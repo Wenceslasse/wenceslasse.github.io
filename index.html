@@ -491,13 +491,19 @@ async function loadIssues(){
   if(error){ alert("Erreur de chargement des numéros : "+error.message); return []; }
   return data||[];
 }
-async function selectIssue(id){
+async function selectIssue(id, pushUrl){
+  if(pushUrl===undefined) pushUrl=true;
   const iss = issuesCache.find(i=>i.id===id);
   if(!iss) return;
   currentIssue = iss;
   localStorage.setItem("cdf_last_issue", id);
   issueSelect.value = id;
   numero.value = iss.numero||""; bouclage.value = iss.bouclage||"";
+  const url = new URL(window.location.href);
+  if(url.searchParams.get("issue")!==id){
+    url.searchParams.set("issue", id);
+    if(pushUrl) history.pushState({issue:id}, "", url); else history.replaceState({issue:id}, "", url);
+  }
   const { data, error } = await sb.from("pages").select("*").eq("issue_id", id).order("n",{ascending:true});
   if(error){ alert("Erreur de chargement des pages : "+error.message); return; }
   state.pages = Array.from({length:TOTAL},(_,i)=>{
@@ -645,11 +651,17 @@ async function showApp(session){
   if(issuesCache.length===0){
     await createIssue();
   } else {
+    const fromUrl = new URL(window.location.href).searchParams.get("issue");
     const last = localStorage.getItem("cdf_last_issue");
-    const pick = issuesCache.find(i=>i.id===last) || issuesCache[0];
-    await selectIssue(pick.id);
+    const pick = issuesCache.find(i=>i.id===fromUrl) || issuesCache.find(i=>i.id===last) || issuesCache[0];
+    await selectIssue(pick.id, false);
   }
 }
+window.addEventListener("popstate", ()=>{
+  if(!appInited) return;
+  const id = new URL(window.location.href).searchParams.get("issue");
+  if(id && issuesCache.find(i=>i.id===id) && (!currentIssue || currentIssue.id!==id)) selectIssue(id, false);
+});
 sb.auth.onAuthStateChange((_event, session)=>{ if(session) showApp(session); else showAuth(); });
 sb.auth.getSession().then(({data})=>{ if(data.session) showApp(data.session); else showAuth(); });
 </script>
