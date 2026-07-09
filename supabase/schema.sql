@@ -22,9 +22,14 @@ create table if not exists public.pages (
   unite text not null default 'signes',
   rendu date,
   statut text not null default 'a_caler',
+  journaliste text not null default '',
   notes text not null default '',
   unique (issue_id, n)
 );
+
+-- Si la table existait déjà avant l'ajout du champ "journaliste" (migration
+-- ultérieure), cette ligne l'ajoute sans toucher aux données existantes.
+alter table public.pages add column if not exists journaliste text not null default '';
 
 -- ---- Row Level Security ---------------------------------------------
 

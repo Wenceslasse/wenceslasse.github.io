@@ -256,6 +256,10 @@
         <div class="pval"><div class="selectrow" id="chips"></div></div>
       </div>
       <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Journaliste</div>
+        <div class="pval"><input id="fJournaliste" list="journalistes" placeholder="Vide"><datalist id="journalistes"></datalist></div>
+      </div>
+      <div class="prow">
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14v16l-7-3-7 3z"/></svg>Notes</div>
         <div class="pval"><textarea id="fNotes" placeholder="Vide"></textarea></div>
       </div>
@@ -292,8 +296,8 @@ const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", notes:""}; }
-function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", notes:r.notes||""}; }
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", journaliste:"", notes:""}; }
+function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", journaliste:r.journaliste||"", notes:r.notes||""}; }
 
 let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
 let issuesCache = [];
@@ -380,20 +384,23 @@ function renderStats(){
 function renderDatalist(){
   const set=[...new Set(state.pages.map(p=>p.rubrique).filter(Boolean))].sort();
   document.getElementById("rubriques").innerHTML=set.map(r=>`<option value="${esc(r)}">`).join("");
+  const setJ=[...new Set(state.pages.map(p=>p.journaliste).filter(Boolean))].sort();
+  document.getElementById("journalistes").innerHTML=setJ.map(r=>`<option value="${esc(r)}">`).join("");
 }
 
 /* ---- peek editor ---- */
 const peek=document.getElementById("peek"), scrim=document.getElementById("scrim");
 let current=null;
 const F={rub:document.getElementById("fRubrique"),calib:document.getElementById("fCalib"),
-  unite:document.getElementById("fUnite"),rendu:document.getElementById("fRendu"),notes:document.getElementById("fNotes")};
+  unite:document.getElementById("fUnite"),rendu:document.getElementById("fRendu"),
+  journaliste:document.getElementById("fJournaliste"),notes:document.getElementById("fNotes")};
 const dtitle=document.getElementById("dtitle");
 
 function autoGrow(t){ t.style.height="auto"; t.style.height=t.scrollHeight+"px"; }
 function openPeek(n){
   current=n; const p=state.pages[n-1];
   document.getElementById("dnum").textContent = "Page "+n+(COVER[n]?"  ·  "+COVER[n]:"");
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.notes.value=p.notes;
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
   renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
@@ -444,6 +451,7 @@ F.rub.addEventListener("input",e=>commit("rubrique",e.target.value));
 F.calib.addEventListener("input",e=>commit("calib",e.target.value));
 F.unite.addEventListener("change",e=>commit("unite",e.target.value));
 F.rendu.addEventListener("input",e=>commit("rendu",e.target.value));
+F.journaliste.addEventListener("input",e=>commit("journaliste",e.target.value));
 F.notes.addEventListener("input",e=>{ autoGrow(e.target); commit("notes",e.target.value); });
 document.getElementById("closePeek").addEventListener("click",closePeek);
 document.getElementById("prevPage").addEventListener("click",()=>{ if(current>1) openPeek(current-1); });
@@ -455,7 +463,7 @@ function refreshPeekIfIdle(n){
   if(current!==n || !peek.classList.contains("open")) return;
   if(peek.contains(document.activeElement)) return; // ne pas couper la frappe en cours
   const p=state.pages[n-1];
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.notes.value=p.notes;
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
   renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
 }
 
@@ -518,7 +526,7 @@ async function createIssue(){
   if(name==null) return;
   const { data, error } = await sb.from("issues").insert({ numero: name || "Nouveau numéro" }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
-  const pages = Array.from({length:TOTAL},(_,i)=>({ issue_id:data.id, n:i+1, rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", notes:"" }));
+  const pages = Array.from({length:TOTAL},(_,i)=>({ issue_id:data.id, n:i+1, rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", notes:"" }));
   const { error:e2 } = await sb.from("pages").insert(pages);
   if(e2){ alert("Erreur de création des pages : "+e2.message); return; }
   if(!issuesCache.find(i=>i.id===data.id)) issuesCache.push(data);
@@ -570,9 +578,9 @@ function download(text,name,type){ const b=new Blob([text],{type}),u=URL.createO
   const a=document.createElement("a"); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
 
 document.getElementById("btnCsv").addEventListener("click",()=>{
-  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Feuillets","Date de rendu","Statut","Notes"];
+  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Feuillets","Date de rendu","Statut","Journaliste","Notes"];
   const rows=state.pages.map(p=>{ const sig=toSignes(p);
-    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),sig?(sig/1500).toFixed(2):"",p.rendu,STATUTS[p.statut].label,(p.notes||"").replace(/\n/g," ")]; });
+    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),sig?(sig/1500).toFixed(2):"",p.rendu,STATUTS[p.statut].label,p.journaliste,(p.notes||"").replace(/\n/g," ")]; });
   const q=v=>{ v=(v==null?"":String(v)); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
   const csv=[head,...rows].map(r=>r.map(q).join(";")).join("\r\n");
   download("﻿"+csv, slug(currentIssue&&currentIssue.numero)+".csv","text/csv;charset=utf-8");
@@ -592,7 +600,8 @@ document.getElementById("fileInput").addEventListener("change",e=>{
         id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
         rubrique:p.rubrique||"", sujet:p.sujet||"",
         calib:(p.calib===""||p.calib==null)?null:Number(p.calib),
-        unite:p.unite||"signes", rendu:p.rendu||null, statut:p.statut||"a_caler", notes:p.notes||""
+        unite:p.unite||"signes", rendu:p.rendu||null, statut:p.statut||"a_caler",
+        journaliste:p.journaliste||"", notes:p.notes||""
       }));
       const { error } = await sb.from("pages").upsert(updates);
       if(error) throw error;
@@ -610,7 +619,7 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   if(!confirm("Réinitialiser toutes les pages de ce numéro ? Exporte une sauvegarde avant, au besoin.")) return;
   const updates = Array.from({length:TOTAL},(_,i)=>({
     id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
-    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", notes:""
+    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", notes:""
   }));
   const { error } = await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
