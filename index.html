@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chemin de fer</title>
+<style>
+  :root{
+    --canvas:#FFFFFF; --body:#FBFBFA;
+    --text:#37352F; --muted:#787774; --faint:#9B9A97;
+    --border:#E9E9E7; --border-strong:#DCDBD9; --hover:#F1F1EF;
+    --accent:#2383E2; --danger:#9B2C1E;
+    --sans:ui-sans-serif,-apple-system,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif;
+    --ring:0 0 0 3px rgba(35,131,226,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--body); color:var(--text); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font-family:inherit; font-size:inherit; color:inherit}
+  ::placeholder{color:var(--faint)}
+
+  .wrap{max-width:1080px; margin:0 auto; padding:0 40px}
+
+  /* ---- Page header (Notion page style) ---- */
+  header{background:var(--body); position:sticky; top:0; z-index:20}
+  .head-inner{padding:26px 0 14px}
+  .titlebar{display:flex; align-items:center; gap:12px}
+  .picon{width:34px; height:34px; border-radius:7px; display:grid; place-items:center; background:var(--hover); flex:none}
+  .picon svg{width:20px; height:20px; color:var(--muted)}
+  #numero{
+    font-size:30px; font-weight:700; letter-spacing:-.02em; border:none; background:transparent;
+    padding:2px 6px; border-radius:5px; width:100%; color:var(--text);
+  }
+  #numero:hover{background:var(--hover)}
+  #numero:focus{outline:none; background:var(--canvas); box-shadow:var(--ring)}
+
+  .props{display:flex; flex-wrap:wrap; gap:8px 26px; margin:14px 0 2px; align-items:center}
+  .prop-inline{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13.5px}
+  .prop-inline b{color:var(--text); font-weight:600}
+  .prop-inline input[type=date]{border:1px solid transparent; border-radius:5px; padding:3px 6px; background:transparent; color:var(--text)}
+  .prop-inline input[type=date]:hover{background:var(--hover)}
+  .prop-inline input[type=date]:focus{outline:none; background:var(--canvas); box-shadow:var(--ring)}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-left:auto}
+  .lg{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted)}
+  .dot{width:8px; height:8px; border-radius:50%; display:inline-block}
+
+  /* ---- Toolbar (Notion view bar) ---- */
+  .toolbar{display:flex; gap:4px; align-items:center; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:7px 0; margin-top:12px; flex-wrap:wrap}
+  .toolbar input[type=search]{border:none; background:transparent; padding:5px 8px; min-width:220px; border-radius:5px}
+  .toolbar input[type=search]:hover{background:var(--hover)}
+  .toolbar input[type=search]:focus{outline:none; background:var(--canvas); box-shadow:var(--ring)}
+  .tbtn{border:none; background:transparent; border-radius:5px; padding:5px 9px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-size:13.5px}
+  .tbtn:hover{background:var(--hover); color:var(--text)}
+  .tsel{border:none; background:transparent; padding:5px 6px; border-radius:5px; color:var(--muted); cursor:pointer}
+  .tsel:hover{background:var(--hover)}
+  .spacer{flex:1}
+
+  /* ---- Rail ---- */
+  main{padding:22px 0 140px}
+  .rail{display:flex; flex-direction:column; gap:20px}
+  .spreadlabel{font-size:11px; color:var(--faint); letter-spacing:.06em; text-transform:uppercase; margin:0 0 6px 2px}
+  .spread{display:grid; grid-template-columns:1fr 1fr; gap:0}
+  .page{
+    background:var(--canvas); border:1px solid var(--border); min-height:172px; padding:14px 15px 32px;
+    position:relative; display:flex; flex-direction:column; cursor:pointer; text-align:left; width:100%;
+    transition:box-shadow .12s ease, background .12s ease;
+  }
+  .page:first-child{border-radius:8px 0 0 8px}
+  .page.solo{border-radius:8px}
+  .spread .page.left{border-radius:8px 0 0 8px; border-right:none}
+  .spread .page.right{border-radius:0 8px 8px 0; box-shadow:inset 8px 0 12px -12px rgba(0,0,0,.14)}
+  .page:hover{box-shadow:0 1px 2px rgba(15,15,15,.06), 0 3px 10px rgba(15,15,15,.05); z-index:2}
+  .page:focus-visible{outline:none; box-shadow:var(--ring); z-index:3}
+  .page.blank{background:transparent; border:1px dashed var(--border); cursor:default}
+  .page.blank:hover{box-shadow:none}
+  .page.dim{opacity:.35}
+
+  .pill{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; max-width:100%}
+  .pill .ptxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .rubrow{min-height:20px; margin-bottom:8px}
+  .sujet{font-size:15px; font-weight:600; letter-spacing:-.01em; line-height:1.3}
+  .sujet.empty{color:var(--faint); font-weight:400}
+  .cardmeta{margin-top:auto; padding-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--muted)}
+  .cardmeta .sep{color:var(--border-strong)}
+  .due.late{color:var(--danger); font-weight:600}
+  .cardmeta .statuswrap{margin-left:auto}
+  .folio{position:absolute; bottom:9px; font-size:12px; color:var(--faint); font-variant-numeric:tabular-nums}
+  .page.left .folio, .page.solo.p56 .folio{left:15px}
+  .page.right .folio, .page.solo.p1 .folio{right:15px}
+  .cvr{position:absolute; bottom:9px; font-size:10px; letter-spacing:.08em; color:var(--accent); font-weight:600}
+  .page.left .cvr{right:15px}
+  .page.right .cvr, .page.solo .cvr{left:15px}
+  .page.solo.p56 .cvr{right:15px; left:auto}
+
+  /* ---- Peek panel editor (Notion style) ---- */
+  .scrim{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
+  .scrim.open{opacity:1; pointer-events:auto}
+  .peek{
+    position:fixed; top:0; right:0; height:100%; width:min(480px,94vw); background:var(--canvas);
+    border-left:1px solid var(--border); transform:translateX(100%); transition:transform .2s ease;
+    z-index:50; display:flex; flex-direction:column; box-shadow:-8px 0 30px rgba(15,15,15,.08);
+  }
+  .peek.open{transform:none}
+  .peek-top{display:flex; align-items:center; gap:6px; padding:10px 14px; border-bottom:1px solid var(--border); color:var(--muted); font-size:13px}
+  .peek-top .pnum{font-variant-numeric:tabular-nums}
+  .peek-body{padding:18px 22px; overflow:auto; flex:1}
+  #dtitle{font-size:24px; font-weight:700; letter-spacing:-.02em; border:none; background:transparent; width:100%; padding:4px 6px; border-radius:5px; resize:none; line-height:1.25; overflow:hidden}
+  #dtitle:hover{background:var(--hover)}
+  #dtitle:focus{outline:none; box-shadow:var(--ring); background:var(--canvas)}
+  .proplist{margin-top:14px; display:flex; flex-direction:column; gap:2px}
+  .prow{display:grid; grid-template-columns:132px 1fr; align-items:start; gap:4px}
+  .plabel{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13.5px; padding:7px 6px}
+  .plabel svg{width:15px; height:15px; opacity:.85}
+  .pval input, .pval select, .pval textarea{width:100%; border:1px solid transparent; border-radius:5px; padding:6px 8px; background:transparent}
+  .pval input:hover, .pval select:hover, .pval textarea:hover{background:var(--hover)}
+  .pval input:focus, .pval select:focus, .pval textarea:focus{outline:none; background:var(--canvas); box-shadow:var(--ring)}
+  .pval textarea{resize:vertical; min-height:38px; line-height:1.5}
+  .calibgrid{display:grid; grid-template-columns:1fr 118px; gap:6px}
+  .calibhint{color:var(--faint); font-size:12.5px; padding:2px 8px 0}
+  .selectrow{display:flex; gap:6px; flex-wrap:wrap; padding:4px 6px}
+  .opt{border:1px solid transparent; cursor:pointer; background:transparent; padding:2px 2px; border-radius:5px}
+  .opt.active{box-shadow:0 0 0 2px var(--text) inset; border-radius:5px}
+  .opt .pill{cursor:pointer}
+  .peek-foot{display:flex; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid var(--border)}
+  .ghostbtn{border:none; background:transparent; border-radius:5px; padding:6px 10px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; gap:6px}
+  .ghostbtn:hover{background:var(--hover); color:var(--text)}
+  .primary{background:var(--accent); color:#fff}
+  .primary:hover{background:#1a72cc; color:#fff}
+
+  /* ---- Auth screen ---- */
+  .authscreen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
+  .authcard{width:100%; max-width:360px; background:var(--canvas); border:1px solid var(--border); border-radius:10px; padding:32px 28px; text-align:center}
+  .authicon{width:44px; height:44px; border-radius:9px; background:var(--hover); display:grid; place-items:center; margin:0 auto 14px}
+  .authicon svg{width:24px; height:24px; color:var(--muted)}
+  .authcard h1{font-size:22px; margin:0 0 4px; letter-spacing:-.02em}
+  .authsub{color:var(--muted); font-size:13.5px; margin:0 0 22px}
+  .authlabel{display:block; text-align:left; font-size:12.5px; color:var(--muted); margin:0 0 6px}
+  #authEmail{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body)}
+  #authEmail:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+  .authbtn{width:100%; justify-content:center; padding:9px 10px; border-radius:6px; font-weight:600}
+  .authmsg{margin-top:12px; font-size:13px; color:var(--muted); min-height:18px}
+  .authmsg.err{color:var(--danger)}
+  .authmsg.ok{color:#2C5E3E}
+  .userbar{color:var(--faint); font-size:13px; white-space:nowrap}
+
+  @media (max-width:760px){
+    .wrap{padding:0 18px}
+    .spread{grid-template-columns:1fr}
+    .spread .page.left{border-radius:8px 8px 0 0; border-right:1px solid var(--border); border-bottom:none}
+    .spread .page.right{border-radius:0 0 8px 8px; box-shadow:none}
+    .legend{margin-left:0; width:100%}
+    .prow{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media print{
+    .toolbar,.legend,.scrim,.peek,.prop-inline input{display:none!important}
+    header{position:static}
+    body{background:#fff}
+    .page{box-shadow:none!important; break-inside:avoid}
+    main{padding:0}
+  }
+</style>
+</head>
+<body>
+
+<div class="authscreen" id="authScreen">
+  <div class="authcard">
+    <span class="authicon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v15"/><path d="M12 5C10 3.5 6.5 3.5 4 4v14c2.5-.5 6-.5 8 1"/><path d="M12 5c2-1.5 5.5-1.5 8-1v14c-2.5-.5-6-.5-8 1"/></svg>
+    </span>
+    <h1>Chemin de fer</h1>
+    <p class="authsub">Connexion à l'espace éditorial</p>
+    <label class="authlabel" for="authEmail">Adresse email</label>
+    <input type="email" id="authEmail" placeholder="prenom@redaction.fr" autocomplete="email">
+    <button class="ghostbtn primary authbtn" id="btnMagicLink">Envoyer le lien magique</button>
+    <div class="authmsg" id="authMsg"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<header>
+  <div class="wrap head-inner">
+    <div class="titlebar">
+      <span class="picon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v15"/><path d="M12 5C10 3.5 6.5 3.5 4 4v14c2.5-.5 6-.5 8 1"/><path d="M12 5c2-1.5 5.5-1.5 8-1v14c-2.5-.5-6-.5-8 1"/></svg>
+      </span>
+      <input id="numero" spellcheck="false" aria-label="Nom du numéro">
+    </div>
+
+    <div class="props">
+      <span class="prop-inline">Bouclage <input type="date" id="bouclage" aria-label="Date de bouclage"></span>
+      <span class="prop-inline" id="pDefined"></span>
+      <span class="prop-inline" id="pCalib"></span>
+      <span class="prop-inline" id="pBoucle"></span>
+      <span class="prop-inline" id="pNext"></span>
+      <span class="legend" id="legend"></span>
+    </div>
+
+    <div class="toolbar">
+      <select class="tsel" id="issueSelect" aria-label="Choisir un numéro"></select>
+      <button class="tbtn" id="btnNewIssue">+ Nouveau numéro</button>
+      <input type="search" id="search" placeholder="Rechercher rubrique ou sujet…" aria-label="Rechercher">
+      <select class="tsel" id="filterStatut" aria-label="Filtrer par statut">
+        <option value="">Tous les statuts</option>
+        <option value="a_caler">À caler</option>
+        <option value="en_cours">En cours</option>
+        <option value="relu">Relu</option>
+        <option value="boucle">Bouclé</option>
+      </select>
+      <span class="spacer"></span>
+      <button class="tbtn" id="btnCsv">Exporter CSV</button>
+      <button class="tbtn" id="btnJson">Sauvegarde</button>
+      <button class="tbtn" id="btnImport">Importer</button>
+      <button class="tbtn" id="btnPrint">Imprimer</button>
+      <button class="tbtn" id="btnReset">Réinitialiser</button>
+      <input type="file" id="fileInput" accept="application/json" hidden>
+      <span class="userbar" id="pUser"></span>
+      <button class="tbtn" id="btnLogout">Déconnexion</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap"><div class="rail" id="rail"></div></div>
+</main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="peek" id="peek" aria-label="Éditer la page">
+  <div class="peek-top">
+    <span class="pnum" id="dnum"></span>
+  </div>
+  <div class="peek-body">
+    <textarea id="dtitle" rows="1" placeholder="Sujet à définir" aria-label="Sujet"></textarea>
+    <div class="proplist">
+      <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Rubrique</div>
+        <div class="pval"><input id="fRubrique" list="rubriques" placeholder="Vide"><datalist id="rubriques"></datalist></div>
+      </div>
+      <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Calibrage</div>
+        <div class="pval">
+          <div class="calibgrid">
+            <input id="fCalib" type="number" min="0" step="50" inputmode="numeric" placeholder="0">
+            <select id="fUnite"><option value="signes">signes</option><option value="feuillets">feuillets</option><option value="mots">mots</option></select>
+          </div>
+          <div class="calibhint" id="calibHint"></div>
+        </div>
+      </div>
+      <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Date de rendu</div>
+        <div class="pval"><input id="fRendu" type="date"></div>
+      </div>
+      <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>Statut</div>
+        <div class="pval"><div class="selectrow" id="chips"></div></div>
+      </div>
+      <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14v16l-7-3-7 3z"/></svg>Notes</div>
+        <div class="pval"><textarea id="fNotes" placeholder="Vide"></textarea></div>
+      </div>
+    </div>
+  </div>
+  <div class="peek-foot">
+    <button class="ghostbtn" id="prevPage">← Précédente</button>
+    <button class="ghostbtn" id="nextPage">Suivante →</button>
+    <span class="spacer"></span>
+    <button class="ghostbtn primary" id="closePeek">Fermer</button>
+  </div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+"use strict";
+const TOTAL = 56;
+const STATUTS = {
+  a_caler:{label:"À caler", bg:"#EBECED", fg:"#5B5B58", dot:"#9B9A97"},
+  en_cours:{label:"En cours", bg:"#D3E5EF", fg:"#24547A", dot:"#337EA9"},
+  relu:{label:"Relu", bg:"#FDECC8", fg:"#7C5E00", dot:"#C99A2E"},
+  boucle:{label:"Bouclé", bg:"#DBEDDB", fg:"#2C5E3E", dot:"#4B8B5B"},
+};
+// Palette pastel Notion pour les rubriques (l'index 0 gris est réservé au "vide")
+const RUB_TAGS = [
+  {bg:"#EEE0DA",fg:"#64473A"},{bg:"#FADEC9",fg:"#8A4B00"},{bg:"#FDECC8",fg:"#7C5E00"},
+  {bg:"#DBEDDB",fg:"#2C5E3E"},{bg:"#D3E5EF",fg:"#24547A"},{bg:"#E8DEEE",fg:"#5B3E7A"},
+  {bg:"#F5E0E9",fg:"#7A2E58"},{bg:"#FFE2DD",fg:"#9B2C1E"},
+];
+const COVER = {1:"C1",2:"C2",55:"C3",56:"C4"};
+
+/* ---- Supabase ---- */
+const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", notes:""}; }
+function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", notes:r.notes||""}; }
+
+let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
+let issuesCache = [];
+let currentIssue = null;
+let appInited = false;
+let pagesChannel = null, issuesChannel = null;
+
+function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
+function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
+function rubTag(name){ if(!name) return null; let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0; return RUB_TAGS[h%RUB_TAGS.length]; }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}`; }
+function isLate(p){ return p.rendu && p.statut!=="boucle" && p.rendu < todayISO(); }
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+let filter={q:"",statut:""};
+function matches(p){
+  if(filter.statut && p.statut!==filter.statut) return false;
+  if(filter.q){ const q=filter.q.toLowerCase(); if(!((p.rubrique||"").toLowerCase().includes(q)||(p.sujet||"").toLowerCase().includes(q))) return false; }
+  return true;
+}
+
+const rail=document.getElementById("rail");
+function pillHTML(text, tag){ return `<span class="pill" style="background:${tag.bg};color:${tag.fg}"><span class="ptxt">${esc(text)}</span></span>`; }
+
+function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' | 'blank'
+  if(!p){ const b=document.createElement("div"); b.className="page blank "+role; return b; }
+  const el=document.createElement("button"); el.type="button";
+  let cls="page";
+  if(role==="left") cls+=" left"; else if(role==="right") cls+=" right";
+  else if(role==="solo-p1") cls+=" solo p1"; else if(role==="solo-p56") cls+=" solo p56";
+  el.className=cls + (matches(p)?"":" dim");
+  el.setAttribute("aria-label",`Page ${p.n}${p.sujet?" — "+p.sujet:""}`);
+  el.addEventListener("click",()=>openPeek(p.n));
+
+  const rt=rubTag(p.rubrique);
+  const rub = `<div class="rubrow">${rt?pillHTML(p.rubrique,rt):""}</div>`;
+  const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
+
+  const bits=[];
+  const sig=toSignes(p);
+  if(p.calib){
+    let t = `${fmt(p.calib)} ${p.unite==="signes"?"sg":p.unite==="feuillets"?"f.":"mots"}`;
+    if(p.unite==="signes"&&sig) t += ` · ≈${(sig/1500).toFixed(1)} f.`;
+    bits.push(`<span>${t}</span>`);
+  }
+  if(p.rendu) bits.push(`<span class="due${isLate(p)?" late":""}">◷ ${frDate(p.rendu)}</span>`);
+  const st=STATUTS[p.statut];
+  const status=`<span class="statuswrap">${pillHTML(st.label,st)}</span>`;
+  const meta=`<div class="cardmeta">${bits.join('<span class="sep">·</span>')}${status}</div>`;
+
+  const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
+  el.innerHTML = rub + suj + meta + folio;
+  return el;
+}
+
+function render(){
+  rail.innerHTML="";
+  const P=state.pages;
+  rail.appendChild(row("Couverture", pageCard(null,"blank"), pageCard(P[0],"solo-p1")));
+  for(let n=2;n<=54;n+=2) rail.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
+  rail.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
+  renderStats(); renderDatalist();
+}
+function row(label,a,b){
+  const w=document.createElement("div");
+  const l=document.createElement("div"); l.className="spreadlabel"; l.textContent=label; w.appendChild(l);
+  const s=document.createElement("div"); s.className="spread"; s.appendChild(a); s.appendChild(b); w.appendChild(s);
+  return w;
+}
+
+function renderStats(){
+  let totalSig=0, counts={a_caler:0,en_cours:0,relu:0,boucle:0}, defined=0, next=null;
+  for(const p of state.pages){ totalSig+=toSignes(p); counts[p.statut]++; if(p.sujet) defined++;
+    if(p.rendu&&p.statut!=="boucle"){ if(!next||p.rendu<next) next=p.rendu; } }
+  document.getElementById("pDefined").innerHTML = `Pages calées <b>${defined}/${TOTAL}</b>`;
+  document.getElementById("pCalib").innerHTML = `Calibrage <b>${fmt(totalSig)} sg</b> ≈ ${(totalSig/1500).toFixed(0)} f.`;
+  document.getElementById("pBoucle").innerHTML = `Bouclé <b>${Math.round(counts.boucle/TOTAL*100)}%</b>`;
+  document.getElementById("pNext").innerHTML = `Prochain rendu <b>${next?frDate(next):"—"}</b>`;
+  const lg=document.getElementById("legend"); lg.innerHTML="";
+  for(const k in STATUTS){ const s=STATUTS[k];
+    lg.insertAdjacentHTML("beforeend",`<span class="lg"><span class="dot" style="background:${s.dot}"></span>${s.label} ${counts[k]}</span>`); }
+}
+function renderDatalist(){
+  const set=[...new Set(state.pages.map(p=>p.rubrique).filter(Boolean))].sort();
+  document.getElementById("rubriques").innerHTML=set.map(r=>`<option value="${esc(r)}">`).join("");
+}
+
+/* ---- peek editor ---- */
+const peek=document.getElementById("peek"), scrim=document.getElementById("scrim");
+let current=null;
+const F={rub:document.getElementById("fRubrique"),calib:document.getElementById("fCalib"),
+  unite:document.getElementById("fUnite"),rendu:document.getElementById("fRendu"),notes:document.getElementById("fNotes")};
+const dtitle=document.getElementById("dtitle");
+
+function autoGrow(t){ t.style.height="auto"; t.style.height=t.scrollHeight+"px"; }
+function openPeek(n){
+  current=n; const p=state.pages[n-1];
+  document.getElementById("dnum").textContent = "Page "+n+(COVER[n]?"  ·  "+COVER[n]:"");
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.notes.value=p.notes;
+  renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+  peek.classList.add("open"); scrim.classList.add("open");
+  document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
+  document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
+  setTimeout(()=>dtitle.focus(),120);
+}
+function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; }
+function renderChips(active){
+  const c=document.getElementById("chips"); c.innerHTML="";
+  for(const k in STATUTS){ const s=STATUTS[k];
+    const b=document.createElement("button"); b.type="button"; b.className="opt"+(k===active?" active":"");
+    b.innerHTML=pillHTML(s.label,s);
+    b.addEventListener("click",()=>{ commit("statut",k); renderChips(k); });
+    c.appendChild(b);
+  }
+}
+function updateHint(){
+  const p=state.pages[current-1], sig=toSignes(p), h=document.getElementById("calibHint");
+  if(!p.calib){ h.textContent=""; return; }
+  if(p.unite==="signes") h.textContent=`≈ ${(sig/1500).toFixed(1)} feuillets (1 f. = 1500 signes)`;
+  else if(p.unite==="feuillets") h.textContent=`≈ ${fmt(sig)} signes`;
+  else h.textContent=`≈ ${fmt(sig)} signes (~6 sg/mot)`;
+}
+
+/* ---- persistence to Supabase (per-page, per-field) ---- */
+const writeTimers = {};
+function commit(field,val){
+  if(current==null) return;
+  const p = state.pages[current-1];
+  p[field]=val;
+  if(["calib","unite"].includes(field)) updateHint();
+  render();
+  if(field==="statut"){ persistField(p, field); return; }
+  const key = p.id+":"+field;
+  clearTimeout(writeTimers[key]);
+  writeTimers[key]=setTimeout(()=>persistField(p, field), 350);
+}
+async function persistField(p, field){
+  if(!p.id) return;
+  let val = p[field];
+  if(field==="calib") val = (val===""||val==null) ? null : Number(val);
+  if(field==="rendu" && val==="") val=null;
+  const { error } = await sb.from("pages").update({ [field]: val }).eq("id", p.id);
+  if(error) console.error("Erreur de sauvegarde de la page :", error.message);
+}
+dtitle.addEventListener("input",e=>{ autoGrow(e.target); commit("sujet",e.target.value); });
+F.rub.addEventListener("input",e=>commit("rubrique",e.target.value));
+F.calib.addEventListener("input",e=>commit("calib",e.target.value));
+F.unite.addEventListener("change",e=>commit("unite",e.target.value));
+F.rendu.addEventListener("input",e=>commit("rendu",e.target.value));
+F.notes.addEventListener("input",e=>{ autoGrow(e.target); commit("notes",e.target.value); });
+document.getElementById("closePeek").addEventListener("click",closePeek);
+document.getElementById("prevPage").addEventListener("click",()=>{ if(current>1) openPeek(current-1); });
+document.getElementById("nextPage").addEventListener("click",()=>{ if(current<TOTAL) openPeek(current+1); });
+scrim.addEventListener("click",closePeek);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&current!=null) closePeek(); });
+
+function refreshPeekIfIdle(n){
+  if(current!==n || !peek.classList.contains("open")) return;
+  if(peek.contains(document.activeElement)) return; // ne pas couper la frappe en cours
+  const p=state.pages[n-1];
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.notes.value=p.notes;
+  renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+}
+
+/* ---- header fields (numero / bouclage of the current issue) ---- */
+const numero=document.getElementById("numero"), bouclage=document.getElementById("bouclage");
+let issueWriteTimer=null;
+function debounceIssueWrite(field, val){
+  clearTimeout(issueWriteTimer);
+  issueWriteTimer=setTimeout(async ()=>{
+    if(!currentIssue) return;
+    const { error } = await sb.from("issues").update({[field]: val}).eq("id", currentIssue.id);
+    if(error){ console.error(error.message); return; }
+    const idx=issuesCache.findIndex(i=>i.id===currentIssue.id);
+    if(idx>=0) issuesCache[idx][field]=val;
+    if(field==="numero") populateIssueSelect();
+  }, 400);
+}
+numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.target.value; debounceIssueWrite("numero", e.target.value); } });
+bouclage.addEventListener("input",e=>{ if(currentIssue){ currentIssue.bouclage=e.target.value||null; debounceIssueWrite("bouclage", e.target.value||null); } });
+
+/* ---- filters ---- */
+document.getElementById("search").addEventListener("input",e=>{ filter.q=e.target.value; render(); });
+document.getElementById("filterStatut").addEventListener("change",e=>{ filter.statut=e.target.value; render(); });
+
+/* ---- issues (numéros) ---- */
+const issueSelect=document.getElementById("issueSelect");
+function populateIssueSelect(){
+  issueSelect.innerHTML = issuesCache.map(i=>`<option value="${i.id}">${esc(i.numero||"(sans nom)")}</option>`).join("");
+  if(currentIssue) issueSelect.value = currentIssue.id;
+}
+async function loadIssues(){
+  const { data, error } = await sb.from("issues").select("*").order("created_at",{ascending:true});
+  if(error){ alert("Erreur de chargement des numéros : "+error.message); return []; }
+  return data||[];
+}
+async function selectIssue(id){
+  const iss = issuesCache.find(i=>i.id===id);
+  if(!iss) return;
+  currentIssue = iss;
+  localStorage.setItem("cdf_last_issue", id);
+  issueSelect.value = id;
+  numero.value = iss.numero||""; bouclage.value = iss.bouclage||"";
+  const { data, error } = await sb.from("pages").select("*").eq("issue_id", id).order("n",{ascending:true});
+  if(error){ alert("Erreur de chargement des pages : "+error.message); return; }
+  state.pages = Array.from({length:TOTAL},(_,i)=>{
+    const r = (data||[]).find(x=>x.n===i+1);
+    return r ? rowToPage(r) : blankPage(i+1);
+  });
+  render();
+  subscribePages(id);
+}
+async function createIssue(){
+  const name = prompt("Nom du nouveau numéro :", "");
+  if(name==null) return;
+  const { data, error } = await sb.from("issues").insert({ numero: name || "Nouveau numéro" }).select().single();
+  if(error){ alert("Erreur de création du numéro : "+error.message); return; }
+  const pages = Array.from({length:TOTAL},(_,i)=>({ issue_id:data.id, n:i+1, rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", notes:"" }));
+  const { error:e2 } = await sb.from("pages").insert(pages);
+  if(e2){ alert("Erreur de création des pages : "+e2.message); return; }
+  if(!issuesCache.find(i=>i.id===data.id)) issuesCache.push(data);
+  populateIssueSelect();
+  await selectIssue(data.id);
+}
+issueSelect.addEventListener("change", e=>selectIssue(e.target.value));
+document.getElementById("btnNewIssue").addEventListener("click", createIssue);
+
+/* ---- Supabase Realtime ---- */
+function subscribePages(issueId){
+  if(pagesChannel){ sb.removeChannel(pagesChannel); pagesChannel=null; }
+  pagesChannel = sb.channel("pages-"+issueId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"pages",filter:`issue_id=eq.${issueId}`}, payload=>{
+      const row = payload.new && Object.keys(payload.new).length ? payload.new : null;
+      if(!row) return;
+      state.pages[row.n-1] = rowToPage(row);
+      render();
+      refreshPeekIfIdle(row.n);
+    })
+    .subscribe();
+}
+function subscribeIssues(){
+  issuesChannel = sb.channel("issues-all")
+    .on("postgres_changes",{event:"*",schema:"public",table:"issues"}, payload=>{
+      if(payload.eventType==="INSERT"){
+        if(!issuesCache.find(i=>i.id===payload.new.id)) issuesCache.push(payload.new);
+        populateIssueSelect();
+      } else if(payload.eventType==="UPDATE"){
+        const idx=issuesCache.findIndex(i=>i.id===payload.new.id);
+        if(idx>=0) issuesCache[idx]=payload.new;
+        if(currentIssue && currentIssue.id===payload.new.id){
+          currentIssue=payload.new;
+          if(document.activeElement!==numero) numero.value=payload.new.numero||"";
+          if(document.activeElement!==bouclage) bouclage.value=payload.new.bouclage||"";
+        }
+        populateIssueSelect();
+      } else if(payload.eventType==="DELETE"){
+        issuesCache = issuesCache.filter(i=>i.id!==payload.old.id);
+        populateIssueSelect();
+      }
+    })
+    .subscribe();
+}
+
+/* ---- exports / imports / reset ---- */
+function slug(s){ return (s||"chemin-de-fer").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"chemin-de-fer"; }
+function download(text,name,type){ const b=new Blob([text],{type}),u=URL.createObjectURL(b);
+  const a=document.createElement("a"); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
+
+document.getElementById("btnCsv").addEventListener("click",()=>{
+  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Feuillets","Date de rendu","Statut","Notes"];
+  const rows=state.pages.map(p=>{ const sig=toSignes(p);
+    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),sig?(sig/1500).toFixed(2):"",p.rendu,STATUTS[p.statut].label,(p.notes||"").replace(/\n/g," ")]; });
+  const q=v=>{ v=(v==null?"":String(v)); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const csv=[head,...rows].map(r=>r.map(q).join(";")).join("\r\n");
+  download("﻿"+csv, slug(currentIssue&&currentIssue.numero)+".csv","text/csv;charset=utf-8");
+});
+document.getElementById("btnJson").addEventListener("click",()=>{
+  const out = { numero: currentIssue&&currentIssue.numero, bouclage: currentIssue&&currentIssue.bouclage, pages: state.pages };
+  download(JSON.stringify(out,null,2), slug(currentIssue&&currentIssue.numero)+".json","application/json");
+});
+document.getElementById("btnImport").addEventListener("click",()=>document.getElementById("fileInput").click());
+document.getElementById("fileInput").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=async ()=>{
+    try{
+      const s=JSON.parse(r.result); if(!s.pages||s.pages.length!==TOTAL) throw 0;
+      if(!currentIssue) throw 0;
+      const updates = s.pages.map((p,i)=>({
+        id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
+        rubrique:p.rubrique||"", sujet:p.sujet||"",
+        calib:(p.calib===""||p.calib==null)?null:Number(p.calib),
+        unite:p.unite||"signes", rendu:p.rendu||null, statut:p.statut||"a_caler", notes:p.notes||""
+      }));
+      const { error } = await sb.from("pages").upsert(updates);
+      if(error) throw error;
+      if(s.numero!=null){ numero.value=s.numero; currentIssue.numero=s.numero; await sb.from("issues").update({numero:s.numero}).eq("id",currentIssue.id); }
+      if(s.bouclage!=null){ bouclage.value=s.bouclage||""; currentIssue.bouclage=s.bouclage||null; await sb.from("issues").update({bouclage:s.bouclage||null}).eq("id",currentIssue.id); }
+      state.pages = updates.map(rowToPage);
+      render();
+    }catch(err){ alert("Fichier illisible ou nombre de pages différent de 56."); }
+  };
+  r.readAsText(f); e.target.value="";
+});
+document.getElementById("btnPrint").addEventListener("click",()=>window.print());
+document.getElementById("btnReset").addEventListener("click", async ()=>{
+  if(!currentIssue) return;
+  if(!confirm("Réinitialiser toutes les pages de ce numéro ? Exporte une sauvegarde avant, au besoin.")) return;
+  const updates = Array.from({length:TOTAL},(_,i)=>({
+    id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
+    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", notes:""
+  }));
+  const { error } = await sb.from("pages").upsert(updates);
+  if(error){ alert("Erreur : "+error.message); return; }
+  state.pages = updates.map(rowToPage);
+  render();
+});
+
+/* ---- authentification (lien magique) ---- */
+const authScreen=document.getElementById("authScreen"), appRoot=document.getElementById("app");
+const authEmail=document.getElementById("authEmail"), authMsg=document.getElementById("authMsg");
+function setAuthMsg(text,isErr,isOk){ authMsg.textContent=text; authMsg.className="authmsg"+(isErr?" err":isOk?" ok":""); }
+async function sendMagicLink(){
+  const email=authEmail.value.trim();
+  if(!email){ setAuthMsg("Entrez votre adresse email.", true); return; }
+  setAuthMsg("Envoi en cours…", false);
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: window.location.origin + window.location.pathname } });
+  if(error) setAuthMsg(error.message, true);
+  else setAuthMsg("Lien envoyé. Vérifiez votre boîte mail.", false, true);
+}
+document.getElementById("btnMagicLink").addEventListener("click", sendMagicLink);
+authEmail.addEventListener("keydown", e=>{ if(e.key==="Enter") sendMagicLink(); });
+document.getElementById("btnLogout").addEventListener("click", ()=>sb.auth.signOut());
+
+function showAuth(){
+  authScreen.style.display="flex"; appRoot.style.display="none";
+  if(pagesChannel){ sb.removeChannel(pagesChannel); pagesChannel=null; }
+  if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
+  appInited=false; currentIssue=null; issuesCache=[];
+}
+async function showApp(session){
+  authScreen.style.display="none"; appRoot.style.display="";
+  document.getElementById("pUser").textContent = session.user.email;
+  if(appInited) return;
+  appInited=true;
+  subscribeIssues();
+  issuesCache = await loadIssues();
+  populateIssueSelect();
+  if(issuesCache.length===0){
+    await createIssue();
+  } else {
+    const last = localStorage.getItem("cdf_last_issue");
+    const pick = issuesCache.find(i=>i.id===last) || issuesCache[0];
+    await selectIssue(pick.id);
+  }
+}
+sb.auth.onAuthStateChange((_event, session)=>{ if(session) showApp(session); else showAuth(); });
+sb.auth.getSession().then(({data})=>{ if(data.session) showApp(data.session); else showAuth(); });
+</script>
+</body>
+</html>
