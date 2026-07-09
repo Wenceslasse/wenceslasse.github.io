@@ -74,6 +74,20 @@
   .page.blank{background:transparent; border:1px dashed var(--border); cursor:default}
   .page.blank:hover{box-shadow:none}
   .page.dim{opacity:.35}
+  .page.selected{background:var(--hover); border-color:var(--accent); box-shadow:0 0 0 2px var(--accent)}
+  .page-checkbox{position:absolute; top:10px; left:10px; width:18px; height:18px; cursor:pointer; z-index:10}
+
+  .bulk-edit-panel{
+    position:fixed; bottom:0; left:0; right:0; background:var(--canvas); border-top:1px solid var(--border);
+    padding:14px 40px; display:none; gap:12px; align-items:flex-end; flex-wrap:wrap; box-shadow:0 -2px 8px rgba(15,15,15,.1);
+    z-index:35;
+  }
+  .bulk-edit-panel.open{display:flex}
+  .bulk-edit-panel > div{display:flex; align-items:center; gap:6px}
+  .bulk-edit-panel input, .bulk-edit-panel select{border:1px solid var(--border-strong); border-radius:5px; padding:6px 8px; background:var(--body); font-size:13px}
+  .bulk-edit-panel input:focus, .bulk-edit-panel select:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+  .bulk-edit-panel label{color:var(--muted); font-size:13px; white-space:nowrap}
+  .bulk-edit-count{color:var(--text); font-weight:600; font-size:13px; margin-right:12px}
 
   .pill{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; max-width:100%}
   .pill .ptxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -135,8 +149,11 @@
   .authcard h1{font-size:22px; margin:0 0 4px; letter-spacing:-.02em}
   .authsub{color:var(--muted); font-size:13.5px; margin:0 0 22px}
   .authlabel{display:block; text-align:left; font-size:12.5px; color:var(--muted); margin:0 0 6px}
-  #authEmail{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body)}
-  #authEmail:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+  .authtab{border:none; background:transparent; padding:10px 12px; cursor:pointer; color:var(--muted); font-size:13.5px; border-bottom:2px solid transparent; font-weight:500}
+  .authtab:hover{color:var(--text)}
+  .authtab.active{color:var(--text); border-bottom-color:var(--accent)}
+  #authEmail, #authEmailPwd, #authPassword{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body); font-size:15px}
+  #authEmail:focus, #authEmailPwd:focus, #authPassword:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
   .authbtn{width:100%; justify-content:center; padding:9px 10px; border-radius:6px; font-weight:600}
   .authmsg{margin-top:12px; font-size:13px; color:var(--muted); min-height:18px}
   .authmsg.err{color:var(--danger)}
@@ -170,9 +187,26 @@
     </span>
     <h1>Chemin de fer</h1>
     <p class="authsub">Connexion à l'espace éditorial</p>
-    <label class="authlabel" for="authEmail">Adresse email</label>
-    <input type="email" id="authEmail" placeholder="prenom@redaction.fr" autocomplete="email">
-    <button class="ghostbtn primary authbtn" id="btnMagicLink">Envoyer le lien magique</button>
+
+    <div style="display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px">
+      <button class="authtab active" id="tabMagicLink" data-method="magiclink">Lien magique</button>
+      <button class="authtab" id="tabPassword" data-method="password">Mot de passe</button>
+    </div>
+
+    <div id="methodMagicLink">
+      <label class="authlabel" for="authEmail">Adresse email</label>
+      <input type="email" id="authEmail" placeholder="prenom@redaction.fr" autocomplete="email">
+      <button class="ghostbtn primary authbtn" id="btnMagicLink">Envoyer le lien magique</button>
+    </div>
+
+    <div id="methodPassword" style="display:none">
+      <label class="authlabel" for="authEmailPwd">Adresse email</label>
+      <input type="email" id="authEmailPwd" placeholder="prenom@redaction.fr" autocomplete="email">
+      <label class="authlabel" for="authPassword" style="margin-top:10px">Mot de passe</label>
+      <input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password">
+      <button class="ghostbtn primary authbtn" id="btnPassword" style="margin-top:12px">Connexion</button>
+    </div>
+
     <div class="authmsg" id="authMsg"></div>
   </div>
 </div>
@@ -199,6 +233,7 @@
     <div class="toolbar">
       <select class="tsel" id="issueSelect" aria-label="Choisir un numéro"></select>
       <button class="tbtn" id="btnNewIssue">+ Nouveau numéro</button>
+      <button class="tbtn" id="btnSelectMode">☐ Sélectionner</button>
       <input type="search" id="search" placeholder="Rechercher rubrique ou sujet…" aria-label="Rechercher">
       <select class="tsel" id="filterStatut" aria-label="Filtrer par statut">
         <option value="">Tous les statuts</option>
@@ -223,6 +258,31 @@
 <main>
   <div class="wrap"><div class="rail" id="rail"></div></div>
 </main>
+
+<div class="bulk-edit-panel" id="bulkEditPanel">
+  <div class="bulk-edit-count" id="selectedCount"></div>
+  <div>
+    <label for="bulkRubrique">Rubrique</label>
+    <input type="text" id="bulkRubrique" list="rubriques" placeholder="">
+  </div>
+  <div>
+    <label for="bulkJournaliste">Journaliste</label>
+    <input type="text" id="bulkJournaliste" list="journalistes" placeholder="">
+  </div>
+  <div>
+    <label for="bulkStatut">Statut</label>
+    <select id="bulkStatut">
+      <option value="">Inchangé</option>
+      <option value="a_caler">À caler</option>
+      <option value="en_cours">En cours</option>
+      <option value="relu">Relu</option>
+      <option value="boucle">Bouclé</option>
+    </select>
+  </div>
+  <span class="spacer"></span>
+  <button class="ghostbtn primary" id="btnApplyBulk">Appliquer</button>
+  <button class="ghostbtn" id="btnClearSelection">Annuler</button>
+</div>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -304,6 +364,9 @@ let issuesCache = [];
 let currentIssue = null;
 let appInited = false;
 let pagesChannel = null, issuesChannel = null;
+let selectionMode = false;
+let selectedPages = new Set();
+let dragStartPage = null;
 
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
@@ -329,9 +392,18 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   let cls="page";
   if(role==="left") cls+=" left"; else if(role==="right") cls+=" right";
   else if(role==="solo-p1") cls+=" solo p1"; else if(role==="solo-p56") cls+=" solo p56";
-  el.className=cls + (matches(p)?"":" dim");
+  el.className=cls + (matches(p)?"":" dim") + (selectedPages.has(p.n)?" selected":"");
   el.setAttribute("aria-label",`Page ${p.n}${p.sujet?" — "+p.sujet:""}`);
-  el.addEventListener("click",()=>openPeek(p.n));
+  el.setAttribute("data-page-n", p.n);
+
+  if(selectionMode){
+    el.addEventListener("mousedown", e=>{ if(e.button===0){ dragStartPage=p.n; selectedPages.add(p.n); updateSelection(); e.preventDefault(); } });
+    el.addEventListener("mouseover", ()=>{ if(dragStartPage!==null){ const min=Math.min(dragStartPage,p.n), max=Math.max(dragStartPage,p.n);
+      for(let i=min;i<=max;i++) selectedPages.add(i); updateSelection(); } });
+    el.addEventListener("click", e=>{ if(!e.ctrlKey && !e.metaKey) e.preventDefault(); });
+  } else {
+    el.addEventListener("click",()=>openPeek(p.n));
+  }
 
   const rt=rubTag(p.rubrique);
   const rub = `<div class="rubrow">${rt?pillHTML(p.rubrique,rt):""}</div>`;
@@ -386,6 +458,45 @@ function renderDatalist(){
   document.getElementById("rubriques").innerHTML=set.map(r=>`<option value="${esc(r)}">`).join("");
   const setJ=[...new Set(state.pages.map(p=>p.journaliste).filter(Boolean))].sort();
   document.getElementById("journalistes").innerHTML=setJ.map(r=>`<option value="${esc(r)}">`).join("");
+}
+
+function updateSelection(){
+  render();
+  const count=selectedPages.size;
+  const panel=document.getElementById("bulkEditPanel");
+  const main=document.querySelector("main");
+  if(count>0){
+    panel.classList.add("open");
+    document.getElementById("selectedCount").textContent=`${count} page${count>1?"s":""} sélectionnée${count>1?"s":""}`;
+    main.style.paddingBottom="200px";
+  } else {
+    panel.classList.remove("open");
+    main.style.paddingBottom="140px";
+  }
+}
+
+async function applyBulkEdit(){
+  if(selectedPages.size===0) return;
+  const rubrique=document.getElementById("bulkRubrique").value;
+  const journaliste=document.getElementById("bulkJournaliste").value;
+  const statut=document.getElementById("bulkStatut").value;
+
+  const updates=[];
+  for(const n of selectedPages){
+    const p=state.pages[n-1];
+    if(rubrique) p.rubrique=rubrique;
+    if(journaliste) p.journaliste=journaliste;
+    if(statut) p.statut=statut;
+    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, rubrique:p.rubrique, sujet:p.sujet, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, notes:p.notes});
+  }
+  const {error}=await sb.from("pages").upsert(updates);
+  if(error){ alert("Erreur : "+error.message); return; }
+  render();
+  selectedPages.clear();
+  document.getElementById("bulkRubrique").value="";
+  document.getElementById("bulkJournaliste").value="";
+  document.getElementById("bulkStatut").value="";
+  document.getElementById("bulkEditPanel").classList.remove("open");
 }
 
 /* ---- peek editor ---- */
@@ -483,6 +594,26 @@ function debounceIssueWrite(field, val){
 }
 numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.target.value; debounceIssueWrite("numero", e.target.value); } });
 bouclage.addEventListener("input",e=>{ if(currentIssue){ currentIssue.bouclage=e.target.value||null; debounceIssueWrite("bouclage", e.target.value||null); } });
+
+/* ---- selection mode & bulk edit ---- */
+document.getElementById("btnSelectMode").addEventListener("click",()=>{
+  selectionMode=!selectionMode;
+  const btn=document.getElementById("btnSelectMode");
+  btn.style.color=selectionMode?"#2383E2":"";
+  selectedPages.clear();
+  document.getElementById("bulkEditPanel").classList.remove("open");
+  render();
+});
+document.getElementById("btnApplyBulk").addEventListener("click",applyBulkEdit);
+document.getElementById("btnClearSelection").addEventListener("click",()=>{
+  selectedPages.clear();
+  document.getElementById("bulkRubrique").value="";
+  document.getElementById("bulkJournaliste").value="";
+  document.getElementById("bulkStatut").value="";
+  document.getElementById("bulkEditPanel").classList.remove("open");
+  render();
+});
+document.addEventListener("mouseup",()=>{ dragStartPage=null; });
 
 /* ---- filters ---- */
 document.getElementById("search").addEventListener("input",e=>{ filter.q=e.target.value; render(); });
@@ -628,10 +759,11 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   render();
 });
 
-/* ---- authentification (lien magique) ---- */
+/* ---- authentification ---- */
 const authScreen=document.getElementById("authScreen"), appRoot=document.getElementById("app");
-const authEmail=document.getElementById("authEmail"), authMsg=document.getElementById("authMsg");
+const authEmail=document.getElementById("authEmail"), authEmailPwd=document.getElementById("authEmailPwd"), authPassword=document.getElementById("authPassword"), authMsg=document.getElementById("authMsg");
 function setAuthMsg(text,isErr,isOk){ authMsg.textContent=text; authMsg.className="authmsg"+(isErr?" err":isOk?" ok":""); }
+
 async function sendMagicLink(){
   const email=authEmail.value.trim();
   if(!email){ setAuthMsg("Entrez votre adresse email.", true); return; }
@@ -640,8 +772,37 @@ async function sendMagicLink(){
   if(error) setAuthMsg(error.message, true);
   else setAuthMsg("Lien envoyé. Vérifiez votre boîte mail.", false, true);
 }
+
+async function signInWithPassword(){
+  const email=authEmailPwd.value.trim();
+  const password=authPassword.value;
+  if(!email){ setAuthMsg("Entrez votre adresse email.", true); return; }
+  if(!password){ setAuthMsg("Entrez votre mot de passe.", true); return; }
+  setAuthMsg("Connexion en cours…", false);
+  const { error } = await sb.auth.signInWithPassword(email, password);
+  if(error) setAuthMsg(error.message, true);
+}
+
 document.getElementById("btnMagicLink").addEventListener("click", sendMagicLink);
 authEmail.addEventListener("keydown", e=>{ if(e.key==="Enter") sendMagicLink(); });
+document.getElementById("btnPassword").addEventListener("click", signInWithPassword);
+authPassword.addEventListener("keydown", e=>{ if(e.key==="Enter") signInWithPassword(); });
+
+document.getElementById("tabMagicLink").addEventListener("click", e=>{
+  document.getElementById("methodMagicLink").style.display="";
+  document.getElementById("methodPassword").style.display="none";
+  document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
+  e.target.classList.add("active");
+  setAuthMsg("", false);
+});
+document.getElementById("tabPassword").addEventListener("click", e=>{
+  document.getElementById("methodMagicLink").style.display="none";
+  document.getElementById("methodPassword").style.display="";
+  document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
+  e.target.classList.add("active");
+  setAuthMsg("", false);
+});
+
 document.getElementById("btnLogout").addEventListener("click", ()=>sb.auth.signOut());
 
 function showAuth(){
