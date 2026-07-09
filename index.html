@@ -189,22 +189,22 @@
     <p class="authsub">Connexion à l'espace éditorial</p>
 
     <div style="display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px">
-      <button class="authtab active" id="tabMagicLink" data-method="magiclink">Lien magique</button>
-      <button class="authtab" id="tabPassword" data-method="password">Mot de passe</button>
+      <button class="authtab active" id="tabPassword" data-method="password">Connexion</button>
+      <button class="authtab" id="tabMagicLink" data-method="magiclink">Lien magique</button>
     </div>
 
-    <div id="methodMagicLink">
-      <label class="authlabel" for="authEmail">Adresse email</label>
-      <input type="email" id="authEmail" placeholder="prenom@redaction.fr" autocomplete="email">
-      <button class="ghostbtn primary authbtn" id="btnMagicLink">Envoyer le lien magique</button>
-    </div>
-
-    <div id="methodPassword" style="display:none">
+    <div id="methodPassword">
       <label class="authlabel" for="authEmailPwd">Adresse email</label>
       <input type="email" id="authEmailPwd" placeholder="prenom@redaction.fr" autocomplete="email">
       <label class="authlabel" for="authPassword" style="margin-top:10px">Mot de passe</label>
       <input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password">
       <button class="ghostbtn primary authbtn" id="btnPassword" style="margin-top:12px">Connexion</button>
+    </div>
+
+    <div id="methodMagicLink" style="display:none">
+      <label class="authlabel" for="authEmail">Adresse email</label>
+      <input type="email" id="authEmail" placeholder="prenom@redaction.fr" autocomplete="email">
+      <button class="ghostbtn primary authbtn" id="btnMagicLink">Envoyer le lien magique</button>
     </div>
 
     <div class="authmsg" id="authMsg"></div>
@@ -779,8 +779,14 @@ async function signInWithPassword(){
   if(!email){ setAuthMsg("Entrez votre adresse email.", true); return; }
   if(!password){ setAuthMsg("Entrez votre mot de passe.", true); return; }
   setAuthMsg("Connexion en cours…", false);
-  const { error } = await sb.auth.signInWithPassword(email, password);
-  if(error) setAuthMsg(error.message, true);
+  try {
+    const { data, error } = await sb.auth.signInWithPassword(email, password);
+    if(error) { setAuthMsg(error.message, true); return; }
+    if(!data || !data.user) { setAuthMsg("Erreur : vérifiez vos identifiants.", true); return; }
+    setAuthMsg("Connexion réussie !", false, true);
+  } catch(err) {
+    setAuthMsg(err.message || "Erreur de connexion", true);
+  }
 }
 
 document.getElementById("btnMagicLink").addEventListener("click", sendMagicLink);
@@ -788,16 +794,16 @@ authEmail.addEventListener("keydown", e=>{ if(e.key==="Enter") sendMagicLink(); 
 document.getElementById("btnPassword").addEventListener("click", signInWithPassword);
 authPassword.addEventListener("keydown", e=>{ if(e.key==="Enter") signInWithPassword(); });
 
-document.getElementById("tabMagicLink").addEventListener("click", e=>{
-  document.getElementById("methodMagicLink").style.display="";
-  document.getElementById("methodPassword").style.display="none";
+document.getElementById("tabPassword").addEventListener("click", e=>{
+  document.getElementById("methodPassword").style.display="";
+  document.getElementById("methodMagicLink").style.display="none";
   document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
   e.target.classList.add("active");
   setAuthMsg("", false);
 });
-document.getElementById("tabPassword").addEventListener("click", e=>{
-  document.getElementById("methodMagicLink").style.display="none";
-  document.getElementById("methodPassword").style.display="";
+document.getElementById("tabMagicLink").addEventListener("click", e=>{
+  document.getElementById("methodMagicLink").style.display="";
+  document.getElementById("methodPassword").style.display="none";
   document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
   e.target.classList.add("active");
   setAuthMsg("", false);
