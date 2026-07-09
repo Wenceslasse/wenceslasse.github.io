@@ -616,7 +616,8 @@ document.getElementById("fileInput").addEventListener("change",e=>{
 document.getElementById("btnPrint").addEventListener("click",()=>window.print());
 document.getElementById("btnReset").addEventListener("click", async ()=>{
   if(!currentIssue) return;
-  if(!confirm("Réinitialiser toutes les pages de ce numéro ? Exporte une sauvegarde avant, au besoin.")) return;
+  const nom = currentIssue.numero || "ce numéro";
+  if(!confirm(`Réinitialiser « ${nom} » ?\n\nLes 56 pages seront vidées : rubriques, sujets, calibrages, dates de rendu, statuts, journalistes et notes seront définitivement supprimés. Cette action est irréversible.\n\nExporte une sauvegarde avant si besoin.`)) return;
   const updates = Array.from({length:TOTAL},(_,i)=>({
     id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
     rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", notes:""
