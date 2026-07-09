@@ -397,10 +397,24 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   el.setAttribute("data-page-n", p.n);
 
   if(selectionMode){
-    el.addEventListener("mousedown", e=>{ if(e.button===0){ dragStartPage=p.n; selectedPages.add(p.n); updateSelection(); e.preventDefault(); } });
-    el.addEventListener("mouseover", ()=>{ if(dragStartPage!==null){ const min=Math.min(dragStartPage,p.n), max=Math.max(dragStartPage,p.n);
-      for(let i=min;i<=max;i++) selectedPages.add(i); updateSelection(); } });
-    el.addEventListener("click", e=>{ if(!e.ctrlKey && !e.metaKey) e.preventDefault(); });
+    el.style.userSelect="none";
+    el.addEventListener("mousedown", e=>{
+      if(e.button===0){
+        dragStartPage=p.n;
+        selectedPages.clear();
+        selectedPages.add(p.n);
+        updateSelection();
+        e.preventDefault();
+      }
+    });
+    el.addEventListener("mouseenter", ()=>{
+      if(dragStartPage!==null){
+        const min=Math.min(dragStartPage,p.n), max=Math.max(dragStartPage,p.n);
+        selectedPages.clear();
+        for(let i=min;i<=max;i++) selectedPages.add(i);
+        updateSelection();
+      }
+    });
   } else {
     el.addEventListener("click",()=>openPeek(p.n));
   }
