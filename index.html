@@ -780,7 +780,7 @@ async function signInWithPassword(){
   if(!password){ setAuthMsg("Entrez votre mot de passe.", true); return; }
   setAuthMsg("Connexion en cours…", false);
   try {
-    const result = await sb.auth.signInWithPassword(email, password);
+    const result = await sb.auth.signInWithPassword({ email, password });
     const { data, error } = result || {};
     if(error) {
       console.error("Auth error:", error);
