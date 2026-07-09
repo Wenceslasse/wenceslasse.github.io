@@ -780,12 +780,22 @@ async function signInWithPassword(){
   if(!password){ setAuthMsg("Entrez votre mot de passe.", true); return; }
   setAuthMsg("Connexion en cours…", false);
   try {
-    const { data, error } = await sb.auth.signInWithPassword(email, password);
-    if(error) { setAuthMsg(error.message, true); return; }
-    if(!data || !data.user) { setAuthMsg("Erreur : vérifiez vos identifiants.", true); return; }
+    const result = await sb.auth.signInWithPassword(email, password);
+    const { data, error } = result || {};
+    if(error) {
+      console.error("Auth error:", error);
+      setAuthMsg(error.message || "Identifiants incorrects.", true);
+      return;
+    }
+    if(!data?.user) {
+      console.error("No user in response:", data);
+      setAuthMsg("Erreur : vérifiez vos identifiants.", true);
+      return;
+    }
     setAuthMsg("Connexion réussie !", false, true);
   } catch(err) {
-    setAuthMsg(err.message || "Erreur de connexion", true);
+    console.error("Exception:", err);
+    setAuthMsg("Erreur de connexion. Vérifiez l'email et le mot de passe.", true);
   }
 }
 
