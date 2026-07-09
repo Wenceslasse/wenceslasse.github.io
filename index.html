@@ -75,19 +75,6 @@
   .page.blank:hover{box-shadow:none}
   .page.dim{opacity:.35}
   .page.selected{background:var(--hover); border-color:var(--accent); box-shadow:0 0 0 2px var(--accent)}
-  .page-checkbox{position:absolute; top:10px; left:10px; width:18px; height:18px; cursor:pointer; z-index:10}
-
-  .bulk-edit-panel{
-    position:fixed; bottom:0; left:0; right:0; background:var(--canvas); border-top:1px solid var(--border);
-    padding:14px 40px; display:none; gap:12px; align-items:flex-end; flex-wrap:wrap; box-shadow:0 -2px 8px rgba(15,15,15,.1);
-    z-index:35;
-  }
-  .bulk-edit-panel.open{display:flex}
-  .bulk-edit-panel > div{display:flex; align-items:center; gap:6px}
-  .bulk-edit-panel input, .bulk-edit-panel select{border:1px solid var(--border-strong); border-radius:5px; padding:6px 8px; background:var(--body); font-size:13px}
-  .bulk-edit-panel input:focus, .bulk-edit-panel select:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
-  .bulk-edit-panel label{color:var(--muted); font-size:13px; white-space:nowrap}
-  .bulk-edit-count{color:var(--text); font-weight:600; font-size:13px; margin-right:12px}
 
   .pill{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; max-width:100%}
   .pill .ptxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -233,7 +220,6 @@
     <div class="toolbar">
       <select class="tsel" id="issueSelect" aria-label="Choisir un numéro"></select>
       <button class="tbtn" id="btnNewIssue">+ Nouveau numéro</button>
-      <button class="tbtn" id="btnSelectMode">☐ Sélectionner</button>
       <input type="search" id="search" placeholder="Rechercher rubrique ou sujet…" aria-label="Rechercher">
       <select class="tsel" id="filterStatut" aria-label="Filtrer par statut">
         <option value="">Tous les statuts</option>
@@ -259,30 +245,6 @@
   <div class="wrap"><div class="rail" id="rail"></div></div>
 </main>
 
-<div class="bulk-edit-panel" id="bulkEditPanel">
-  <div class="bulk-edit-count" id="selectedCount"></div>
-  <div>
-    <label for="bulkRubrique">Rubrique</label>
-    <input type="text" id="bulkRubrique" list="rubriques" placeholder="">
-  </div>
-  <div>
-    <label for="bulkJournaliste">Journaliste</label>
-    <input type="text" id="bulkJournaliste" list="journalistes" placeholder="">
-  </div>
-  <div>
-    <label for="bulkStatut">Statut</label>
-    <select id="bulkStatut">
-      <option value="">Inchangé</option>
-      <option value="a_caler">À caler</option>
-      <option value="en_cours">En cours</option>
-      <option value="relu">Relu</option>
-      <option value="boucle">Bouclé</option>
-    </select>
-  </div>
-  <span class="spacer"></span>
-  <button class="ghostbtn primary" id="btnApplyBulk">Appliquer</button>
-  <button class="ghostbtn" id="btnClearSelection">Annuler</button>
-</div>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -364,9 +326,9 @@ let issuesCache = [];
 let currentIssue = null;
 let appInited = false;
 let pagesChannel = null, issuesChannel = null;
-let selectionMode = false;
 let selectedPages = new Set();
 let dragStartPage = null;
+let isDragging = false;
 
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
@@ -396,28 +358,28 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   el.setAttribute("aria-label",`Page ${p.n}${p.sujet?" — "+p.sujet:""}`);
   el.setAttribute("data-page-n", p.n);
 
-  if(selectionMode){
-    el.style.userSelect="none";
-    el.addEventListener("mousedown", e=>{
-      if(e.button===0){
-        dragStartPage=p.n;
-        selectedPages.clear();
-        selectedPages.add(p.n);
-        updateSelection();
-        e.preventDefault();
-      }
-    });
-    el.addEventListener("mouseenter", ()=>{
-      if(dragStartPage!==null){
-        const min=Math.min(dragStartPage,p.n), max=Math.max(dragStartPage,p.n);
-        selectedPages.clear();
-        for(let i=min;i<=max;i++) selectedPages.add(i);
-        updateSelection();
-      }
-    });
-  } else {
-    el.addEventListener("click",()=>openPeek(p.n));
-  }
+  el.style.userSelect="none";
+  el.addEventListener("mousedown", e=>{
+    if(e.button===0){
+      isDragging=true;
+      dragStartPage=p.n;
+      selectedPages.clear();
+      selectedPages.add(p.n);
+      updateSelection();
+      e.preventDefault();
+    }
+  });
+  el.addEventListener("mouseenter", ()=>{
+    if(isDragging && dragStartPage!==null){
+      const min=Math.min(dragStartPage,p.n), max=Math.max(dragStartPage,p.n);
+      selectedPages.clear();
+      for(let i=min;i<=max;i++) selectedPages.add(i);
+      updateSelection();
+    }
+  });
+  el.addEventListener("click", e=>{
+    if(!isDragging) openPeek(p.n);
+  });
 
   const rt=rubTag(p.rubrique);
   const rub = `<div class="rubrow">${rt?pillHTML(p.rubrique,rt):""}</div>`;
@@ -440,12 +402,88 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   return el;
 }
 
+function getPageGroups(){
+  if(selectedPages.size===0) return [];
+  const sorted=Array.from(selectedPages).sort((a,b)=>a-b);
+  const groups=[];
+  let current=[sorted[0]];
+  for(let i=1;i<sorted.length;i++){
+    if(sorted[i]===current[current.length-1]+1) current.push(sorted[i]);
+    else { groups.push(current); current=[sorted[i]]; }
+  }
+  groups.push(current);
+  return groups;
+}
+
+function renderGroupHeader(pages){
+  const firstPage=state.pages[pages[0]-1];
+  const container=document.createElement("div");
+  container.style.cssText="background:var(--hover); border:1px solid var(--accent); border-radius:8px; padding:14px; margin-bottom:12px; gap:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr));";
+
+  const fields=[
+    {label:"Rubrique", key:"rubrique", value:firstPage.rubrique},
+    {label:"Journaliste", key:"journaliste", value:firstPage.journaliste},
+    {label:"Statut", key:"statut", value:STATUTS[firstPage.statut].label},
+    {label:"Calibrage", key:"calib", value:firstPage.calib?`${firstPage.calib} ${firstPage.unite}`:"—"},
+    {label:"Rendu", key:"rendu", value:firstPage.rendu?frDate(firstPage.rendu):"—"},
+  ];
+
+  for(const f of fields){
+    const el=document.createElement("div");
+    el.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
+    el.innerHTML=`<span style="color:var(--muted); font-weight:600">${f.label}</span><span style="color:var(--text); font-weight:500">${esc(f.value)}</span>`;
+    container.appendChild(el);
+  }
+  return container;
+}
+
 function render(){
   rail.innerHTML="";
   const P=state.pages;
-  rail.appendChild(row("Couverture", pageCard(null,"blank"), pageCard(P[0],"solo-p1")));
-  for(let n=2;n<=54;n+=2) rail.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
-  rail.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
+
+  if(selectedPages.size>0){
+    const groups=getPageGroups();
+    const allPages=new Set();
+    for(const g of groups) g.forEach(n=>allPages.add(n));
+
+    let currentIndex=1;
+    for(const group of groups){
+      const minN=Math.min(...group);
+      const maxN=Math.max(...group);
+
+      const groupContainer=document.createElement("div");
+      groupContainer.style.cssText="border:2px solid var(--accent); border-radius:8px; padding:16px; margin-bottom:20px; background:rgba(35,131,226,0.03);";
+
+      const header=document.createElement("div");
+      header.style.cssText="font-size:13px; font-weight:600; color:var(--text); margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--border);";
+      header.textContent=`Pages ${minN}–${maxN} (Ensemble d'articles)`;
+      groupContainer.appendChild(header);
+
+      groupContainer.appendChild(renderGroupHeader(group));
+
+      const pagesContainer=document.createElement("div");
+      pagesContainer.style.cssText="display:grid; grid-template-columns:1fr 1fr; gap:0; border-radius:6px; overflow:hidden;";
+      for(const n of group){
+        const p=P[n-1];
+        const el=pageCard(p, group.length===1?"solo-p1":"left");
+        el.style.cssText+=";border-radius:0;";
+        pagesContainer.appendChild(el);
+      }
+      groupContainer.appendChild(pagesContainer);
+      rail.appendChild(groupContainer);
+
+      currentIndex=maxN+1;
+    }
+
+    if(currentIndex<=TOTAL){
+      for(let n=currentIndex;n<=54;n+=2) rail.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
+      if(currentIndex<=56) rail.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
+    }
+  } else {
+    rail.appendChild(row("Couverture", pageCard(null,"blank"), pageCard(P[0],"solo-p1")));
+    for(let n=2;n<=54;n+=2) rail.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
+    rail.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
+  }
   renderStats(); renderDatalist();
 }
 function row(label,a,b){
@@ -476,17 +514,6 @@ function renderDatalist(){
 
 function updateSelection(){
   render();
-  const count=selectedPages.size;
-  const panel=document.getElementById("bulkEditPanel");
-  const main=document.querySelector("main");
-  if(count>0){
-    panel.classList.add("open");
-    document.getElementById("selectedCount").textContent=`${count} page${count>1?"s":""} sélectionnée${count>1?"s":""}`;
-    main.style.paddingBottom="200px";
-  } else {
-    panel.classList.remove("open");
-    main.style.paddingBottom="140px";
-  }
 }
 
 async function applyBulkEdit(){
@@ -609,25 +636,8 @@ function debounceIssueWrite(field, val){
 numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.target.value; debounceIssueWrite("numero", e.target.value); } });
 bouclage.addEventListener("input",e=>{ if(currentIssue){ currentIssue.bouclage=e.target.value||null; debounceIssueWrite("bouclage", e.target.value||null); } });
 
-/* ---- selection mode & bulk edit ---- */
-document.getElementById("btnSelectMode").addEventListener("click",()=>{
-  selectionMode=!selectionMode;
-  const btn=document.getElementById("btnSelectMode");
-  btn.style.color=selectionMode?"#2383E2":"";
-  selectedPages.clear();
-  document.getElementById("bulkEditPanel").classList.remove("open");
-  render();
-});
-document.getElementById("btnApplyBulk").addEventListener("click",applyBulkEdit);
-document.getElementById("btnClearSelection").addEventListener("click",()=>{
-  selectedPages.clear();
-  document.getElementById("bulkRubrique").value="";
-  document.getElementById("bulkJournaliste").value="";
-  document.getElementById("bulkStatut").value="";
-  document.getElementById("bulkEditPanel").classList.remove("open");
-  render();
-});
-document.addEventListener("mouseup",()=>{ dragStartPage=null; });
+/* ---- selection & drag ---- */
+document.addEventListener("mouseup",()=>{ isDragging=false; dragStartPage=null; });
 
 /* ---- filters ---- */
 document.getElementById("search").addEventListener("input",e=>{ filter.q=e.target.value; render(); });
