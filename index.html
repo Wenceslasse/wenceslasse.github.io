@@ -263,8 +263,8 @@
     .authicon{width:48px; height:48px}
     .authicon svg{width:22px; height:22px}
   }
-  #authEmail, #authEmailPwd, #authPassword, #visitorAnswer{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body); font-size:15px; transition:border-color .15s ease}
-  #authEmail:focus, #authEmailPwd:focus, #authPassword:focus, #visitorAnswer:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+  #authEmail, #authEmailPwd, #authPassword{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body); font-size:15px; transition:border-color .15s ease}
+  #authEmail:focus, #authEmailPwd:focus, #authPassword:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
   @keyframes field-shake{
     10%,90%{transform:translateX(-1px)}
     20%,80%{transform:translateX(2px)}
@@ -290,10 +290,26 @@
     .legend{margin-left:0; width:100%}
     .prow{grid-template-columns:1fr}
   }
-  /* ---- Visitor Auth (single-step, on the auth card) ---- */
-  .visitor-question{margin:14px 0; text-align:left}
-  .visitor-question p{margin:0 0 6px; color:var(--muted); font-size:13.5px}
-  .visitor-lyrics{font-size:15px; font-weight:500; color:var(--text); font-style:italic; margin:8px 0 0 !important}
+  /* ---- Visitor Auth : machine à écrire + saisie en continuation ---- */
+  .p4-lead{color:var(--muted); font-size:13px; display:block; margin-bottom:14px}
+  .p4-type-area{
+    font-size:19px; line-height:1.7; color:var(--text); position:relative; min-height:2.2em;
+    cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">%F0%9F%8E%A4</text></svg>') 4 30, text;
+  }
+  .p4-userinput{color:var(--accent); font-weight:700}
+  .p4-userinput.correct{color:#2C5E3E}
+  .p4-cursor{display:inline-block; width:2px; height:1.05em; background:var(--text); vertical-align:text-bottom; margin-left:1px; animation:p4-blink 1s step-end infinite}
+  .p4-cursor.correct{background:#2C5E3E}
+  @keyframes p4-blink{0%,50%{opacity:1} 50.01%,100%{opacity:0}}
+  .p4-hidden-input{position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; border:none}
+  .p4-hint{margin-top:16px; font-size:13px; color:var(--muted); opacity:0; transition:opacity .5s ease; display:flex; align-items:center; gap:7px}
+  .p4-hint.show{opacity:1}
+
+  .confetti-piece{position:fixed; top:-20px; z-index:9999; pointer-events:none; will-change:transform, opacity}
+  @keyframes confetti-fall{
+    0%{transform:translateY(0) translateX(0) rotate(0deg); opacity:1}
+    100%{transform:translateY(110vh) translateX(var(--drift)) rotate(var(--spin)); opacity:.85}
+  }
 
   /* ---- Visitor Transition (Shazam animation) ---- */
   .visitor-transition{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; background:#000000}
@@ -346,15 +362,11 @@
       </div>
 
       <div id="methodVisitor">
-        <div class="visitor-question">
-          <p>Complétez les paroles de <strong>Melodrama</strong> (Theodora &amp; Disiz) :</p>
-          <p class="visitor-lyrics">Je suis comme un son que t'aurais pas...</p>
+        <span class="p4-lead">Melodrama — Theodora &amp; Disiz</span>
+        <div class="p4-type-area" id="p4-typearea">« <span id="p4-typed"></span><span class="p4-userinput" id="p4-userinput"></span><span class="p4-cursor" id="p4-cursor">|</span> »
+          <input type="text" class="p4-hidden-input" id="p4-hidden-input" autocomplete="off" spellcheck="false" autocapitalize="off">
         </div>
-        <label class="authlabel" for="visitorAnswer">Réponse</label>
-        <input type="text" id="visitorAnswer" placeholder="Votre réponse" autocomplete="off">
-        <button class="ghostbtn primary authbtn" id="btnVisitorAccess" style="margin-top:12px">
-          <span class="btn-label">Accéder</span><span class="btn-spinner" aria-hidden="true"></span>
-        </button>
+        <div class="p4-hint" id="p4-hint">🎤 À vous de terminer la phrase…</div>
       </div>
 
       <div id="methodPassword" style="display:none">
@@ -1815,7 +1827,8 @@ document.getElementById("tabVisitor").addEventListener("click", e=>{
   document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
   e.target.classList.add("active");
   setAuthMsg("", false);
-  document.getElementById("visitorAnswer").focus();
+  startP4Typewriter();
+  document.getElementById("p4-hidden-input").focus();
 });
 
 document.getElementById("tabPassword").addEventListener("click", e=>{
@@ -1835,6 +1848,8 @@ document.getElementById("btnLogout").addEventListener("click", ()=>{
 function showAuth(){
   authScreen.style.display="flex"; appRoot.style.display="none";
   resetAuthLockIcon();
+  resetP4Typewriter();
+  startP4Typewriter();
   if(pagesChannel){ sb.removeChannel(pagesChannel); pagesChannel=null; }
   if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
   if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
@@ -1865,32 +1880,97 @@ window.addEventListener("popstate", ()=>{
   if(id && issuesCache.find(i=>i.id===id) && (!currentIssue || currentIssue.id!==id)) selectIssue(id, false);
 });
 
-/* ---- VISITOR (ÉQUIPE) MODE : question de sécurité, en une seule étape ---- */
+/* ---- VISITOR (ÉQUIPE) MODE : machine à écrire + saisie en continuation ---- */
 let isVisitorMode = false;
 
-function verifyVisitorAccess() {
-  const answerEl = document.getElementById("visitorAnswer");
-  const answer = answerEl.value.trim().toLowerCase();
-  const btn = document.getElementById("btnVisitorAccess");
+const P4_LYRICS = "Je suis comme un son que t'aurais pas...";
+let p4Started = false;
+let p4Timer = null;
+let p4Unlocked = false;
 
-  if (!answer) { setAuthMsg("Veuillez compléter les paroles", true); return; }
-
-  setButtonLoading(btn, true);
-  setTimeout(() => {
-    if (answer !== "shazam") {
-      setButtonLoading(btn, false);
-      flagFieldError(answerEl);
-      setAuthMsg("Réponse incorrecte", true);
-      return;
+function startP4Typewriter() {
+  if (p4Started) return;
+  p4Started = true;
+  const typed = document.getElementById("p4-typed");
+  const hint = document.getElementById("p4-hint");
+  const hiddenInput = document.getElementById("p4-hidden-input");
+  typed.textContent = "";
+  let i = 0;
+  p4Timer = setInterval(() => {
+    typed.textContent += P4_LYRICS[i];
+    i++;
+    if (i >= P4_LYRICS.length) {
+      clearInterval(p4Timer);
+      hint.classList.add("show");
+      hiddenInput.focus();
     }
-
-    setAuthMsg("", false);
-    playUnlockSuccess(() => {
-      setButtonLoading(btn, false);
-      playVisitorTransition();
-    });
-  }, 300);
+  }, 45);
 }
+
+function resetP4Typewriter() {
+  clearInterval(p4Timer);
+  p4Started = false;
+  p4Unlocked = false;
+  document.getElementById("p4-typed").textContent = "";
+  document.getElementById("p4-userinput").textContent = "";
+  document.getElementById("p4-userinput").classList.remove("correct");
+  document.getElementById("p4-cursor").classList.remove("correct");
+  document.getElementById("p4-hint").classList.remove("show");
+  document.getElementById("p4-hidden-input").value = "";
+}
+
+const CONFETTI_COLORS = ["#e8467d", "#f4923d", "#9c1c40", "#2f9e63", "#2383E2", "#FDECC8"];
+function launchConfetti(count = 110) {
+  const frag = document.createDocumentFragment();
+  const pieces = [];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement("div");
+    el.className = "confetti-piece";
+    const size = 6 + Math.random() * 7;
+    const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+    const left = Math.random() * 100;
+    const duration = 2.4 + Math.random() * 1.8;
+    const delay = Math.random() * 0.5;
+    const drift = (Math.random() - 0.5) * 220;
+    const spin = 360 + Math.random() * 720;
+    const round = Math.random() > 0.5;
+    el.style.left = left + "vw";
+    el.style.width = size + "px";
+    el.style.height = (round ? size : size * 0.42) + "px";
+    el.style.background = color;
+    el.style.borderRadius = round ? "50%" : "2px";
+    el.style.setProperty("--drift", drift + "px");
+    el.style.setProperty("--spin", spin + "deg");
+    el.style.animation = `confetti-fall ${duration}s ${delay}s linear forwards`;
+    frag.appendChild(el);
+    pieces.push(el);
+  }
+  document.body.appendChild(frag);
+  setTimeout(() => pieces.forEach(p => p.remove()), 4600);
+}
+
+document.getElementById("p4-typearea").addEventListener("click", () => {
+  document.getElementById("p4-hidden-input").focus();
+});
+
+document.getElementById("p4-hidden-input").addEventListener("input", e => {
+  const userSpan = document.getElementById("p4-userinput");
+  const cursor = document.getElementById("p4-cursor");
+  const val = e.target.value;
+  userSpan.textContent = val;
+  const ok = val.trim().toLowerCase() === "shazam";
+  userSpan.classList.toggle("correct", ok);
+  cursor.classList.toggle("correct", ok);
+  if (ok && !p4Unlocked) {
+    p4Unlocked = true;
+    e.target.blur();
+    launchConfetti();
+    playUnlockSuccess(() => playVisitorTransition());
+  } else if (!ok && p4Unlocked) {
+    p4Unlocked = false;
+    resetAuthLockIcon();
+  }
+});
 
 function playVisitorTransition() {
   const el = document.getElementById("visitorTransition");
@@ -1930,7 +2010,6 @@ async function enterVisitorMode() {
 function exitVisitorMode() {
   isVisitorMode = false;
   localStorage.removeItem("cdf_visitor_mode");
-  document.getElementById("visitorAnswer").value = "";
   showAuth();
 }
 
@@ -1961,16 +2040,6 @@ function enableEditingUI() {
       el.style.opacity = "";
       el.style.cursor = "";
     });
-  });
-}
-
-// Visitor authentication event listeners
-if (document.getElementById("btnVisitorAccess")) {
-  document.getElementById("btnVisitorAccess").addEventListener("click", verifyVisitorAccess);
-}
-if (document.getElementById("visitorAnswer")) {
-  document.getElementById("visitorAnswer").addEventListener("keydown", e => {
-    if (e.key === "Enter") verifyVisitorAccess();
   });
 }
 
