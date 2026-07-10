@@ -107,8 +107,9 @@
 
   /* ---- Calendar & Gantt views ---- */
   #viewCalendar, #viewGantt{width:100%}
-  .g2{background:var(--canvas); border:1px solid var(--border); border-radius:10px; overflow:hidden}
-  .g2-head{display:flex; border-bottom:1px solid var(--border)}
+  #viewGantt{flex-direction:column; min-height:460px}
+  .g2{background:var(--canvas); border:1px solid var(--border); border-radius:10px; overflow:hidden; flex:1; min-height:0; display:flex; flex-direction:column}
+  .g2-head{display:flex; border-bottom:1px solid var(--border); flex:none}
   .g2-corner{width:186px; flex:none; border-right:1px solid var(--border); padding:8px 12px; font-size:11px; font-weight:600; color:var(--muted); display:flex; align-items:flex-end}
   .g2-axis{flex:1; min-width:0}
   .g2-months{display:flex; font-size:11px; font-weight:700; color:var(--text); border-bottom:1px solid var(--border)}
@@ -117,18 +118,19 @@
   .g2-weeks{display:flex; font-size:10px; color:var(--faint)}
   .g2-weeks>div{text-align:center; padding:4px 0; border-right:1px solid var(--border); overflow:hidden; white-space:nowrap}
   .g2-weeks>div:last-child{border-right:none}
-  .g2-body{position:relative}
+  .g2-body{position:relative; flex:1; min-height:0; overflow-y:auto}
   .g2-gridlayer{position:absolute; top:0; bottom:0; left:186px; right:0; display:flex; z-index:0; pointer-events:none}
   .g2-gridlayer>div{flex:1; border-right:1px solid var(--border)}
   .g2-gridlayer>div.we{background:rgba(0,0,0,.028)}
   .g2-gridlayer>div:last-child{border-right:none}
-  .g2-rows{position:relative; z-index:1}
-  .g2-row{display:flex; align-items:center; border-bottom:1px solid var(--border); height:38px}
+  .g2-rows{position:relative; min-height:100%}
+  .g2-row{display:flex; align-items:center; border-bottom:1px solid var(--border); height:38px; position:relative; z-index:1}
   .g2-row:last-child{border-bottom:none}
   .g2-row:hover .g2-label{background:var(--hover)}
-  .g2-label{width:186px; flex:none; border-right:1px solid var(--border); padding:0 12px; height:100%; display:flex; align-items:center; gap:8px; font-size:13px; overflow:hidden; cursor:pointer; background:var(--canvas)}
-  .g2-label .lp{color:var(--faint); font-size:11px; font-variant-numeric:tabular-nums; flex:none}
-  .g2-label .ls{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .g2-label{width:186px; flex:none; border-right:1px solid var(--border); padding:0 12px; height:100%; display:flex; align-items:center; gap:7px; font-size:13px; overflow:hidden; cursor:pointer; background:var(--canvas)}
+  .g2-label .lr{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600}
+  .g2-label .lr.none{color:var(--faint); font-weight:400}
+  .g2-label .lp{color:var(--faint); font-size:11.5px; font-variant-numeric:tabular-nums; flex:none}
   .g2-track{flex:1; position:relative; height:100%; min-width:0}
   .g2-bar{position:absolute; top:50%; transform:translateY(-50%); height:22px; min-width:24px; border-radius:5px; display:flex; align-items:center; padding:0 7px; gap:6px; font-size:11px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.12); overflow:hidden; cursor:pointer}
   .g2-bar.late{outline:2px solid var(--danger); outline-offset:-2px}
@@ -762,6 +764,12 @@ function gLead(p){ // fenêtre de préparation (jours) avant le rendu, selon le 
   if(!sig) return 7;
   return Math.max(3,Math.min(28,Math.round(sig/1500*2)));
 }
+function formatPages(ns){ // [3,4,5,8] -> "3-5, 8"
+  const s=[...new Set(ns)].sort((a,b)=>a-b); const parts=[]; let a=s[0], prev=s[0];
+  for(let i=1;i<s.length;i++){ if(s[i]===prev+1){ prev=s[i]; continue; } parts.push(a===prev?`${a}`:`${a}-${prev}`); a=s[i]; prev=s[i]; }
+  parts.push(a===prev?`${a}`:`${a}-${prev}`); return parts.join(", ");
+}
+window.addEventListener("resize",()=>{ if(currentView==="gantt"){ const g=document.getElementById("viewGantt"); if(g&&g.style.display!=="none"){ const top=g.getBoundingClientRect().top; g.style.height=Math.max(460, window.innerHeight-top-24)+"px"; } } });
 
 const GANTT_MOIS_ABBR=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 const GANTT_JOURS=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
@@ -806,11 +814,21 @@ function renderGanttView(){
   ctl.appendChild(prev); ctl.appendChild(next); ctl.appendChild(period); ctl.appendChild(todayBtn); ctl.appendChild(scope);
   gantt.appendChild(ctl);
 
-  // ---- Articles dont la fenêtre [prépa → rendu] croise la période ----
-  const items=state.pages.filter(p=>matches(p)&&p.rendu)
-    .map(p=>{ const end=gParse(p.rendu); return {p, end, start:gAdd(end,-gLead(p))}; })
+  // ---- Regrouper les pages d'un même sujet (dossier multi-pages) ----
+  const groupsMap=new Map();
+  for(const p of state.pages){
+    if(!matches(p)||!p.rendu) continue;
+    // On ne fusionne que si le sujet est renseigné ; sinon chaque page reste seule.
+    const key=p.sujet ? (p.rubrique||"")+" "+p.sujet+" "+p.rendu : "solo "+p.n;
+    let g=groupsMap.get(key);
+    if(!g){ g={rubrique:p.rubrique,thematique:p.thematique,sujet:p.sujet,rendu:p.rendu,statut:p.statut,pages:[],sig:0}; groupsMap.set(key,g); }
+    g.pages.push(p.n); g.sig+=toSignes(p);
+  }
+  // ---- Groupes dont la fenêtre [prépa → rendu] croise la période ----
+  const items=[...groupsMap.values()]
+    .map(g=>{ const end=gParse(g.rendu); const lead=g.sig?Math.max(3,Math.min(28,Math.round(g.sig/1500*2))):7; return {g, end, start:gAdd(end,-lead), pmin:Math.min(...g.pages)}; })
     .filter(it=>it.end>=rangeStart && it.start<=rangeEnd)
-    .sort((x,y)=>x.p.rendu<y.p.rendu?-1:x.p.rendu>y.p.rendu?1:x.p.n-y.p.n);
+    .sort((x,y)=>x.g.rendu<y.g.rendu?-1:x.g.rendu>y.g.rendu?1:x.pmin-y.pmin);
 
   const g2=document.createElement("div"); g2.className="g2";
 
@@ -845,42 +863,45 @@ function renderGanttView(){
 
   // ---- Corps ----
   const body=document.createElement("div"); body.className="g2-body";
+  const rows=document.createElement("div"); rows.className="g2-rows";
 
+  // Grille de fond (jours + week-ends), sur toute la hauteur du contenu
   const grid=document.createElement("div"); grid.className="g2-gridlayer";
   for(let i=0;i<totalDays;i++){ const d=gAdd(rangeStart,i); const c=document.createElement("div"); if(gWeekend(d)) c.className="we"; grid.appendChild(c); }
-  body.appendChild(grid);
+  rows.appendChild(grid);
 
-  const rows=document.createElement("div"); rows.className="g2-rows";
   if(items.length===0){
     const empty=document.createElement("div"); empty.className="g2-empty";
     empty.textContent="Aucun rendu sur cette période.";
     rows.appendChild(empty);
   }
-  for(const {p,start,end} of items){
+  for(const {g,start,end,pmin} of items){
     const row=document.createElement("div"); row.className="g2-row";
 
     const label=document.createElement("div"); label.className="g2-label";
-    label.innerHTML=`<span class="lp">p${p.n}</span><span class="ls">${esc(p.sujet||"[Sujet]")}</span>`;
-    label.addEventListener("click",()=>openPeek(p.n));
+    const rub=g.rubrique||g.sujet||"";
+    label.innerHTML=`<span class="lr${rub?"":" none"}">${esc(rub||"Sans rubrique")}</span><span class="lp">[${formatPages(g.pages)}]</span>`;
+    label.title=`${g.rubrique||"Sans rubrique"} — ${g.sujet||"[Sujet]"} · p.${formatPages(g.pages)}`;
+    label.addEventListener("click",()=>openPeek(pmin));
     row.appendChild(label);
 
     const track=document.createElement("div"); track.className="g2-track";
-    const col=getTagColor(p.rubrique||p.thematique||"");
-    const s=STATUTS[p.statut]||{label:"?",dot:"#ccc"};
+    const col=getTagColor(g.rubrique||g.thematique||"");
+    const s=STATUTS[g.statut]||{label:"?",dot:"#ccc"};
+    const late=g.rendu && g.statut!=="boucle" && g.rendu<todayISO();
     let left=pct(start), right=pct(gAdd(end,1));
     left=Math.max(0,left); right=Math.min(100,right);
     const width=Math.max(right-left,0);
     const bar=document.createElement("div");
-    bar.className="g2-bar"+(isLate(p)?" late":"");
+    bar.className="g2-bar"+(late?" late":"");
     bar.style.cssText=`left:${left}%;width:${width}%;background:${col.bg};color:${col.fg}`;
-    bar.innerHTML=`<span class="cap">${esc(p.sujet||p.rubrique||"—")}</span><span class="endpt" style="background:${s.dot}"></span>`;
-    bar.title=`${p.sujet||"[Sujet]"} · ${p.rubrique||"sans rubrique"} · rendu ${frDate(p.rendu)} · ${s.label}`;
-    bar.addEventListener("click",()=>openPeek(p.n));
+    bar.innerHTML=`<span class="cap">${esc(g.sujet||g.rubrique||"—")}</span><span class="endpt" style="background:${s.dot}"></span>`;
+    bar.title=`${g.sujet||"[Sujet]"} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)} · ${s.label}`;
+    bar.addEventListener("click",()=>openPeek(pmin));
     track.appendChild(bar);
     row.appendChild(track);
     rows.appendChild(row);
   }
-  body.appendChild(rows);
 
   // ---- Ligne « aujourd'hui » ----
   const today=gParse(todayISO());
@@ -888,11 +909,16 @@ function renderGanttView(){
     const frac=(gDiff(rangeStart,today)+0.5)/totalDays;
     const line=document.createElement("div"); line.className="g2-today";
     line.style.left=`calc(186px + (100% - 186px) * ${frac})`;
-    body.appendChild(line);
+    rows.appendChild(line);
   }
 
+  body.appendChild(rows);
   g2.appendChild(body);
   gantt.appendChild(g2);
+
+  // ---- Occuper toute la hauteur disponible de la page ----
+  const top=gantt.getBoundingClientRect().top;
+  gantt.style.height=Math.max(460, window.innerHeight-top-24)+"px";
 }
 
 function render(){
@@ -909,7 +935,7 @@ function render(){
   }
   if(currentView==="gantt"){
     rail.style.display="none";
-    document.getElementById("viewGantt").style.display="block";
+    document.getElementById("viewGantt").style.display="flex";
     renderGanttView();
     return;
   }
