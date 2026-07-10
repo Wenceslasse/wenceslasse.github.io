@@ -348,6 +348,10 @@
         <div class="pval"><div class="selectrow" id="chips"></div></div>
       </div>
       <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>Lot</div>
+        <div class="pval"><div class="selectrow" id="lotChips"></div></div>
+      </div>
+      <div class="prow">
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Journaliste</div>
         <div class="pval"><input id="fJournaliste" list="journalistes" placeholder="Vide"><datalist id="journalistes"></datalist></div>
       </div>
@@ -374,6 +378,12 @@ const STATUTS = {
   en_cours:{label:"En cours", bg:"#D3E5EF", fg:"#24547A", dot:"#337EA9"},
   relu:{label:"Relu", bg:"#FDECC8", fg:"#7C5E00", dot:"#C99A2E"},
   boucle:{label:"Bouclé", bg:"#DBEDDB", fg:"#2C5E3E", dot:"#4B8B5B"},
+};
+const LOTS = {
+  "1":{label:"Lot 1", bg:"#E3F0FF", fg:"#1F4B7A"},
+  "2":{label:"Lot 2", bg:"#E7F6EA", fg:"#2C5E3E"},
+  "3":{label:"Lot 3", bg:"#FBEBD0", fg:"#7C5E00"},
+  "4":{label:"Lot 4", bg:"#F1E5F7", fg:"#5B3E7A"},
 };
 // Palette pastel Notion pour les rubriques (l'index 0 gris est réservé au "vide")
 const RUB_TAGS = [
@@ -410,8 +420,8 @@ const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", journaliste:"", notes:""}; }
-function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", journaliste:r.journaliste||"", notes:r.notes||""}; }
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", journaliste:"", lot:"", notes:""}; }
+function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||""}; }
 
 let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
 let issuesCache = [];
@@ -1047,7 +1057,7 @@ async function applyBulkEdit(){
     if(rubrique) p.rubrique=rubrique;
     if(journaliste) p.journaliste=journaliste;
     if(statut) p.statut=statut;
-    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique, rubrique:p.rubrique, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, notes:p.notes});
+    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique, rubrique:p.rubrique, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, lot:p.lot, notes:p.notes});
   }
   const {error}=await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
@@ -1070,7 +1080,7 @@ function openPeek(n){
   current=n; const p=state.pages[n-1];
   document.getElementById("dnum").textContent = "Page "+n+(COVER[n]?"  ·  "+COVER[n]:"");
   dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
-  renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+  renderChips(p.statut); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
   document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
@@ -1083,6 +1093,16 @@ function renderChips(active){
     const b=document.createElement("button"); b.type="button"; b.className="opt"+(k===active?" active":"");
     b.innerHTML=pillHTML(s.label,s);
     b.addEventListener("click",()=>{ commit("statut",k); renderChips(k); });
+    c.appendChild(b);
+  }
+}
+function renderLotChips(active){
+  const c=document.getElementById("lotChips"); c.innerHTML="";
+  for(const k in LOTS){ const s=LOTS[k];
+    const b=document.createElement("button"); b.type="button"; b.className="opt"+(k===active?" active":"");
+    b.title=k===active?"Cliquer pour retirer du lot":"Affecter au "+s.label;
+    b.innerHTML=pillHTML(s.label,s);
+    b.addEventListener("click",()=>{ const nv=(active===k)?"":k; commit("lot",nv); renderLotChips(nv); });
     c.appendChild(b);
   }
 }
@@ -1102,7 +1122,7 @@ function commit(field,val){
   p[field]=val;
   if(["calib","unite"].includes(field)) updateHint();
   render();
-  if(field==="statut"){ persistField(p, field); return; }
+  if(field==="statut"||field==="lot"){ persistField(p, field); return; }
   const key = p.id+":"+field;
   clearTimeout(writeTimers[key]);
   writeTimers[key]=setTimeout(()=>persistField(p, field), 350);
@@ -1134,7 +1154,7 @@ function refreshPeekIfIdle(n){
   if(peek.contains(document.activeElement)) return; // ne pas couper la frappe en cours
   const p=state.pages[n-1];
   dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
-  renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+  renderChips(p.statut); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
 }
 
 /* ---- header fields (numero / bouclage of the current issue) ---- */
@@ -1205,7 +1225,7 @@ async function createIssue(){
   if(name==null) return;
   const { data, error } = await sb.from("issues").insert({ numero: name || "Nouveau numéro" }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
-  const pages = Array.from({length:TOTAL},(_,i)=>({ issue_id:data.id, n:i+1, rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", notes:"" }));
+  const pages = Array.from({length:TOTAL},(_,i)=>({ issue_id:data.id, n:i+1, rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", lot:"", notes:"" }));
   const { error:e2 } = await sb.from("pages").insert(pages);
   if(e2){ alert("Erreur de création des pages : "+e2.message); return; }
   if(!issuesCache.find(i=>i.id===data.id)) issuesCache.push(data);
@@ -1303,7 +1323,7 @@ document.getElementById("fileInput").addEventListener("change",e=>{
         rubrique:p.rubrique||"", sujet:p.sujet||"",
         calib:(p.calib===""||p.calib==null)?null:Number(p.calib),
         unite:p.unite||"signes", rendu:p.rendu||null, statut:p.statut||"a_caler",
-        journaliste:p.journaliste||"", notes:p.notes||""
+        journaliste:p.journaliste||"", lot:p.lot||"", notes:p.notes||""
       }));
       const { error } = await sb.from("pages").upsert(updates);
       if(error) throw error;
@@ -1319,10 +1339,10 @@ document.getElementById("btnPrint").addEventListener("click",()=>window.print())
 document.getElementById("btnReset").addEventListener("click", async ()=>{
   if(!currentIssue) return;
   const nom = currentIssue.numero || "ce numéro";
-  if(!confirm(`Réinitialiser « ${nom} » ?\n\nLes 56 pages seront vidées : rubriques, sujets, calibrages, dates de rendu, statuts, journalistes et notes seront définitivement supprimés. Cette action est irréversible.\n\nExporte une sauvegarde avant si besoin.`)) return;
+  if(!confirm(`Réinitialiser « ${nom} » ?\n\nLes 56 pages seront vidées : rubriques, sujets, calibrages, dates de rendu, statuts, lots, journalistes et notes seront définitivement supprimés. Cette action est irréversible.\n\nExporte une sauvegarde avant si besoin.`)) return;
   const updates = Array.from({length:TOTAL},(_,i)=>({
     id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
-    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", notes:""
+    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", lot:"", notes:""
   }));
   const { error } = await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
