@@ -1783,6 +1783,7 @@ function showAuth(){
 async function showApp(session){
   authScreen.style.display="none"; appRoot.style.display="";
   document.getElementById("pUser").textContent = session.user.email;
+  enableEditingUI();
   if(appInited) return;
   appInited=true;
   subscribeIssues();
@@ -1858,20 +1859,32 @@ function exitVisitorMode() {
   showAuth();
 }
 
-function disableEditingUI() {
-  // Désactiver tous les boutons et champs d'édition
-  const disableSelectors = [
-    "#btnNewIssue", "#btnClearSelection", "#btnColorMgr", "#btnCsv", "#btnJson",
-    "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#dtitle", "[id^='f']", "#numero"
-  ];
+const VISITOR_LOCKED_SELECTORS = [
+  "#btnNewIssue", "#btnClearSelection", "#btnColorMgr", "#btnCsv", "#btnJson",
+  "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#dtitle", "#numero",
+  "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fRendu", "#fJournaliste", "#fNotes"
+];
 
-  disableSelectors.forEach(sel => {
+function disableEditingUI() {
+  // Désactiver tous les boutons et champs d'édition (mode visiteur en lecture seule)
+  VISITOR_LOCKED_SELECTORS.forEach(sel => {
     document.querySelectorAll(sel).forEach(el => {
       if (el.id !== "btnLogout") {
         el.disabled = true;
         el.style.opacity = "0.5";
         el.style.cursor = "not-allowed";
       }
+    });
+  });
+}
+
+function enableEditingUI() {
+  // Réactiver l'interface pour une vraie session éditeur (annule disableEditingUI)
+  VISITOR_LOCKED_SELECTORS.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => {
+      el.disabled = false;
+      el.style.opacity = "";
+      el.style.cursor = "";
     });
   });
 }
