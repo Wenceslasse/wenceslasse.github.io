@@ -266,35 +266,29 @@
     .legend{margin-left:0; width:100%}
     .prow{grid-template-columns:1fr}
   }
-  /* ---- Visitor Auth Screen ---- */
-  .visitor-auth-screen{position:fixed; inset:0; background:var(--body); display:flex; align-items:center; justify-content:center; z-index:100}
-  .visitor-card{background:var(--canvas); border:1px solid var(--border); border-radius:12px; max-width:520px; width:90%; box-shadow:0 4px 12px rgba(0,0,0,.1)}
-  .visitor-header{background:linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border-radius:12px 12px 0 0; overflow:hidden; position:relative; min-height:240px; display:flex; align-items:center; justify-content:center}
-  .visitor-anim-container{width:100%; height:100%; position:relative; display:flex; align-items:center; justify-content:center}
-  .visitor-anim-bg{position:absolute; inset:0; background:#000000}
-  .visitor-anim-text{position:relative; z-index:1; color:#fff; font-size:48px; font-weight:700; text-align:center; white-space:nowrap}
-  .visitor-body{padding:24px}
-  .visitor-question{margin-bottom:16px; text-align:center}
-  .visitor-question p{margin:0 0 8px; color:var(--muted); font-size:14px}
-  .visitor-lyrics{font-size:16px; font-weight:500; color:var(--text); font-style:italic; margin:12px 0 0 !important}
-  .visitor-msg{margin-top:12px; padding:10px; border-radius:6px; font-size:13px; text-align:center}
-  .visitor-msg.error{background:#FFE2DD; color:#9B2C1E}
-  .visitor-msg.success{background:#DBEDDB; color:#2C5E3E}
+  /* ---- Visitor Auth (single-step, on the auth card) ---- */
+  .visitor-question{margin:14px 0; text-align:left}
+  .visitor-question p{margin:0 0 6px; color:var(--muted); font-size:13.5px}
+  .visitor-lyrics{font-size:15px; font-weight:500; color:var(--text); font-style:italic; margin:8px 0 0 !important}
+
+  /* ---- Visitor Transition (Shazam animation) ---- */
+  .visitor-transition{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; background:#000000}
+  .visitor-transition .visitor-anim-text{color:#fff; font-size:44px; font-weight:700; text-align:center; padding:0 20px}
 
   @keyframes visitor-zoom-fade{
-    0%{opacity:0; transform:scale(0.98) translateY(8px)}
-    100%{opacity:1; transform:scale(1) translateY(0)}
+    0%{opacity:0; transform:translateY(12px)}
+    100%{opacity:1; transform:translateY(0)}
   }
   @keyframes visitor-bg-invert{
     0%{background:#000000}
     100%{background:#FBFBFA}
   }
   @keyframes visitor-text-invert{
-    0%{color:#FFFFFF; text-shadow:none}
-    100%{color:#37352F; text-shadow:none}
+    0%{color:#FFFFFF}
+    100%{color:#37352F}
   }
-  .visitor-anim-container.playing .visitor-anim-bg{animation:visitor-bg-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
-  .visitor-anim-container.playing .visitor-anim-text{animation:visitor-zoom-fade 0.6s cubic-bezier(0.16,1,0.3,1) forwards, visitor-text-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
+  .visitor-transition.playing{animation:visitor-bg-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
+  .visitor-transition.playing .visitor-anim-text{animation:visitor-zoom-fade 0.6s cubic-bezier(0.16,1,0.3,1) forwards, visitor-text-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
   @media print{
@@ -324,7 +318,13 @@
     <div id="methodVisitor">
       <label class="authlabel" for="visitorPassword">Mot de passe</label>
       <input type="password" id="visitorPassword" placeholder="Votre mot de passe" autocomplete="off">
-      <button class="ghostbtn primary authbtn" id="btnVisitorPassword" style="margin-top:12px">Suivant</button>
+      <div class="visitor-question">
+        <p>Complétez les paroles de <strong>Melodrama</strong> (Theodora &amp; Disiz) :</p>
+        <p class="visitor-lyrics">Je suis comme un son que t'aurais pas...</p>
+      </div>
+      <label class="authlabel" for="visitorAnswer">Réponse</label>
+      <input type="text" id="visitorAnswer" placeholder="Votre réponse" autocomplete="off">
+      <button class="ghostbtn primary authbtn" id="btnVisitorAccess" style="margin-top:12px">Accéder</button>
     </div>
 
     <div id="methodPassword" style="display:none">
@@ -339,27 +339,9 @@
   </div>
 </div>
 
-<!-- VISITOR SECURITY SCREEN -->
-<div class="visitor-auth-screen" id="visitorSecurityScreen" style="display:none">
-  <div class="visitor-card">
-    <div class="visitor-header">
-      <div class="visitor-anim-container" id="visitorAnimContainer">
-        <div class="visitor-anim-bg" id="visitorAnimBg"></div>
-        <div class="visitor-anim-text" id="visitorAnimText">Shazam, ouvre toi !</div>
-      </div>
-    </div>
-    <div class="visitor-body">
-      <div class="visitor-question">
-        <p>Complétez les paroles de <strong>Melodrama</strong> (Theodora & Disiz) :</p>
-        <p class="visitor-lyrics">Je suis comme un son que t'aurais pas...</p>
-      </div>
-      <label class="authlabel" for="visitorAnswer" style="margin-top:16px">Réponse</label>
-      <input type="text" id="visitorAnswer" placeholder="Votre réponse" autocomplete="off">
-      <button class="ghostbtn primary authbtn" id="btnVisitorAnswer" style="margin-top:12px">Accéder</button>
-      <button class="ghostbtn authbtn" id="btnBackToPassword" style="margin-top:8px">← Retour</button>
-      <div class="authmsg" id="visitorMsg"></div>
-    </div>
-  </div>
+<!-- VISITOR TRANSITION ANIMATION (Shazam) -->
+<div class="visitor-transition" id="visitorTransition" style="display:none">
+  <div class="visitor-anim-text" id="visitorAnimText">Shazam, ouvre toi !</div>
 </div>
 
 <div id="app" style="display:none">
@@ -1774,7 +1756,10 @@ document.getElementById("tabPassword").addEventListener("click", e=>{
   document.getElementById("authEmailPwd").focus();
 });
 
-document.getElementById("btnLogout").addEventListener("click", ()=>sb.auth.signOut());
+document.getElementById("btnLogout").addEventListener("click", ()=>{
+  if(isVisitorMode){ exitVisitorMode(); return; }
+  sb.auth.signOut();
+});
 
 function showAuth(){
   authScreen.style.display="flex"; appRoot.style.display="none";
@@ -1807,7 +1792,7 @@ window.addEventListener("popstate", ()=>{
   if(id && issuesCache.find(i=>i.id===id) && (!currentIssue || currentIssue.id!==id)) selectIssue(id, false);
 });
 
-/* ---- VISITOR MODE ---- */
+/* ---- VISITOR (ÉQUIPE) MODE : mot de passe + question, en une seule étape ---- */
 const VISITOR_PASSWORD_HASH = "4e7462f7ad59e8fcaa009233b030bd9d501bbe811600c4496bed7d026b85e1b6";
 let isVisitorMode = false;
 
@@ -1818,64 +1803,71 @@ async function sha256(message) {
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function verifyVisitorPassword() {
+async function verifyVisitorAccess() {
   const pwd = document.getElementById("visitorPassword").value.trim();
+  const answer = document.getElementById("visitorAnswer").value.trim().toLowerCase();
+
   if (!pwd) { setAuthMsg("Veuillez entrer un mot de passe", true); return; }
+  if (!answer) { setAuthMsg("Veuillez compléter les paroles", true); return; }
 
   const hash = await sha256(pwd);
-  if (hash !== VISITOR_PASSWORD_HASH) { setAuthMsg("Mot de passe incorrect", true); return; }
-
-  // Afficher l'animation et la question de sécurité
-  showVisitorSecurityScreen();
-}
-
-function showVisitorSecurityScreen() {
-  document.getElementById("visitorSecurityScreen").style.display = "flex";
-  playVisitorAnimation();
-  document.getElementById("visitorAnswer").focus();
-}
-
-function playVisitorAnimation() {
-  const container = document.getElementById("visitorAnimContainer");
-  const bg = document.getElementById("visitorAnimBg");
-  const text = document.getElementById("visitorAnimText");
-
-  container.classList.remove("playing");
-  void bg.offsetWidth; // Force reflow
-  container.classList.add("playing");
-}
-
-function verifyVisitorAnswer() {
-  const answer = document.getElementById("visitorAnswer").value.trim().toLowerCase();
-  const visitorMsg = document.getElementById("visitorMsg");
-
-  if (answer !== "shazam") {
-    visitorMsg.className = "authmsg error";
-    visitorMsg.textContent = "Réponse incorrecte";
+  if (hash !== VISITOR_PASSWORD_HASH || answer !== "shazam") {
+    setAuthMsg("Mot de passe ou réponse incorrecte", true);
     return;
   }
 
-  // Authentification réussie
-  activateVisitorMode();
+  setAuthMsg("", false);
+  playVisitorTransition();
 }
 
-function activateVisitorMode() {
+function playVisitorTransition() {
+  const el = document.getElementById("visitorTransition");
+  el.style.display = "flex";
+  el.classList.remove("playing");
+  void el.offsetWidth; // Force reflow
+  el.classList.add("playing");
+  setTimeout(() => {
+    el.style.display = "none";
+    el.classList.remove("playing");
+    enterVisitorMode();
+  }, 1300);
+}
+
+async function enterVisitorMode() {
   isVisitorMode = true;
   localStorage.setItem("cdf_visitor_mode", "true");
-  document.getElementById("visitorSecurityScreen").style.display = "none";
   document.getElementById("authScreen").style.display = "none";
-  document.getElementById("app").style.display = "flex";
-
-  // Désactiver les boutons d'édition
+  appRoot.style.display = "";
+  const userbar = document.getElementById("pUser");
+  if (userbar) userbar.textContent = "👁 Mode Équipe (lecture seule)";
   disableEditingUI();
+
+  if (appInited) return;
+  appInited = true;
+  subscribeIssues();
+  issuesCache = await loadIssues();
+  populateIssueSelect();
+  if (issuesCache.length) {
+    const fromUrl = new URL(window.location.href).searchParams.get("issue");
+    const last = localStorage.getItem("cdf_last_issue");
+    const pick = issuesCache.find(i=>i.id===fromUrl) || issuesCache.find(i=>i.id===last) || issuesCache[0];
+    await selectIssue(pick.id, false);
+  }
+}
+
+function exitVisitorMode() {
+  isVisitorMode = false;
+  localStorage.removeItem("cdf_visitor_mode");
+  document.getElementById("visitorPassword").value = "";
+  document.getElementById("visitorAnswer").value = "";
+  showAuth();
 }
 
 function disableEditingUI() {
   // Désactiver tous les boutons et champs d'édition
   const disableSelectors = [
     "#btnNewIssue", "#btnClearSelection", "#btnColorMgr", "#btnCsv", "#btnJson",
-    "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#btnPassword",
-    "#btnMagicLink", ".ghostbtn.primary", "#dtitle", "[id^='f']", "#numero"
+    "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#dtitle", "[id^='f']", "#numero"
   ];
 
   disableSelectors.forEach(sel => {
@@ -1887,46 +1879,29 @@ function disableEditingUI() {
       }
     });
   });
-
-  // Afficher un badge visitor
-  const userbar = document.getElementById("pUser");
-  if (userbar) userbar.textContent = "👁 Mode Équipe";
-}
-
-// Vérifier si déjà en mode visitor
-if (localStorage.getItem("cdf_visitor_mode") === "true") {
-  isVisitorMode = true;
 }
 
 // Visitor authentication event listeners
-if (document.getElementById("btnVisitorPassword")) {
-  document.getElementById("btnVisitorPassword").addEventListener("click", verifyVisitorPassword);
+if (document.getElementById("btnVisitorAccess")) {
+  document.getElementById("btnVisitorAccess").addEventListener("click", verifyVisitorAccess);
 }
 if (document.getElementById("visitorPassword")) {
   document.getElementById("visitorPassword").addEventListener("keydown", e => {
-    if (e.key === "Enter") verifyVisitorPassword();
+    if (e.key === "Enter") verifyVisitorAccess();
   });
-}
-
-if (document.getElementById("btnVisitorAnswer")) {
-  document.getElementById("btnVisitorAnswer").addEventListener("click", verifyVisitorAnswer);
 }
 if (document.getElementById("visitorAnswer")) {
   document.getElementById("visitorAnswer").addEventListener("keydown", e => {
-    if (e.key === "Enter") verifyVisitorAnswer();
+    if (e.key === "Enter") verifyVisitorAccess();
   });
 }
 
-if (document.getElementById("btnBackToPassword")) {
-  document.getElementById("btnBackToPassword").addEventListener("click", () => {
-    document.getElementById("visitorSecurityScreen").style.display = "none";
-    document.getElementById("visitorAnswer").value = "";
-    document.getElementById("visitorMsg").textContent = "";
-    document.getElementById("visitorPassword").focus();
-  });
-}
-sb.auth.onAuthStateChange((_event, session)=>{ if(session) showApp(session); else showAuth(); });
-sb.auth.getSession().then(({data})=>{ if(data.session) showApp(data.session); else showAuth(); });
+sb.auth.onAuthStateChange((_event, session)=>{ if(session) showApp(session); else if(!isVisitorMode) showAuth(); });
+sb.auth.getSession().then(({data})=>{
+  if(data.session) showApp(data.session);
+  else if(localStorage.getItem("cdf_visitor_mode")==="true") enterVisitorMode();
+  else showAuth();
+});
 </script>
 </body>
 </html>
