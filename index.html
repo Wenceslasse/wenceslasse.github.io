@@ -75,7 +75,7 @@
   .page.blank:hover{box-shadow:none}
   .page.dim{opacity:.35}
   .page{user-select:none;}
-  .page.selected{background:var(--hover); border-color:var(--accent); box-shadow:0 0 0 2px var(--accent)}
+  .page.selected{background:rgba(35,131,226,0.1); border:2px solid var(--accent); box-shadow:0 0 0 2px var(--accent); z-index:5;}
 
   .pill{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; max-width:100%}
   .pill .ptxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -522,7 +522,9 @@ function renderDatalist(){
 }
 
 function updateSelection(){
+  const scrollY = window.scrollY;
   render();
+  window.scrollTo(0, scrollY);
   const btn=document.getElementById("btnClearSelection");
   if(selectedPages.size>0){
     btn.style.display="";
