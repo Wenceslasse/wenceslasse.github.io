@@ -367,6 +367,7 @@ let lastShiftClickPage = null;
 let draggedPages = null;
 let dropTarget = null;
 let currentView = "grid"; // grid, calendar, gantt
+let currentCalendarMonth = new Date();
 
 async function reorderPages(draggedPageNums, targetPageNum){
   const pages=[...state.pages];
@@ -601,39 +602,89 @@ function renderGroupHeader(pages){
 function renderCalendarView(){
   const cal=document.getElementById("viewCalendar");
   cal.innerHTML="";
+
   const grouped={};
   for(const p of state.pages){
-    if(!matches(p)) continue;
-    const d=p.rendu||"(pas de date)";
+    if(!matches(p)||!p.rendu) continue;
+    const d=p.rendu;
     if(!grouped[d]) grouped[d]=[];
     grouped[d].push(p);
   }
-  const sorted=Object.keys(grouped).sort();
-  for(const date of sorted){
-    const section=document.createElement("div");
-    section.style.cssText="margin-bottom:20px;";
-    const h=document.createElement("h3");
-    h.style.cssText="color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px;";
-    h.textContent=date==="(pas de date)"?"Sans date de rendu":new Date(date).toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-    section.appendChild(h);
-    const items=document.createElement("div");
-    items.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;";
-    for(const p of grouped[date]){
-      const card=document.createElement("div");
-      card.style.cssText="padding:12px;background:var(--canvas);border:1px solid var(--border);border-radius:6px;cursor:pointer;";
-      const rt=rubTag(p.rubrique);
-      const rub=rt?pillHTML(p.rubrique,rt):"";
-      const themaTag=p.thematique?getTagColor(p.thematique):null;
-      const thema=p.thematique?pillHTML(p.thematique,themaTag):"";
-      const st=STATUTS[p.statut];
-      const status=pillHTML(st.label,st);
-      card.innerHTML=`<div style="font-weight:600;color:var(--text);margin-bottom:4px;">${esc(p.sujet||"Sujet à définir")}</div><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${rub}${rub?"":" "}${thema}</div><div style="font-size:12px;color:var(--muted);">Page ${p.n}</div><div style="font-size:12px;margin-top:8px;">${status}</div>`;
-      card.addEventListener("click",()=>openPeek(p.n));
-      items.appendChild(card);
-    }
-    section.appendChild(items);
-    cal.appendChild(section);
+
+  const container=document.createElement("div");
+  container.style.cssText="padding:20px;";
+
+  const header=document.createElement("div");
+  header.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;";
+
+  const prevBtn=document.createElement("button");
+  prevBtn.textContent="◀";
+  prevBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:20px;padding:4px 8px;";
+  prevBtn.addEventListener("click",()=>{
+    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth()-1);
+    renderCalendarView();
+  });
+
+  const title=document.createElement("h2");
+  title.style.cssText="margin:0;font-size:18px;color:var(--text);font-weight:600;";
+  title.textContent=currentCalendarMonth.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+
+  const nextBtn=document.createElement("button");
+  nextBtn.textContent="▶";
+  nextBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:20px;padding:4px 8px;";
+  nextBtn.addEventListener("click",()=>{
+    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth()+1);
+    renderCalendarView();
+  });
+
+  header.appendChild(prevBtn);
+  header.appendChild(title);
+  header.appendChild(nextBtn);
+  container.appendChild(header);
+
+  const calGrid=document.createElement("div");
+  calGrid.style.cssText="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;";
+
+  const dayNames=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+  for(const day of dayNames){
+    const dayEl=document.createElement("div");
+    dayEl.style.cssText="background:var(--hover);padding:8px;text-align:center;font-weight:600;color:var(--muted);font-size:12px;";
+    dayEl.textContent=day;
+    calGrid.appendChild(dayEl);
   }
+
+  const firstDay=new Date(currentCalendarMonth.getFullYear(),currentCalendarMonth.getMonth(),1);
+  const lastDay=new Date(currentCalendarMonth.getFullYear(),currentCalendarMonth.getMonth()+1,0);
+  const startDate=new Date(firstDay);
+  startDate.setDate(startDate.getDate()-(firstDay.getDay()+6)%7);
+
+  let currentDate=new Date(startDate);
+  while(currentDate<=lastDay||currentDate.getDay()!==1){
+    const dateStr=currentDate.toISOString().split("T")[0];
+    const dayEl=document.createElement("div");
+    dayEl.style.cssText=`background:var(--canvas);padding:8px;min-height:100px;border:1px solid var(--border);${currentDate.getMonth()!==currentCalendarMonth.getMonth()?'opacity:0.3;':''}`;
+
+    const dateNum=document.createElement("div");
+    dateNum.style.cssText="font-weight:600;color:var(--text);margin-bottom:4px;";
+    dateNum.textContent=currentDate.getDate();
+    dayEl.appendChild(dateNum);
+
+    if(grouped[dateStr]){
+      for(const p of grouped[dateStr]){
+        const dot=document.createElement("div");
+        const st=STATUTS[p.statut];
+        dot.style.cssText=`width:6px;height:6px;border-radius:50%;background:${st.dot};display:inline-block;margin-right:2px;cursor:pointer;`;
+        dot.title=p.sujet;
+        dot.addEventListener("click",()=>openPeek(p.n));
+        dayEl.appendChild(dot);
+      }
+    }
+    calGrid.appendChild(dayEl);
+    currentDate.setDate(currentDate.getDate()+1);
+  }
+
+  container.appendChild(calGrid);
+  cal.appendChild(container);
 }
 
 function renderGanttView(){
