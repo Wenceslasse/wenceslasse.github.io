@@ -96,6 +96,16 @@
   #issueSelect:focus{outline:none; box-shadow:0 0 0 3px rgba(0,0,0,.2)}
   #issueSelect option{background:#1a1a1a; color:#fff; font-weight:500}
   .spacer{flex:1}
+  .more-menu-wrap{position:relative}
+  #btnMoreActions{font-weight:700; font-size:16px; padding:5px 11px}
+  .more-menu{
+    position:absolute; top:100%; right:0; margin-top:6px; background:var(--canvas); border:1px solid var(--border);
+    border-radius:8px; box-shadow:0 8px 24px rgba(15,15,15,.12); padding:6px; min-width:170px;
+    display:none; flex-direction:column; gap:1px; z-index:60;
+  }
+  .more-menu.open{display:flex}
+  .more-menu-item{border:none; background:transparent; text-align:left; padding:7px 10px; border-radius:5px; cursor:pointer; font-size:13.5px; color:var(--text)}
+  .more-menu-item:hover{background:var(--hover)}
 
   /* ---- Rail ---- */
   main{padding:22px 0 140px}
@@ -121,7 +131,8 @@
 
   .pill{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; max-width:100%}
   .pill .ptxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .rubrow{min-height:20px; margin-bottom:8px}
+  .rubrow{min-height:20px; margin-bottom:8px; padding-right:70px}
+  .lotrow{position:absolute; top:14px; right:15px}
   .sujet{font-size:15px; font-weight:600; letter-spacing:-.01em; line-height:1.3}
   .sujet.empty{color:var(--faint); font-weight:400}
   .cardmeta{margin-top:auto; padding-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--muted)}
@@ -288,20 +299,19 @@
   }
   /* ---- Visitor Auth : machine à écrire + saisie en continuation ---- */
   #methodVisitor{
-    cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">%F0%9F%8E%A4</text></svg>') 4 30, auto;
+    cursor:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">🎤</text></svg>') 4 30, auto;
   }
   .p4-lead{color:var(--muted); font-size:13px; display:block; margin-bottom:14px}
   .p4-type-area{
     font-size:19px; line-height:1.7; color:var(--text); position:relative; min-height:2.2em;
-    cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">%F0%9F%8E%A4</text></svg>') 4 30, text;
+    cursor:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">🎤</text></svg>') 4 30, text;
   }
   .p4-type-area > div+div{margin-top:6px}
-  .p4-userinput{color:var(--accent); font-weight:700}
-  .p4-userinput.correct{color:#2C5E3E}
-  .p4-cursor{display:inline-block; width:2px; height:1.05em; background:var(--text); vertical-align:text-bottom; margin-left:1px; animation:p4-blink 1s step-end infinite}
-  .p4-cursor.correct{background:#2C5E3E}
-  @keyframes p4-blink{0%,50%{opacity:1} 50.01%,100%{opacity:0}}
-  .p4-hidden-input{position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; border:none}
+  .p4-hidden-input{
+    font:inherit; font-weight:700; color:var(--accent); border:none; outline:none; background:transparent;
+    padding:0; min-width:8px; width:8px; vertical-align:baseline;
+  }
+  .p4-hidden-input.correct{color:#2C5E3E}
   .p4-hint{margin-top:16px; font-size:13px; color:var(--muted); opacity:0; transition:opacity .5s ease; display:flex; align-items:center; gap:7px}
   .p4-hint.show{opacity:1}
 
@@ -365,8 +375,7 @@
         <span class="p4-lead">Melodrama — Theodora &amp; Disiz</span>
         <div class="p4-type-area" id="p4-typearea">
           <div>« <span id="p4-typed-line1"></span></div>
-          <div><span id="p4-typed-line2"></span><span class="p4-userinput" id="p4-userinput"></span><span class="p4-cursor" id="p4-cursor">|</span> »</div>
-          <input type="text" class="p4-hidden-input" id="p4-hidden-input" autocomplete="off" spellcheck="false" autocapitalize="off">
+          <div><span id="p4-typed-line2"></span><input type="text" class="p4-hidden-input" id="p4-hidden-input" autocomplete="off" spellcheck="false" autocapitalize="off"> »</div>
         </div>
         <div class="p4-hint" id="p4-hint">🎤 À vous de terminer la phrase…</div>
       </div>
@@ -442,11 +451,16 @@
       <button class="tbtn" id="btnViewCalendar" title="Vue Calendrier">📅 Calendrier</button>
       <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
       <span class="spacer"></span>
-      <button class="tbtn" id="btnCsv">Exporter CSV</button>
-      <button class="tbtn" id="btnJson">Sauvegarde</button>
-      <button class="tbtn" id="btnImport">Importer</button>
-      <button class="tbtn" id="btnPrint">Imprimer</button>
-      <button class="tbtn" id="btnReset">Réinitialiser</button>
+      <div class="more-menu-wrap" id="moreMenuWrap">
+        <button class="tbtn" id="btnMoreActions" title="Plus d'actions" aria-haspopup="true" aria-expanded="false">⋯</button>
+        <div class="more-menu" id="moreMenu">
+          <button class="more-menu-item" id="btnCsv">Exporter CSV</button>
+          <button class="more-menu-item" id="btnJson">Sauvegarde</button>
+          <button class="more-menu-item" id="btnImport">Importer</button>
+          <button class="more-menu-item" id="btnPrint">Imprimer</button>
+          <button class="more-menu-item" id="btnReset">Réinitialiser</button>
+        </div>
+      </div>
       <input type="file" id="fileInput" accept="application/json" hidden>
     </div>
   </div>
@@ -839,6 +853,8 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
 
   const rt=getTagColor(p.rubrique, "rubrique");
   const rub = `<div class="rubrow">${p.rubrique?pillHTML(p.rubrique,rt,"rubrique",p.rubrique):""}</div>`;
+  const lotLabel = p.lot && LOTS[p.lot] ? LOTS[p.lot].label : p.lot;
+  const lot = p.lot?`<div class="lotrow">${pillHTML(lotLabel,getTagColor(p.lot,"lot"),"lot",p.lot)}</div>`:"";
   const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
 
   const bits=[];
@@ -858,7 +874,7 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   const thema = p.thematique?pillHTML(p.thematique,themaTag,"thematique",p.thematique):"";
 
   const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
-  el.innerHTML = rub + suj + separator + notes + thema + meta + folio;
+  el.innerHTML = rub + lot + suj + separator + notes + thema + meta + folio;
   return el;
 }
 
@@ -1603,6 +1619,20 @@ async function selectIssue(id, pushUrl){
     return r ? rowToPage(r) : blankPage(i+1);
   });
   await loadColorCustomizations(id);
+
+  // Si le mois courant n'a aucun rendu, ouvrir directement Calendrier/Gantt
+  // sur le premier rendu connu plutôt que sur un tableau vide autour d'aujourd'hui.
+  const renduDates = state.pages.map(p=>p.rendu).filter(Boolean).sort();
+  if (renduDates.length) {
+    const currentMonthKey = todayISO().slice(0,7);
+    const hasDataThisMonth = renduDates.some(d => d.slice(0,7) === currentMonthKey);
+    if (!hasDataThisMonth) {
+      const firstDate = new Date(renduDates[0]+"T00:00:00");
+      currentCalendarMonth = firstDate;
+      ganttAnchor = firstDate;
+    }
+  }
+
   render();
   subscribePages(id);
 }
@@ -1721,6 +1751,17 @@ document.getElementById("btnViewGantt").addEventListener("click",()=>{
   document.getElementById("btnViewGantt").style.opacity="1";
   render();
 });
+
+const moreMenu=document.getElementById("moreMenu"), btnMoreActions=document.getElementById("btnMoreActions");
+function closeMoreMenu(){ moreMenu.classList.remove("open"); btnMoreActions.setAttribute("aria-expanded","false"); }
+btnMoreActions.addEventListener("click", e=>{
+  e.stopPropagation();
+  const open=moreMenu.classList.toggle("open");
+  btnMoreActions.setAttribute("aria-expanded", open?"true":"false");
+});
+moreMenu.addEventListener("click", e=>{ if(e.target.closest(".more-menu-item")) closeMoreMenu(); });
+document.addEventListener("click", e=>{ if(!document.getElementById("moreMenuWrap").contains(e.target)) closeMoreMenu(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeMoreMenu(); });
 
 document.getElementById("btnCsv").addEventListener("click",()=>{
   const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Date de rendu","Statut","Journaliste","Notes"];
@@ -1944,11 +1985,11 @@ function resetP4Typewriter() {
   p4Unlocked = false;
   document.getElementById("p4-typed-line1").textContent = "";
   document.getElementById("p4-typed-line2").textContent = "";
-  document.getElementById("p4-userinput").textContent = "";
-  document.getElementById("p4-userinput").classList.remove("correct");
-  document.getElementById("p4-cursor").classList.remove("correct");
   document.getElementById("p4-hint").classList.remove("show");
-  document.getElementById("p4-hidden-input").value = "";
+  const input = document.getElementById("p4-hidden-input");
+  input.value = "";
+  input.classList.remove("correct");
+  input.style.width = "8px";
 }
 
 const CONFETTI_COLORS = ["#e8467d", "#f4923d", "#9c1c40", "#2f9e63", "#2383E2", "#FDECC8"];
@@ -1985,17 +2026,27 @@ document.getElementById("p4-typearea").addEventListener("click", () => {
   document.getElementById("p4-hidden-input").focus();
 });
 
+let p4WidthMeasureEl = null;
+function p4MeasureTextWidth(text, referenceEl){
+  if (!p4WidthMeasureEl) {
+    p4WidthMeasureEl = document.createElement("span");
+    p4WidthMeasureEl.style.cssText = "position:absolute; visibility:hidden; white-space:pre; top:-9999px; left:-9999px;";
+    document.body.appendChild(p4WidthMeasureEl);
+  }
+  p4WidthMeasureEl.style.font = getComputedStyle(referenceEl).font;
+  p4WidthMeasureEl.textContent = text || " ";
+  return p4WidthMeasureEl.offsetWidth;
+}
+
 document.getElementById("p4-hidden-input").addEventListener("input", e => {
-  const userSpan = document.getElementById("p4-userinput");
-  const cursor = document.getElementById("p4-cursor");
-  const val = e.target.value;
-  userSpan.textContent = val;
+  const input = e.target;
+  const val = input.value;
+  input.style.width = Math.max(8, p4MeasureTextWidth(val, input) + 3) + "px";
   const ok = val.trim().toLowerCase() === "shazam";
-  userSpan.classList.toggle("correct", ok);
-  cursor.classList.toggle("correct", ok);
+  input.classList.toggle("correct", ok);
   if (ok && !p4Unlocked) {
     p4Unlocked = true;
-    e.target.blur();
+    input.blur();
     launchConfetti();
     playUnlockSuccess(() => playVisitorTransition());
   } else if (!ok && p4Unlocked) {
