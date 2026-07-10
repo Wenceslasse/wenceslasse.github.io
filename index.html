@@ -19,7 +19,35 @@
   button,input,select,textarea{font-family:inherit; font-size:inherit; color:inherit}
   ::placeholder{color:var(--faint)}
 
-  .wrap{max-width:1080px; margin:0 auto; padding:0 40px}
+  .wrap{max-width:none; margin:0; padding:0 32px}
+
+  /* ---- Layout : barre latérale + contenu (pleine largeur) ---- */
+  #app{display:flex; align-items:stretch; min-height:100vh}
+  #appmain{flex:1; min-width:0; display:flex; flex-direction:column}
+  #sidebar{
+    width:250px; flex:none; box-sizing:border-box; border-right:1px solid var(--border);
+    background:var(--body); position:sticky; top:0; height:100vh; overflow-y:auto;
+    display:flex; flex-direction:column; padding:14px 10px 12px;
+  }
+  #app.sb-hidden #sidebar{display:none}
+  .sb-brand{display:flex; align-items:center; gap:9px; padding:6px 8px 12px}
+  .sb-brand .picon{width:28px; height:28px; border-radius:6px}
+  .sb-brand .picon svg{width:17px; height:17px}
+  .sb-title{font-size:14px; font-weight:700; letter-spacing:-.01em}
+  .sb-sectionlabel{font-size:11px; color:var(--faint); letter-spacing:.05em; text-transform:uppercase; padding:6px 10px 4px}
+  .sb-list{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:1px; min-height:0}
+  .sb-item{display:flex; align-items:center; border-radius:6px; color:var(--text)}
+  .sb-item:hover{background:var(--hover)}
+  .sb-item.active{background:rgba(35,131,226,.12)}
+  .sb-item.active .sb-item-name{color:var(--accent); font-weight:600}
+  .sb-item-name{flex:1; min-width:0; text-align:left; border:none; background:transparent; cursor:pointer; padding:7px 8px 7px 10px; font-size:13.5px; color:inherit; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .sb-item-dup{border:none; background:transparent; cursor:pointer; color:var(--faint); padding:5px 8px; border-radius:5px; font-size:15px; opacity:0; flex:none}
+  .sb-item:hover .sb-item-dup{opacity:1}
+  .sb-item-dup:hover{background:var(--border); color:var(--text)}
+  .sb-new{margin-top:8px; border:1px solid var(--border); background:var(--canvas); border-radius:7px; padding:9px 10px; cursor:pointer; color:var(--text); font-size:13.5px; font-weight:500; text-align:left}
+  .sb-new:hover{background:var(--hover)}
+  .sb-toggle{border:none; background:transparent; cursor:pointer; color:var(--muted); border-radius:5px; padding:4px 7px; font-size:16px}
+  .sb-toggle:hover{background:var(--hover); color:var(--text)}
 
   /* ---- Page header (Notion page style) ---- */
   header{background:var(--body); position:sticky; top:0; z-index:20}
@@ -256,9 +284,22 @@
 </div>
 
 <div id="app" style="display:none">
+<aside id="sidebar">
+  <div class="sb-brand">
+    <span class="picon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v15"/><path d="M12 5C10 3.5 6.5 3.5 4 4v14c2.5-.5 6-.5 8 1"/><path d="M12 5c2-1.5 5.5-1.5 8-1v14c-2.5-.5-6-.5-8 1"/></svg>
+    </span>
+    <span class="sb-title">Chemins de fer</span>
+  </div>
+  <div class="sb-sectionlabel">Numéros</div>
+  <div class="sb-list" id="issueList"></div>
+  <button class="sb-new" id="btnNewIssue">+ Nouveau chemin de fer</button>
+</aside>
+<div id="appmain">
 <header>
   <div class="wrap head-inner">
     <div class="titlebar">
+      <button class="sb-toggle" id="btnToggleSidebar" title="Afficher/masquer le menu" aria-label="Afficher ou masquer le menu">☰</button>
       <span class="picon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v15"/><path d="M12 5C10 3.5 6.5 3.5 4 4v14c2.5-.5 6-.5 8 1"/><path d="M12 5c2-1.5 5.5-1.5 8-1v14c-2.5-.5-6-.5-8 1"/></svg>
       </span>
@@ -275,8 +316,7 @@
     </div>
 
     <div class="toolbar">
-      <select class="tsel" id="issueSelect" aria-label="Choisir un numéro"></select>
-      <button class="tbtn" id="btnNewIssue">+ Nouveau numéro</button>
+      <select class="tsel" id="issueSelect" aria-label="Choisir un numéro" hidden></select>
       <button class="tbtn" id="btnClearSelection" style="display:none; color:#9B2C1E">✕ Déselectionner</button>
       <input type="search" id="search" placeholder="Rechercher rubrique ou sujet…" aria-label="Rechercher">
       <select class="tsel" id="filterStatut" aria-label="Filtrer par statut">
@@ -310,7 +350,7 @@
     <div id="viewGantt" style="display:none;"></div>
   </div>
 </main>
-
+</div>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -1192,6 +1232,23 @@ const issueSelect=document.getElementById("issueSelect");
 function populateIssueSelect(){
   issueSelect.innerHTML = issuesCache.map(i=>`<option value="${i.id}">${esc(i.numero||"(sans nom)")}</option>`).join("");
   if(currentIssue) issueSelect.value = currentIssue.id;
+  renderIssueList();
+}
+function renderIssueList(){
+  const list=document.getElementById("issueList"); if(!list) return;
+  list.innerHTML="";
+  for(const iss of issuesCache){
+    const item=document.createElement("div");
+    item.className="sb-item"+(currentIssue&&currentIssue.id===iss.id?" active":"");
+    const name=document.createElement("button"); name.type="button"; name.className="sb-item-name";
+    name.textContent=iss.numero||"(sans nom)"; name.title=iss.numero||"(sans nom)";
+    name.addEventListener("click",()=>selectIssue(iss.id));
+    const dup=document.createElement("button"); dup.type="button"; dup.className="sb-item-dup"; dup.title="Dupliquer ce chemin de fer";
+    dup.textContent="⧉";
+    dup.addEventListener("click",(e)=>{ e.stopPropagation(); duplicateIssue(iss.id); });
+    item.appendChild(name); item.appendChild(dup);
+    list.appendChild(item);
+  }
 }
 async function loadIssues(){
   const { data, error } = await sb.from("issues").select("*").order("created_at",{ascending:true});
@@ -1205,6 +1262,7 @@ async function selectIssue(id, pushUrl){
   currentIssue = iss;
   localStorage.setItem("cdf_last_issue", id);
   issueSelect.value = id;
+  renderIssueList();
   numero.value = iss.numero||""; bouclage.value = iss.bouclage||"";
   const url = new URL(window.location.href);
   if(url.searchParams.get("issue")!==id){
@@ -1221,7 +1279,7 @@ async function selectIssue(id, pushUrl){
   subscribePages(id);
 }
 async function createIssue(){
-  const name = prompt("Nom du nouveau numéro :", "");
+  const name = prompt("Nom du nouveau chemin de fer :", "");
   if(name==null) return;
   const { data, error } = await sb.from("issues").insert({ numero: name || "Nouveau numéro" }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
@@ -1232,8 +1290,28 @@ async function createIssue(){
   populateIssueSelect();
   await selectIssue(data.id);
 }
+async function duplicateIssue(id){
+  const src = issuesCache.find(i=>i.id===id);
+  if(!src) return;
+  if(!confirm(`Dupliquer « ${src.numero||"ce numéro"} » ?\n\nUn nouveau chemin de fer sera créé avec une copie de toutes les pages.`)) return;
+  const { data: srcPages, error:e0 } = await sb.from("pages").select("*").eq("issue_id", id);
+  if(e0){ alert("Erreur de lecture des pages : "+e0.message); return; }
+  const { data: newIss, error } = await sb.from("issues").insert({ numero:(src.numero||"Sans nom")+" (copie)", bouclage: src.bouclage||null }).select().single();
+  if(error){ alert("Erreur de création du numéro : "+error.message); return; }
+  const bySrcN={}; (srcPages||[]).forEach(p=>{ bySrcN[p.n]=p; });
+  const pages = Array.from({length:TOTAL},(_,i)=>{ const n=i+1; const s=bySrcN[n]||{};
+    return { issue_id:newIss.id, n, rubrique:s.rubrique||"", sujet:s.sujet||"", thematique:s.thematique||"",
+      calib:(s.calib==null?null:s.calib), unite:s.unite||"signes", rendu:s.rendu||null, statut:s.statut||"a_caler",
+      journaliste:s.journaliste||"", lot:s.lot||"", notes:s.notes||"" }; });
+  const { error:e2 } = await sb.from("pages").insert(pages);
+  if(e2){ alert("Erreur de copie des pages : "+e2.message); return; }
+  if(!issuesCache.find(i=>i.id===newIss.id)) issuesCache.push(newIss);
+  populateIssueSelect();
+  await selectIssue(newIss.id);
+}
 issueSelect.addEventListener("change", e=>selectIssue(e.target.value));
 document.getElementById("btnNewIssue").addEventListener("click", createIssue);
+document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{ document.getElementById("app").classList.toggle("sb-hidden"); });
 
 /* ---- Supabase Realtime ---- */
 function subscribePages(issueId){
