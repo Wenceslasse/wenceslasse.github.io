@@ -1909,22 +1909,33 @@ if (localStorage.getItem("cdf_visitor_mode") === "true") {
   isVisitorMode = true;
 }
 
-document.getElementById("btnVisitorPassword").addEventListener("click", verifyVisitorPassword);
-document.getElementById("visitorPassword").addEventListener("keydown", e => {
-  if (e.key === "Enter") verifyVisitorPassword();
-});
+// Visitor authentication event listeners
+if (document.getElementById("btnVisitorPassword")) {
+  document.getElementById("btnVisitorPassword").addEventListener("click", verifyVisitorPassword);
+}
+if (document.getElementById("visitorPassword")) {
+  document.getElementById("visitorPassword").addEventListener("keydown", e => {
+    if (e.key === "Enter") verifyVisitorPassword();
+  });
+}
 
-document.getElementById("btnVisitorAnswer").addEventListener("click", verifyVisitorAnswer);
-document.getElementById("visitorAnswer").addEventListener("keydown", e => {
-  if (e.key === "Enter") verifyVisitorAnswer();
-});
+if (document.getElementById("btnVisitorAnswer")) {
+  document.getElementById("btnVisitorAnswer").addEventListener("click", verifyVisitorAnswer);
+}
+if (document.getElementById("visitorAnswer")) {
+  document.getElementById("visitorAnswer").addEventListener("keydown", e => {
+    if (e.key === "Enter") verifyVisitorAnswer();
+  });
+}
 
-document.getElementById("btnBackToPassword").addEventListener("click", () => {
-  document.getElementById("visitorSecurityScreen").style.display = "none";
-  document.getElementById("visitorAnswer").value = "";
-  document.getElementById("visitorMsg").textContent = "";
-  document.getElementById("visitorPassword").focus();
-});
+if (document.getElementById("btnBackToPassword")) {
+  document.getElementById("btnBackToPassword").addEventListener("click", () => {
+    document.getElementById("visitorSecurityScreen").style.display = "none";
+    document.getElementById("visitorAnswer").value = "";
+    document.getElementById("visitorMsg").textContent = "";
+    document.getElementById("visitorPassword").focus();
+  });
+}
 sb.auth.onAuthStateChange((_event, session)=>{ if(session) showApp(session); else showAuth(); });
 sb.auth.getSession().then(({data})=>{ if(data.session) showApp(data.session); else showAuth(); });
 </script>
