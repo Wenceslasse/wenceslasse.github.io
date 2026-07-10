@@ -74,6 +74,7 @@
   .page.blank{background:transparent; border:1px dashed var(--border); cursor:default}
   .page.blank:hover{box-shadow:none}
   .page.dim{opacity:.35}
+  .page{user-select:none;}
   .page.selected{background:var(--hover); border-color:var(--accent); box-shadow:0 0 0 2px var(--accent)}
 
   .pill{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; max-width:100%}
@@ -362,6 +363,7 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   el.addEventListener("click", e=>{
     if(e.shiftKey){
       e.preventDefault();
+      e.stopPropagation();
       if(lastShiftClickPage===null){
         selectedPages.clear();
         selectedPages.add(p.n);
@@ -386,7 +388,7 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
       lastShiftClickPage=null;
       openPeek(p.n);
     }
-  });
+  }, true);
 
   const rt=rubTag(p.rubrique);
   const rub = `<div class="rubrow">${rt?pillHTML(p.rubrique,rt):""}</div>`;
