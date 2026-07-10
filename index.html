@@ -182,27 +182,23 @@
   .g2-scope button.on{background:#000; color:#fff}
 
   /* ---- Color customization panel ---- */
-  .colormgr{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
-  .colormgr.open{opacity:1; pointer-events:auto}
-  .colormgr-panel{
-    position:fixed; top:0; right:0; height:100%; width:min(520px,94vw); background:var(--canvas);
-    border-left:1px solid var(--border); transform:translateX(100%); transition:transform .2s ease;
-    z-index:50; display:flex; flex-direction:column; box-shadow:-8px 0 30px rgba(15,15,15,.08);
-  }
-  .colormgr-panel.open{transform:none}
-  .colormgr-head{display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border)}
-  .colormgr-head h3{margin:0; font-size:16px; font-weight:600}
-  .colormgr-head button{border:none; background:transparent; cursor:pointer; font-size:18px; color:var(--muted); padding:4px 6px}
-  .colormgr-head button:hover{color:var(--text)}
-  .colormgr-body{flex:1; overflow-y:auto; padding:14px}
-  .colormgr-section{margin-bottom:20px}
-  .colormgr-sectiontitle{font-size:12px; font-weight:600; text-transform:uppercase; color:var(--muted); margin-bottom:8px; letter-spacing:.05em}
-  .colortagitem{display:flex; align-items:center; gap:10px; padding:8px; border-radius:6px; background:var(--hover); margin-bottom:6px}
-  .colortag-name{flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .colortag-preview{display:flex; gap:4px; align-items:center}
-  .colorpicker-btn{width:32px; height:32px; border:1px solid var(--border); border-radius:5px; cursor:pointer; padding:0; background:white}
-  .colorpicker-btn:hover{border-color:var(--border-strong)}
-  .colorpicker-input{position:absolute; opacity:0; width:0; height:0}
+  /* ---- Recolor affordance on any tag pill ---- */
+  .pill-recolor{width:0; height:12px; opacity:0; overflow:hidden; border:none; background:rgba(0,0,0,.14); border-radius:50%; display:inline-grid; place-items:center; cursor:pointer; flex:none; transition:width .15s ease, opacity .15s ease; padding:0}
+  .pill-recolor svg{width:8px; height:8px}
+  .pill:hover .pill-recolor{width:12px; opacity:1; margin-left:1px}
+  .pill-recolor:hover{background:rgba(0,0,0,.28)}
+
+  /* ---- Tag color picker popover ---- */
+  .tagcolor-popover{position:fixed; z-index:200; background:var(--canvas); border:1px solid var(--border); border-radius:12px; box-shadow:0 14px 34px rgba(15,15,15,.16), 0 2px 8px rgba(15,15,15,.06); padding:12px; width:206px}
+  .tagcolor-popover-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+  .tagcolor-popover-head span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .tagcolor-popover-head button{border:none; background:transparent; cursor:pointer; color:var(--faint); font-size:14px; padding:2px 5px; border-radius:4px; line-height:1; flex:none}
+  .tagcolor-popover-head button:hover{background:var(--hover); color:var(--text)}
+  .tagcolor-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:6px}
+  .tagcolor-swatch{width:26px; height:26px; border-radius:7px; border:none; cursor:pointer; display:grid; place-items:center; transition:transform .1s ease}
+  .tagcolor-swatch:hover{transform:scale(1.12)}
+  .tagcolor-swatch.active{box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--text)}
+  .tagcolor-swatch svg{width:13px; height:13px}
 
   /* ---- Peek panel editor (Notion style) ---- */
   .scrim{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
@@ -291,11 +287,15 @@
     .prow{grid-template-columns:1fr}
   }
   /* ---- Visitor Auth : machine à écrire + saisie en continuation ---- */
+  #methodVisitor{
+    cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">%F0%9F%8E%A4</text></svg>') 4 30, auto;
+  }
   .p4-lead{color:var(--muted); font-size:13px; display:block; margin-bottom:14px}
   .p4-type-area{
     font-size:19px; line-height:1.7; color:var(--text); position:relative; min-height:2.2em;
     cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">%F0%9F%8E%A4</text></svg>') 4 30, text;
   }
+  .p4-type-area > div+div{margin-top:6px}
   .p4-userinput{color:var(--accent); font-weight:700}
   .p4-userinput.correct{color:#2C5E3E}
   .p4-cursor{display:inline-block; width:2px; height:1.05em; background:var(--text); vertical-align:text-bottom; margin-left:1px; animation:p4-blink 1s step-end infinite}
@@ -363,7 +363,9 @@
 
       <div id="methodVisitor">
         <span class="p4-lead">Melodrama — Theodora &amp; Disiz</span>
-        <div class="p4-type-area" id="p4-typearea">« <span id="p4-typed"></span><span class="p4-userinput" id="p4-userinput"></span><span class="p4-cursor" id="p4-cursor">|</span> »
+        <div class="p4-type-area" id="p4-typearea">
+          <div>« <span id="p4-typed-line1"></span></div>
+          <div><span id="p4-typed-line2"></span><span class="p4-userinput" id="p4-userinput"></span><span class="p4-cursor" id="p4-cursor">|</span> »</div>
           <input type="text" class="p4-hidden-input" id="p4-hidden-input" autocomplete="off" spellcheck="false" autocapitalize="off">
         </div>
         <div class="p4-hint" id="p4-hint">🎤 À vous de terminer la phrase…</div>
@@ -419,7 +421,6 @@
     <div class="props">
       <span class="prop-inline">Bouclage <input type="date" id="bouclage" aria-label="Date de bouclage"></span>
       <span class="prop-inline" id="pDefined"></span>
-      <span class="prop-inline" id="pCalib"></span>
       <span class="prop-inline" id="pBoucle"></span>
       <span class="prop-inline" id="pNext"></span>
       <span class="legend" id="legend"></span>
@@ -441,7 +442,6 @@
       <button class="tbtn" id="btnViewCalendar" title="Vue Calendrier">📅 Calendrier</button>
       <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
       <span class="spacer"></span>
-      <button class="tbtn" id="btnColorMgr" title="Personnaliser les couleurs">🎨 Couleurs</button>
       <button class="tbtn" id="btnCsv">Exporter CSV</button>
       <button class="tbtn" id="btnJson">Sauvegarde</button>
       <button class="tbtn" id="btnImport">Importer</button>
@@ -518,15 +518,6 @@
   </div>
 </aside>
 
-<div class="colormgr" id="colorMgrScrim"></div>
-<aside class="colormgr-panel" id="colorMgrPanel" aria-label="Personnaliser les couleurs">
-  <div class="colormgr-head">
-    <h3>Couleurs</h3>
-    <button id="closeColorMgr" title="Fermer">✕</button>
-  </div>
-  <div class="colormgr-body" id="colorMgrBody"></div>
-</aside>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
@@ -561,6 +552,16 @@ const PASTEL_PALETTE = [
   {bg:"#FFF0E5", fg:"#000000"}, {bg:"#FFE8D5", fg:"#000000"}, {bg:"#FFE0C5", fg:"#000000"}, {bg:"#FFD8B5", fg:"#000000"},
   {bg:"#F0E5FF", fg:"#000000"}, {bg:"#E8D5FF", fg:"#000000"}, {bg:"#E0C5FF", fg:"#000000"}, {bg:"#D8B5FF", fg:"#000000"},
   {bg:"#E5F0FF", fg:"#000000"}, {bg:"#D5E8FF", fg:"#000000"}, {bg:"#C5E0FF", fg:"#000000"}, {bg:"#B5D8FF", fg:"#000000"}
+];
+
+// Palette de 24 couleurs pastels proposées dans le sélecteur de couleur des tags
+const COLOR_PICKER_PALETTE = [
+  {bg:"#E9E9E7", fg:"#5B5B58"}, {bg:"#EEE0DA", fg:"#64473A"}, {bg:"#FADEC9", fg:"#8A4B00"}, {bg:"#FDECC8", fg:"#7C5E00"},
+  {bg:"#F5EBC7", fg:"#7A6414"}, {bg:"#E3EFC7", fg:"#4C6B1F"}, {bg:"#E5EAC9", fg:"#5C6B1F"}, {bg:"#DBEDDB", fg:"#2C5E3E"},
+  {bg:"#D6F0E0", fg:"#1F6B4A"}, {bg:"#D3EFE7", fg:"#1F6B57"}, {bg:"#D3E9EF", fg:"#1F5A6B"}, {bg:"#D6E8F5", fg:"#1F5A8C"},
+  {bg:"#D3E5EF", fg:"#24547A"}, {bg:"#DCDFF7", fg:"#35398C"}, {bg:"#E6DFF5", fg:"#4A3A8C"}, {bg:"#E8DEEE", fg:"#5B3E7A"},
+  {bg:"#EBD8F5", fg:"#6B2D8C"}, {bg:"#F5DCEF", fg:"#8C2D74"}, {bg:"#F5E0E9", fg:"#7A2E58"}, {bg:"#F0DDE6", fg:"#8C3A5E"},
+  {bg:"#FFE2DD", fg:"#9B2C1E"}, {bg:"#FADCDC", fg:"#A83232"}, {bg:"#FADFD3", fg:"#A8482E"}, {bg:"#FFEEDD", fg:"#A8601F"}
 ];
 
 function getTagColor(text, fieldType) {
@@ -643,6 +644,92 @@ async function saveColorCustomization(fieldType, tagName, bgColor, fgColor) {
   colorCustomizations[key] = { bg: bgColor, fg: fgColor };
 }
 
+/* ---- Sélecteur de couleur : cliquer sur n'importe quel tag (rubrique, thématique, statut, lot) ---- */
+let tagColorPopoverEl = null;
+let tagColorPopoverOutsideHandler = null;
+
+function closeTagColorPicker(){
+  if (tagColorPopoverEl) { tagColorPopoverEl.remove(); tagColorPopoverEl = null; }
+  if (tagColorPopoverOutsideHandler) { document.removeEventListener("mousedown", tagColorPopoverOutsideHandler, true); tagColorPopoverOutsideHandler = null; }
+}
+
+function openTagColorPicker(anchorEl, fieldType, tagName, labelText){
+  closeTagColorPicker();
+
+  const current = getTagColor(tagName, fieldType);
+  const pop = document.createElement("div");
+  pop.className = "tagcolor-popover";
+
+  const head = document.createElement("div");
+  head.className = "tagcolor-popover-head";
+  const label = document.createElement("span");
+  label.textContent = labelText || tagName;
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button"; closeBtn.textContent = "✕"; closeBtn.title = "Fermer";
+  closeBtn.addEventListener("click", closeTagColorPicker);
+  head.appendChild(label); head.appendChild(closeBtn);
+  pop.appendChild(head);
+
+  const grid = document.createElement("div");
+  grid.className = "tagcolor-grid";
+  for (const c of COLOR_PICKER_PALETTE) {
+    const sw = document.createElement("button");
+    sw.type = "button";
+    sw.className = "tagcolor-swatch" + (c.bg === current.bg ? " active" : "");
+    sw.style.background = c.bg;
+    sw.style.color = c.fg;
+    sw.title = c.bg;
+    sw.addEventListener("click", async () => {
+      await saveColorCustomization(fieldType, tagName, c.bg, c.fg);
+      closeTagColorPicker();
+      refreshAfterColorChange();
+    });
+    grid.appendChild(sw);
+  }
+  pop.appendChild(grid);
+
+  document.body.appendChild(pop);
+
+  // Positionnement : sous l'ancre, ajusté pour rester dans le viewport
+  const r = anchorEl.getBoundingClientRect();
+  const popRect = pop.getBoundingClientRect();
+  let top = r.bottom + 6;
+  let left = r.left;
+  if (left + popRect.width > window.innerWidth - 8) left = window.innerWidth - popRect.width - 8;
+  if (top + popRect.height > window.innerHeight - 8) top = r.top - popRect.height - 6;
+  pop.style.top = Math.max(8, top) + "px";
+  pop.style.left = Math.max(8, left) + "px";
+
+  tagColorPopoverEl = pop;
+  tagColorPopoverOutsideHandler = (e) => {
+    if (!pop.contains(e.target) && e.target !== anchorEl) closeTagColorPicker();
+  };
+  setTimeout(() => document.addEventListener("mousedown", tagColorPopoverOutsideHandler, true), 0);
+}
+
+function refreshAfterColorChange(){
+  render();
+  if (current) { renderChips(state.pages[current-1].statut); renderLotChips(state.pages[current-1].lot); }
+}
+
+// Délégation d'évènement (phase de capture) : les pills sont recréées à chaque
+// rendu, donc on écoute sur document ; la capture est nécessaire pour intercepter
+// le clic AVANT qu'il n'atteigne le gestionnaire de la carte/chip parente (qui
+// ouvrirait sinon la fiche ou changerait le statut/lot en même temps).
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".pill-recolor");
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const fieldType = btn.dataset.fieldType;
+  const tagName = btn.dataset.tagName;
+  const labelText = btn.closest(".pill")?.querySelector(".ptxt")?.textContent || tagName;
+  openTagColorPicker(btn, fieldType, tagName, labelText);
+}, true);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeTagColorPicker();
+});
+
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
 function rubTag(name){ if(!name) return null; return getTagColor(name); }
@@ -659,21 +746,33 @@ function matches(p){
 }
 
 const rail=document.getElementById("rail");
-function pillHTML(text, tag){ return `<span class="pill" style="background:${tag.bg};color:${tag.fg}"><span class="ptxt">${esc(text)}</span></span>`; }
+function pillHTML(text, tag, fieldType, tagName){
+  const recolor = fieldType && tagName
+    ? `<button type="button" class="pill-recolor" data-field-type="${esc(fieldType)}" data-tag-name="${esc(tagName)}" title="Changer la couleur" aria-label="Changer la couleur"></button>`
+    : "";
+  return `<span class="pill" style="background:${tag.bg};color:${tag.fg}"><span class="ptxt">${esc(text)}</span>${recolor}</span>`;
+}
 
 function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' | 'blank'
   if(!p){ const b=document.createElement("div"); b.className="page blank "+role; return b; }
-  const el=document.createElement("button"); el.type="button";
+  const el=document.createElement("div");
   let cls="page";
   if(role==="left") cls+=" left"; else if(role==="right") cls+=" right";
   else if(role==="solo-p1") cls+=" solo p1"; else if(role==="solo-p56") cls+=" solo p56";
   el.className=cls + (matches(p)?"":" dim");
   if(selectedPages.has(p.n)) el.classList.add("selected");
+  el.setAttribute("role","button");
+  el.tabIndex=0;
   el.setAttribute("aria-label",`Page ${p.n}${p.sujet?" — "+p.sujet:""}`);
   el.setAttribute("data-page-n", p.n);
 
   el.style.userSelect="none";
   el.draggable=true;
+
+  el.addEventListener("keydown", e=>{
+    if(e.target!==el) return;
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); el.click(); }
+  });
 
   el.addEventListener("dragstart", e=>{
     if(selectedPages.has(p.n)) draggedPages=Array.from(selectedPages).sort((a,b)=>a-b);
@@ -739,7 +838,7 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   }, true);
 
   const rt=getTagColor(p.rubrique, "rubrique");
-  const rub = `<div class="rubrow">${p.rubrique?pillHTML(p.rubrique,rt):""}</div>`;
+  const rub = `<div class="rubrow">${p.rubrique?pillHTML(p.rubrique,rt,"rubrique",p.rubrique):""}</div>`;
   const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
 
   const bits=[];
@@ -750,13 +849,13 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   if(p.rendu) bits.push(`<span class="due${isLate(p)?" late":""}">◷ ${frDate(p.rendu)}</span>`);
   const st=getTagColor(p.statut, "statut");
   const statLabel=STATUTS[p.statut]?STATUTS[p.statut].label:p.statut;
-  const status=`<span class="statuswrap">${pillHTML(statLabel,st)}</span>`;
+  const status=`<span class="statuswrap">${pillHTML(statLabel,st,"statut",p.statut)}</span>`;
   const meta=`<div class="cardmeta">${bits.join('<span class="sep">·</span>')}${status}</div>`;
 
   const separator = `<div style="border-top:1px solid var(--border);margin:8px 0;"></div>`;
   const notes = p.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4;">${esc(p.notes)}</div>`:"";
   const themaTag = p.thematique?getTagColor(p.thematique, "thematique"):null;
-  const thema = p.thematique?pillHTML(p.thematique,themaTag):"";
+  const thema = p.thematique?pillHTML(p.thematique,themaTag,"thematique",p.thematique):"";
 
   const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
   el.innerHTML = rub + suj + separator + notes + thema + meta + folio;
@@ -1272,11 +1371,10 @@ function row(label,a,b){
 }
 
 function renderStats(){
-  let totalSig=0, counts={a_caler:0,en_cours:0,relu:0,boucle:0}, defined=0, next=null;
-  for(const p of state.pages){ totalSig+=toSignes(p); counts[p.statut]++; if(p.sujet) defined++;
+  let counts={a_caler:0,en_cours:0,relu:0,boucle:0}, defined=0, next=null;
+  for(const p of state.pages){ counts[p.statut]++; if(p.sujet) defined++;
     if(p.rendu&&p.statut!=="boucle"){ if(!next||p.rendu<next) next=p.rendu; } }
   document.getElementById("pDefined").innerHTML = `Pages calées <b>${defined}/${TOTAL}</b>`;
-  document.getElementById("pCalib").innerHTML = `Calibrage <b>${fmt(totalSig)} sg</b>`;
   document.getElementById("pBoucle").innerHTML = `Bouclé <b>${Math.round(counts.boucle/TOTAL*100)}%</b>`;
   document.getElementById("pNext").innerHTML = `Prochain rendu <b>${next?frDate(next):"—"}</b>`;
   const lg=document.getElementById("legend"); lg.innerHTML="";
@@ -1289,79 +1387,6 @@ function renderDatalist(){
   const setJ=[...new Set(state.pages.map(p=>p.journaliste).filter(Boolean))].sort();
   document.getElementById("journalistes").innerHTML=setJ.map(r=>`<option value="${esc(r)}">`).join("");
 }
-
-const colorMgrScrim=document.getElementById("colorMgrScrim"), colorMgrPanel=document.getElementById("colorMgrPanel");
-function openColorMgr(){
-  renderColorMgr();
-  colorMgrPanel.classList.add("open");
-  colorMgrScrim.classList.add("open");
-}
-function closeColorMgr(){
-  colorMgrPanel.classList.remove("open");
-  colorMgrScrim.classList.remove("open");
-}
-function renderColorMgr(){
-  const body=document.getElementById("colorMgrBody"); body.innerHTML="";
-
-  // Rubrique section
-  const rubSection=document.createElement("div"); rubSection.className="colormgr-section";
-  const rubTitle=document.createElement("div"); rubTitle.className="colormgr-sectiontitle"; rubTitle.textContent="Rubriques"; rubSection.appendChild(rubTitle);
-  const rubiques=new Set(state.pages.map(p=>p.rubrique).filter(Boolean));
-  for(const r of [...rubiques].sort()){
-    const item=document.createElement("div"); item.className="colortagitem";
-    const name=document.createElement("div"); name.className="colortag-name"; name.textContent=r;
-    const color=getTagColor(r, "rubrique");
-    const preview=document.createElement("div"); preview.className="colortag-preview";
-    const bg=document.createElement("button"); bg.className="colorpicker-btn"; bg.style.background=color.bg; bg.style.borderColor=color.fg; bg.title="Couleur de fond";
-    bg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.bg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("rubrique", r, c, color.fg); renderColorMgr(); }); input.click(); });
-    const fg=document.createElement("button"); fg.className="colorpicker-btn"; fg.style.background=color.fg; fg.title="Couleur du texte";
-    fg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.fg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("rubrique", r, color.bg, c); renderColorMgr(); }); input.click(); });
-    preview.appendChild(bg); preview.appendChild(fg);
-    item.appendChild(name); item.appendChild(preview);
-    rubSection.appendChild(item);
-  }
-  body.appendChild(rubSection);
-
-  // Statut section
-  const statSection=document.createElement("div"); statSection.className="colormgr-section";
-  const statTitle=document.createElement("div"); statTitle.className="colormgr-sectiontitle"; statTitle.textContent="Statuts"; statSection.appendChild(statTitle);
-  for(const [k,s] of Object.entries(STATUTS)){
-    const item=document.createElement("div"); item.className="colortagitem";
-    const name=document.createElement("div"); name.className="colortag-name"; name.textContent=s.label;
-    const color=getTagColor(k, "statut");
-    const preview=document.createElement("div"); preview.className="colortag-preview";
-    const bg=document.createElement("button"); bg.className="colorpicker-btn"; bg.style.background=color.bg; bg.style.borderColor=color.fg; bg.title="Couleur de fond";
-    bg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.bg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("statut", k, c, color.fg); renderColorMgr(); }); input.click(); });
-    const fg=document.createElement("button"); fg.className="colorpicker-btn"; fg.style.background=color.fg; fg.title="Couleur du texte";
-    fg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.fg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("statut", k, color.bg, c); renderColorMgr(); }); input.click(); });
-    preview.appendChild(bg); preview.appendChild(fg);
-    item.appendChild(name); item.appendChild(preview);
-    statSection.appendChild(item);
-  }
-  body.appendChild(statSection);
-
-  // Lot section
-  const lotSection=document.createElement("div"); lotSection.className="colormgr-section";
-  const lotTitle=document.createElement("div"); lotTitle.className="colormgr-sectiontitle"; lotTitle.textContent="Lots"; lotSection.appendChild(lotTitle);
-  for(const [k,s] of Object.entries(LOTS)){
-    const item=document.createElement("div"); item.className="colortagitem";
-    const name=document.createElement("div"); name.className="colortag-name"; name.textContent=s.label;
-    const color=getTagColor(k, "lot");
-    const preview=document.createElement("div"); preview.className="colortag-preview";
-    const bg=document.createElement("button"); bg.className="colorpicker-btn"; bg.style.background=color.bg; bg.style.borderColor=color.fg; bg.title="Couleur de fond";
-    bg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.bg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("lot", k, c, color.fg); renderColorMgr(); }); input.click(); });
-    const fg=document.createElement("button"); fg.className="colorpicker-btn"; fg.style.background=color.fg; fg.title="Couleur du texte";
-    fg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.fg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("lot", k, color.bg, c); renderColorMgr(); }); input.click(); });
-    preview.appendChild(bg); preview.appendChild(fg);
-    item.appendChild(name); item.appendChild(preview);
-    lotSection.appendChild(item);
-  }
-  body.appendChild(lotSection);
-}
-
-document.getElementById("closeColorMgr").addEventListener("click", closeColorMgr);
-colorMgrScrim.addEventListener("click", closeColorMgr);
-document.getElementById("btnColorMgr").addEventListener("click", openColorMgr);
 
 function updateSelection(){
   const scrollY = window.scrollY;
@@ -1430,19 +1455,21 @@ function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("ope
 function renderChips(active){
   const c=document.getElementById("chips"); c.innerHTML="";
   for(const k in STATUTS){ const defaultS=STATUTS[k]; const s=getTagColor(k, "statut");
-    const b=document.createElement("button"); b.type="button"; b.className="opt"+(k===active?" active":"");
-    b.innerHTML=pillHTML(defaultS.label,s);
+    const b=document.createElement("div"); b.setAttribute("role","button"); b.tabIndex=0; b.className="opt"+(k===active?" active":"");
+    b.innerHTML=pillHTML(defaultS.label,s,"statut",k);
     b.addEventListener("click",()=>{ commit("statut",k); renderChips(k); });
+    b.addEventListener("keydown", e=>{ if(e.target!==b) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } });
     c.appendChild(b);
   }
 }
 function renderLotChips(active){
   const c=document.getElementById("lotChips"); c.innerHTML="";
   for(const k in LOTS){ const defaultS=LOTS[k]; const s=getTagColor(k, "lot");
-    const b=document.createElement("button"); b.type="button"; b.className="opt"+(k===active?" active":"");
+    const b=document.createElement("div"); b.setAttribute("role","button"); b.tabIndex=0; b.className="opt"+(k===active?" active":"");
     b.title=k===active?"Cliquer pour retirer du lot":"Affecter au "+defaultS.label;
-    b.innerHTML=pillHTML(defaultS.label,s);
+    b.innerHTML=pillHTML(defaultS.label,s,"lot",k);
     b.addEventListener("click",()=>{ const nv=(active===k)?"":k; commit("lot",nv); renderLotChips(nv); });
+    b.addEventListener("keydown", e=>{ if(e.target!==b) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } });
     c.appendChild(b);
   }
 }
@@ -1882,7 +1909,9 @@ window.addEventListener("popstate", ()=>{
 /* ---- VISITOR (ÉQUIPE) MODE : machine à écrire + saisie en continuation ---- */
 let isVisitorMode = false;
 
-const P4_LYRICS = "Je suis comme un son que t'aurais pas...";
+const P4_LYRICS_LINE1 = "Je suis comme un son que t'aurais ";
+const P4_LYRICS_LINE2 = "pas...";
+const P4_LYRICS = P4_LYRICS_LINE1 + P4_LYRICS_LINE2;
 let p4Started = false;
 let p4Timer = null;
 let p4Unlocked = false;
@@ -1890,13 +1919,16 @@ let p4Unlocked = false;
 function startP4Typewriter() {
   if (p4Started) return;
   p4Started = true;
-  const typed = document.getElementById("p4-typed");
+  const typed1 = document.getElementById("p4-typed-line1");
+  const typed2 = document.getElementById("p4-typed-line2");
   const hint = document.getElementById("p4-hint");
   const hiddenInput = document.getElementById("p4-hidden-input");
-  typed.textContent = "";
+  typed1.textContent = "";
+  typed2.textContent = "";
   let i = 0;
   p4Timer = setInterval(() => {
-    typed.textContent += P4_LYRICS[i];
+    if (i < P4_LYRICS_LINE1.length) typed1.textContent += P4_LYRICS[i];
+    else typed2.textContent += P4_LYRICS[i];
     i++;
     if (i >= P4_LYRICS.length) {
       clearInterval(p4Timer);
@@ -1910,7 +1942,8 @@ function resetP4Typewriter() {
   clearInterval(p4Timer);
   p4Started = false;
   p4Unlocked = false;
-  document.getElementById("p4-typed").textContent = "";
+  document.getElementById("p4-typed-line1").textContent = "";
+  document.getElementById("p4-typed-line2").textContent = "";
   document.getElementById("p4-userinput").textContent = "";
   document.getElementById("p4-userinput").classList.remove("correct");
   document.getElementById("p4-cursor").classList.remove("correct");
@@ -1981,7 +2014,7 @@ function playVisitorTransition() {
     el.style.display = "none";
     el.classList.remove("playing");
     enterVisitorMode();
-  }, 1300);
+  }, 1400 + 1000); // laisser l'animation (1.4s) se terminer, puis patienter 1s avant la page suivante
 }
 
 async function enterVisitorMode() {
@@ -2013,7 +2046,7 @@ function exitVisitorMode() {
 }
 
 const VISITOR_LOCKED_SELECTORS = [
-  "#btnNewIssue", "#btnClearSelection", "#btnColorMgr", "#btnCsv", "#btnJson",
+  "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
   "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#dtitle", "#numero",
   "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fRendu", "#fJournaliste", "#fNotes"
 ];
