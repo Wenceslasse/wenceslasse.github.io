@@ -94,9 +94,38 @@
   .page.right .cvr, .page.solo .cvr{left:15px}
   .page.solo.p56 .cvr{right:15px; left:auto}
 
-  /* ---- Calendar and Gantt views ---- */
-  #viewCalendar, #viewGantt{width:100%;max-width:1080px;}
-  #viewGantt>div{height:calc(100vh - 280px);overflow:auto;}
+  /* ---- Calendar & Gantt views ---- */
+  #viewCalendar, #viewGantt{width:100%}
+  .g2{background:var(--canvas); border:1px solid var(--border); border-radius:10px; overflow:hidden}
+  .g2-head{display:flex; border-bottom:1px solid var(--border)}
+  .g2-corner{width:186px; flex:none; border-right:1px solid var(--border); padding:8px 12px; font-size:11px; font-weight:600; color:var(--muted); display:flex; align-items:flex-end}
+  .g2-axis{flex:1; min-width:0}
+  .g2-months{display:flex; font-size:11px; font-weight:700; color:var(--text); border-bottom:1px solid var(--border)}
+  .g2-months>div{padding:6px 8px; border-right:1px solid var(--border); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .g2-months>div:last-child{border-right:none}
+  .g2-weeks{display:flex; font-size:10px; color:var(--faint)}
+  .g2-weeks>div{text-align:center; padding:4px 0; border-right:1px solid var(--border); overflow:hidden; white-space:nowrap}
+  .g2-weeks>div:last-child{border-right:none}
+  .g2-body{position:relative}
+  .g2-gridlayer{position:absolute; top:0; bottom:0; left:186px; right:0; display:flex; z-index:0; pointer-events:none}
+  .g2-gridlayer>div{flex:1; border-right:1px solid var(--border)}
+  .g2-gridlayer>div.we{background:rgba(0,0,0,.028)}
+  .g2-gridlayer>div:last-child{border-right:none}
+  .g2-rows{position:relative; z-index:1}
+  .g2-row{display:flex; align-items:center; border-bottom:1px solid var(--border); height:38px}
+  .g2-row:last-child{border-bottom:none}
+  .g2-row:hover .g2-label{background:var(--hover)}
+  .g2-label{width:186px; flex:none; border-right:1px solid var(--border); padding:0 12px; height:100%; display:flex; align-items:center; gap:8px; font-size:13px; overflow:hidden; cursor:pointer; background:var(--canvas)}
+  .g2-label .lp{color:var(--faint); font-size:11px; font-variant-numeric:tabular-nums; flex:none}
+  .g2-label .ls{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .g2-track{flex:1; position:relative; height:100%; min-width:0}
+  .g2-bar{position:absolute; top:50%; transform:translateY(-50%); height:22px; min-width:24px; border-radius:5px; display:flex; align-items:center; padding:0 7px; gap:6px; font-size:11px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.12); overflow:hidden; cursor:pointer}
+  .g2-bar.late{outline:2px solid var(--danger); outline-offset:-2px}
+  .g2-bar .cap{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .g2-bar .endpt{width:9px; height:9px; border-radius:50%; border:2px solid #fff; flex:none; margin-left:auto; box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+  .g2-today{position:absolute; top:0; bottom:0; width:2px; background:var(--danger); z-index:4; pointer-events:none}
+  .g2-today::before{content:"Auj."; position:absolute; top:2px; left:3px; font-size:9px; color:var(--danger); font-weight:700; background:var(--canvas); padding:0 2px; border-radius:3px}
+  .g2-empty{padding:24px; color:var(--muted); font-size:14px}
 
   /* ---- Peek panel editor (Notion style) ---- */
   .scrim{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
@@ -691,81 +720,111 @@ function renderCalendarView(){
   cal.appendChild(container);
 }
 
+const GANTT_MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+function gParse(iso){ const [y,m,d]=iso.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); }
+function gAdd(d,n){ const x=new Date(d); x.setUTCDate(x.getUTCDate()+n); return x; }
+function gDiff(a,b){ return Math.round((b-a)/86400000); }
+function gMonday(d){ const x=new Date(d); x.setUTCDate(x.getUTCDate()-((x.getUTCDay()+6)%7)); return x; }
+function gSunday(d){ const x=new Date(d); x.setUTCDate(x.getUTCDate()+(6-((x.getUTCDay()+6)%7))); return x; }
+function gWeekend(d){ const w=d.getUTCDay(); return w===0||w===6; }
+function gIsoWeek(d){
+  const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+  t.setUTCDate(t.getUTCDate()-((t.getUTCDay()+6)%7)+3);
+  const firstThu=new Date(Date.UTC(t.getUTCFullYear(),0,4));
+  firstThu.setUTCDate(firstThu.getUTCDate()-((firstThu.getUTCDay()+6)%7)+3);
+  return 1+Math.round((t-firstThu)/(7*86400000));
+}
+function gLead(p){ // fenêtre de préparation (jours) avant le rendu, selon le calibrage
+  const sig=toSignes(p);
+  if(!sig) return 7;
+  return Math.max(3,Math.min(28,Math.round(sig/1500*2)));
+}
+
 function renderGanttView(){
   const gantt=document.getElementById("viewGantt");
   gantt.innerHTML="";
-  const withDate=state.pages.filter(p=>matches(p)&&p.rendu);
-  if(withDate.length===0){ gantt.innerHTML="<div style='padding:20px;color:var(--muted);'>Aucun article avec date de rendu</div>"; return; }
+  const withDate=state.pages.filter(p=>matches(p)&&p.rendu).sort((a,b)=>a.rendu<b.rendu?-1:a.rendu>b.rendu?1:a.n-b.n);
+  if(withDate.length===0){ gantt.innerHTML="<div class='g2-empty'>Aucun article avec date de rendu.</div>"; return; }
 
-  const minDate=new Date(Math.min(...withDate.map(p=>new Date(p.rendu))));
-  const maxDate=new Date(Math.max(...withDate.map(p=>new Date(p.rendu))));
-  const span=Math.max(14,(maxDate-minDate)/(1000*60*60*24)+1);
+  // Fenêtre [start, rendu] de chaque article
+  const items=withDate.map(p=>{ const end=gParse(p.rendu); return {p, end, start:gAdd(end,-gLead(p))}; });
+  let rangeStart=items[0].start, rangeEnd=items[0].end;
+  for(const it of items){ if(it.start<rangeStart) rangeStart=it.start; if(it.end>rangeEnd) rangeEnd=it.end; }
+  // Aligner sur des semaines pleines (lundi → dimanche) pour un bandeau propre
+  rangeStart=gMonday(rangeStart); rangeEnd=gSunday(rangeEnd);
+  let totalDays=gDiff(rangeStart,rangeEnd)+1;
+  while(totalDays<14){ rangeEnd=gAdd(rangeEnd,7); totalDays+=7; }
+  const pct=d=>gDiff(rangeStart,d)/totalDays*100;
 
-  const wrapper=document.createElement("div");
-  wrapper.style.cssText="background:var(--canvas);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;";
+  const g2=document.createElement("div"); g2.className="g2";
 
-  const header=document.createElement("div");
-  header.style.cssText="display:flex;border-bottom:1px solid var(--border);background:var(--body);";
-  const labelCol=document.createElement("div");
-  labelCol.style.cssText="width:200px;flex-shrink:0;padding:12px;border-right:1px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);";
-  labelCol.textContent="Article";
-  header.appendChild(labelCol);
+  // ---- En-tête : mois + semaines ----
+  const head=document.createElement("div"); head.className="g2-head";
+  head.innerHTML=`<div class="g2-corner">Article</div>`;
+  const axis=document.createElement("div"); axis.className="g2-axis";
+  const multiYear=rangeStart.getUTCFullYear()!==rangeEnd.getUTCFullYear();
 
-  const timeline=document.createElement("div");
-  timeline.style.cssText="flex:1;display:flex;border-right:1px solid var(--border);background:linear-gradient(90deg, transparent 39px, var(--border) 39px, var(--border) 40px, transparent 40px);background-size:40px 100%;";
-  for(let i=0;i<span;i++){
-    const d=new Date(minDate);
-    d.setDate(d.getDate()+i);
-    const cell=document.createElement("div");
-    cell.style.cssText="width:40px;flex-shrink:0;padding:8px 2px;text-align:center;font-size:10px;color:var(--muted);border-right:1px solid var(--border);";
-    cell.textContent=d.toLocaleDateString("fr",{day:"numeric"});
-    cell.title=d.toLocaleDateString("fr",{weekday:"short",month:"short",day:"numeric"});
-    timeline.appendChild(cell);
-  }
-  header.appendChild(timeline);
+  const monthsRow=document.createElement("div"); monthsRow.className="g2-months";
+  const months=[]; let cur=null;
+  for(let i=0;i<totalDays;i++){ const d=gAdd(rangeStart,i); const key=d.getUTCFullYear()+"-"+d.getUTCMonth();
+    if(!cur||cur.key!==key){ cur={key,y:d.getUTCFullYear(),m:d.getUTCMonth(),days:0}; months.push(cur); } cur.days++; }
+  for(const mo of months){ const el=document.createElement("div");
+    el.style.width=(mo.days/totalDays*100)+"%";
+    el.textContent=GANTT_MOIS[mo.m].replace(/^./,c=>c.toUpperCase())+(multiYear?" "+mo.y:"");
+    monthsRow.appendChild(el); }
+  axis.appendChild(monthsRow);
 
-  wrapper.appendChild(header);
+  const weeksRow=document.createElement("div"); weeksRow.className="g2-weeks";
+  for(let w=0;w<totalDays/7;w++){ const d=gAdd(rangeStart,w*7); const el=document.createElement("div");
+    el.style.width=(7/totalDays*100)+"%"; el.textContent="S"+gIsoWeek(d);
+    el.title="Semaine du "+d.getUTCDate()+" "+GANTT_MOIS[d.getUTCMonth()]; weeksRow.appendChild(el); }
+  axis.appendChild(weeksRow);
+  head.appendChild(axis);
+  g2.appendChild(head);
 
-  const content=document.createElement("div");
-  content.style.cssText="flex:1;overflow-y:auto;";
+  // ---- Corps ----
+  const body=document.createElement("div"); body.className="g2-body";
 
-  for(const p of withDate){
-    const row=document.createElement("div");
-    row.style.cssText="display:flex;border-bottom:1px solid var(--border);";
+  const grid=document.createElement("div"); grid.className="g2-gridlayer";
+  for(let i=0;i<totalDays;i++){ const d=gAdd(rangeStart,i); const c=document.createElement("div"); if(gWeekend(d)) c.className="we"; grid.appendChild(c); }
+  body.appendChild(grid);
 
-    const label=document.createElement("div");
-    label.style.cssText="width:200px;flex-shrink:0;padding:10px 12px;border-right:1px solid var(--border);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;background:var(--body);";
-    label.textContent=`${p.sujet||"[Sujet]"} (p${p.n})`;
+  const rows=document.createElement("div"); rows.className="g2-rows";
+  for(const {p,start,end} of items){
+    const row=document.createElement("div"); row.className="g2-row";
+
+    const label=document.createElement("div"); label.className="g2-label";
+    label.innerHTML=`<span class="lp">p${p.n}</span><span class="ls">${esc(p.sujet||"[Sujet]")}</span>`;
     label.addEventListener("click",()=>openPeek(p.n));
     row.appendChild(label);
 
-    const barContainer=document.createElement("div");
-    barContainer.style.cssText="flex:1;position:relative;height:40px;display:flex;align-items:center;padding:0 8px;background:linear-gradient(90deg, transparent 39px, var(--border) 39px, var(--border) 40px, transparent 40px);background-size:40px 100%;";
-
-    const pDate=new Date(p.rendu);
-    const dayOffset=(pDate-minDate)/(1000*60*60*24);
-    const barStart=Math.max(0,dayOffset);
-    const barColor=getTagColor(p.rubrique||p.thematique||"");
-
-    const bar=document.createElement("div");
-    bar.style.cssText=`position:absolute;left:${barStart*40+16}px;height:28px;background:${barColor.bg};border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 8px;font-size:11px;font-weight:600;color:${barColor.fg};box-shadow:0 1px 3px rgba(0,0,0,0.1);`;
-    bar.textContent=`${p.sujet.substring(0,12)}${p.sujet.length>12?"...":""}`;
-    bar.title=`${p.sujet} - Rendu: ${p.rendu}`;
-    bar.addEventListener("click",()=>openPeek(p.n));
-
-    const statusBadge=document.createElement("div");
+    const track=document.createElement("div"); track.className="g2-track";
+    const col=getTagColor(p.rubrique||p.thematique||"");
     const s=STATUTS[p.statut]||{label:"?",dot:"#ccc"};
-    statusBadge.style.cssText=`position:absolute;right:8px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:${s.dot};border:2px solid white;box-shadow:0 0 0 2px ${s.dot};`;
-    statusBadge.title=s.label;
-    bar.appendChild(statusBadge);
+    const left=pct(start), width=Math.max(gDiff(start,end)+1,1)/totalDays*100;
+    const bar=document.createElement("div");
+    bar.className="g2-bar"+(isLate(p)?" late":"");
+    bar.style.cssText=`left:${left}%;width:${width}%;background:${col.bg};color:${col.fg}`;
+    bar.innerHTML=`<span class="cap">${esc(p.sujet||p.rubrique||"—")}</span><span class="endpt" style="background:${s.dot}"></span>`;
+    bar.title=`${p.sujet||"[Sujet]"} · ${p.rubrique||"sans rubrique"} · rendu ${frDate(p.rendu)} · ${s.label}`;
+    bar.addEventListener("click",()=>openPeek(p.n));
+    track.appendChild(bar);
+    row.appendChild(track);
+    rows.appendChild(row);
+  }
+  body.appendChild(rows);
 
-    barContainer.appendChild(bar);
-    row.appendChild(barContainer);
-    content.appendChild(row);
+  // ---- Ligne « aujourd'hui » ----
+  const today=gParse(todayISO());
+  if(today>=rangeStart && today<=rangeEnd){
+    const frac=(gDiff(rangeStart,today)+0.5)/totalDays;
+    const line=document.createElement("div"); line.className="g2-today";
+    line.style.left=`calc(186px + (100% - 186px) * ${frac})`;
+    body.appendChild(line);
   }
 
-  wrapper.appendChild(content);
-  gantt.appendChild(wrapper);
+  g2.appendChild(body);
+  gantt.appendChild(g2);
 }
 
 function render(){
