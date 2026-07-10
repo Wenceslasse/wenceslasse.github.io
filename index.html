@@ -53,6 +53,17 @@
   .tbtn:hover{background:var(--hover); color:var(--text)}
   .tsel{border:none; background:transparent; padding:5px 6px; border-radius:5px; color:var(--muted); cursor:pointer}
   .tsel:hover{background:var(--hover)}
+  /* Sélecteur de numéro : apparence de bouton noir */
+  #issueSelect{
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    background-color:#000; color:#fff; font-weight:600; font-size:13.5px;
+    border:none; border-radius:7px; padding:7px 32px 7px 13px; cursor:pointer; line-height:1.3;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 11px center;
+  }
+  #issueSelect:hover{background-color:#2b2b2b}
+  #issueSelect:focus{outline:none; box-shadow:0 0 0 3px rgba(0,0,0,.2)}
+  #issueSelect option{background:#1a1a1a; color:#fff; font-weight:500}
   .spacer{flex:1}
 
   /* ---- Rail ---- */
@@ -125,7 +136,17 @@
   .g2-bar .endpt{width:9px; height:9px; border-radius:50%; border:2px solid #fff; flex:none; margin-left:auto; box-shadow:0 0 0 1px rgba(0,0,0,.12)}
   .g2-today{position:absolute; top:0; bottom:0; width:2px; background:var(--danger); z-index:4; pointer-events:none}
   .g2-today::before{content:"Auj."; position:absolute; top:2px; left:3px; font-size:9px; color:var(--danger); font-weight:700; background:var(--canvas); padding:0 2px; border-radius:3px}
-  .g2-empty{padding:24px; color:var(--muted); font-size:14px}
+  .g2-empty{padding:40px 24px; color:var(--faint); font-size:14px; text-align:center}
+  .g2-ctl{display:flex; align-items:center; gap:8px; margin-bottom:14px}
+  .g2-nav{border:1px solid var(--border); background:var(--canvas); border-radius:6px; width:30px; height:30px; cursor:pointer; color:var(--text); display:grid; place-items:center; font-size:14px}
+  .g2-nav:hover{background:var(--hover)}
+  .g2-period{font-size:15px; font-weight:600; min-width:200px}
+  .g2-today-btn{border:1px solid var(--border); background:var(--canvas); border-radius:6px; padding:0 12px; height:30px; cursor:pointer; color:var(--muted); font-size:13px}
+  .g2-today-btn:hover{background:var(--hover); color:var(--text)}
+  .g2-scope{margin-left:auto; display:inline-flex; border:1px solid var(--border); border-radius:7px; overflow:hidden}
+  .g2-scope button{border:none; background:var(--canvas); padding:0 14px; height:30px; cursor:pointer; color:var(--muted); font-size:13px; font-weight:500}
+  .g2-scope button:hover{background:var(--hover)}
+  .g2-scope button.on{background:#000; color:#fff}
 
   /* ---- Peek panel editor (Notion style) ---- */
   .scrim{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
@@ -401,6 +422,8 @@ let draggedPages = null;
 let dropTarget = null;
 let currentView = "grid"; // grid, calendar, gantt
 let currentCalendarMonth = new Date();
+let ganttScope = "month"; // month | week
+let ganttAnchor = new Date();
 
 async function reorderPages(draggedPageNums, targetPageNum){
   const pages=[...state.pages];
@@ -740,45 +763,83 @@ function gLead(p){ // fenêtre de préparation (jours) avant le rendu, selon le 
   return Math.max(3,Math.min(28,Math.round(sig/1500*2)));
 }
 
+const GANTT_MOIS_ABBR=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const GANTT_JOURS=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+
 function renderGanttView(){
   const gantt=document.getElementById("viewGantt");
   gantt.innerHTML="";
-  const withDate=state.pages.filter(p=>matches(p)&&p.rendu).sort((a,b)=>a.rendu<b.rendu?-1:a.rendu>b.rendu?1:a.n-b.n);
-  if(withDate.length===0){ gantt.innerHTML="<div class='g2-empty'>Aucun article avec date de rendu.</div>"; return; }
 
-  // Fenêtre [start, rendu] de chaque article
-  const items=withDate.map(p=>{ const end=gParse(p.rendu); return {p, end, start:gAdd(end,-gLead(p))}; });
-  let rangeStart=items[0].start, rangeEnd=items[0].end;
-  for(const it of items){ if(it.start<rangeStart) rangeStart=it.start; if(it.end>rangeEnd) rangeEnd=it.end; }
-  // Aligner sur des semaines pleines (lundi → dimanche) pour un bandeau propre
-  rangeStart=gMonday(rangeStart); rangeEnd=gSunday(rangeEnd);
-  let totalDays=gDiff(rangeStart,rangeEnd)+1;
-  while(totalDays<14){ rangeEnd=gAdd(rangeEnd,7); totalDays+=7; }
+  // ---- Période affichée selon la portée (mois / semaine) ----
+  const a=new Date(Date.UTC(ganttAnchor.getFullYear(),ganttAnchor.getMonth(),ganttAnchor.getDate()));
+  let rangeStart, rangeEnd, periodMain, periodSub;
+  if(ganttScope==="week"){
+    rangeStart=gMonday(a); rangeEnd=gSunday(a);
+    periodMain="Semaine "+gIsoWeek(rangeStart);
+    periodSub=rangeStart.getUTCDate()+"–"+rangeEnd.getUTCDate()+" "+GANTT_MOIS_ABBR[rangeEnd.getUTCMonth()]+" "+rangeEnd.getUTCFullYear();
+  } else {
+    const mStart=new Date(Date.UTC(a.getUTCFullYear(),a.getUTCMonth(),1));
+    const mEnd=new Date(Date.UTC(a.getUTCFullYear(),a.getUTCMonth()+1,0));
+    rangeStart=gMonday(mStart); rangeEnd=gSunday(mEnd);
+    periodMain=GANTT_MOIS[a.getUTCMonth()].replace(/^./,c=>c.toUpperCase())+" "+a.getUTCFullYear();
+    periodSub="";
+  }
+  const totalDays=gDiff(rangeStart,rangeEnd)+1;
   const pct=d=>gDiff(rangeStart,d)/totalDays*100;
+
+  // ---- Barre de contrôle (navigation + portée) ----
+  const ctl=document.createElement("div"); ctl.className="g2-ctl";
+  const prev=document.createElement("button"); prev.className="g2-nav"; prev.textContent="◀"; prev.title="Précédent";
+  const next=document.createElement("button"); next.className="g2-nav"; next.textContent="▶"; next.title="Suivant";
+  prev.addEventListener("click",()=>{ if(ganttScope==="week") ganttAnchor.setDate(ganttAnchor.getDate()-7); else ganttAnchor.setMonth(ganttAnchor.getMonth()-1); renderGanttView(); });
+  next.addEventListener("click",()=>{ if(ganttScope==="week") ganttAnchor.setDate(ganttAnchor.getDate()+7); else ganttAnchor.setMonth(ganttAnchor.getMonth()+1); renderGanttView(); });
+  const period=document.createElement("div"); period.className="g2-period";
+  period.innerHTML=esc(periodMain)+(periodSub?` <span style="color:var(--faint);font-weight:400;font-size:13px">· ${esc(periodSub)}</span>`:"");
+  const todayBtn=document.createElement("button"); todayBtn.className="g2-today-btn"; todayBtn.textContent="Aujourd'hui";
+  todayBtn.addEventListener("click",()=>{ ganttAnchor=new Date(); renderGanttView(); });
+  const scope=document.createElement("div"); scope.className="g2-scope";
+  const bMonth=document.createElement("button"); bMonth.textContent="Mois"; if(ganttScope==="month") bMonth.className="on";
+  const bWeek=document.createElement("button"); bWeek.textContent="Semaine"; if(ganttScope==="week") bWeek.className="on";
+  bMonth.addEventListener("click",()=>{ ganttScope="month"; renderGanttView(); });
+  bWeek.addEventListener("click",()=>{ ganttScope="week"; renderGanttView(); });
+  scope.appendChild(bMonth); scope.appendChild(bWeek);
+  ctl.appendChild(prev); ctl.appendChild(next); ctl.appendChild(period); ctl.appendChild(todayBtn); ctl.appendChild(scope);
+  gantt.appendChild(ctl);
+
+  // ---- Articles dont la fenêtre [prépa → rendu] croise la période ----
+  const items=state.pages.filter(p=>matches(p)&&p.rendu)
+    .map(p=>{ const end=gParse(p.rendu); return {p, end, start:gAdd(end,-gLead(p))}; })
+    .filter(it=>it.end>=rangeStart && it.start<=rangeEnd)
+    .sort((x,y)=>x.p.rendu<y.p.rendu?-1:x.p.rendu>y.p.rendu?1:x.p.n-y.p.n);
 
   const g2=document.createElement("div"); g2.className="g2";
 
-  // ---- En-tête : mois + semaines ----
+  // ---- En-tête : mois + (semaines ou jours) ----
   const head=document.createElement("div"); head.className="g2-head";
   head.innerHTML=`<div class="g2-corner">Article</div>`;
   const axis=document.createElement("div"); axis.className="g2-axis";
   const multiYear=rangeStart.getUTCFullYear()!==rangeEnd.getUTCFullYear();
 
   const monthsRow=document.createElement("div"); monthsRow.className="g2-months";
-  const months=[]; let cur=null;
+  const months=[]; let curM=null;
   for(let i=0;i<totalDays;i++){ const d=gAdd(rangeStart,i); const key=d.getUTCFullYear()+"-"+d.getUTCMonth();
-    if(!cur||cur.key!==key){ cur={key,y:d.getUTCFullYear(),m:d.getUTCMonth(),days:0}; months.push(cur); } cur.days++; }
+    if(!curM||curM.key!==key){ curM={key,y:d.getUTCFullYear(),m:d.getUTCMonth(),days:0}; months.push(curM); } curM.days++; }
   for(const mo of months){ const el=document.createElement("div");
     el.style.width=(mo.days/totalDays*100)+"%";
     el.textContent=GANTT_MOIS[mo.m].replace(/^./,c=>c.toUpperCase())+(multiYear?" "+mo.y:"");
     monthsRow.appendChild(el); }
   axis.appendChild(monthsRow);
 
-  const weeksRow=document.createElement("div"); weeksRow.className="g2-weeks";
-  for(let w=0;w<totalDays/7;w++){ const d=gAdd(rangeStart,w*7); const el=document.createElement("div");
-    el.style.width=(7/totalDays*100)+"%"; el.textContent="S"+gIsoWeek(d);
-    el.title="Semaine du "+d.getUTCDate()+" "+GANTT_MOIS[d.getUTCMonth()]; weeksRow.appendChild(el); }
-  axis.appendChild(weeksRow);
+  const subRow=document.createElement("div"); subRow.className="g2-weeks";
+  if(ganttScope==="week"){
+    for(let i=0;i<totalDays;i++){ const d=gAdd(rangeStart,i); const el=document.createElement("div");
+      el.style.width=(100/totalDays)+"%"; el.textContent=GANTT_JOURS[i]+" "+d.getUTCDate(); subRow.appendChild(el); }
+  } else {
+    for(let w=0;w<totalDays/7;w++){ const d=gAdd(rangeStart,w*7); const el=document.createElement("div");
+      el.style.width=(7/totalDays*100)+"%"; el.textContent="S"+gIsoWeek(d);
+      el.title="Semaine du "+d.getUTCDate()+" "+GANTT_MOIS[d.getUTCMonth()]; subRow.appendChild(el); }
+  }
+  axis.appendChild(subRow);
   head.appendChild(axis);
   g2.appendChild(head);
 
@@ -790,6 +851,11 @@ function renderGanttView(){
   body.appendChild(grid);
 
   const rows=document.createElement("div"); rows.className="g2-rows";
+  if(items.length===0){
+    const empty=document.createElement("div"); empty.className="g2-empty";
+    empty.textContent="Aucun rendu sur cette période.";
+    rows.appendChild(empty);
+  }
   for(const {p,start,end} of items){
     const row=document.createElement("div"); row.className="g2-row";
 
@@ -801,7 +867,9 @@ function renderGanttView(){
     const track=document.createElement("div"); track.className="g2-track";
     const col=getTagColor(p.rubrique||p.thematique||"");
     const s=STATUTS[p.statut]||{label:"?",dot:"#ccc"};
-    const left=pct(start), width=Math.max(gDiff(start,end)+1,1)/totalDays*100;
+    let left=pct(start), right=pct(gAdd(end,1));
+    left=Math.max(0,left); right=Math.min(100,right);
+    const width=Math.max(right-left,0);
     const bar=document.createElement("div");
     bar.className="g2-bar"+(isLate(p)?" late":"");
     bar.style.cssText=`left:${left}%;width:${width}%;background:${col.bg};color:${col.fg}`;
