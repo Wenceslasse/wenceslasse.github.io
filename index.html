@@ -979,20 +979,21 @@ function renderCalendarView(){
     if(grouped[dateStr]){
       for(const p of grouped[dateStr]){
         const entry=document.createElement("div");
+        const col=getTagColor(p.rubrique||p.thematique||"", p.rubrique?"rubrique":"thematique");
         const st=getTagColor(p.statut, "statut");
-        entry.style.cssText=`background:${st.bg};color:${st.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;border-left:4px solid ${st.bg};`;
+        entry.style.cssText=`background:${col.bg};color:${col.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;`;
         entry.addEventListener("click",()=>openPeek(p.n));
         entry.addEventListener("mouseenter",()=>{ entry.style.boxShadow="0 2px 6px rgba(0,0,0,0.1)"; entry.style.transform="translateX(2px)"; });
         entry.addEventListener("mouseleave",()=>{ entry.style.boxShadow=""; entry.style.transform=""; });
-
-        const dot=document.createElement("div");
-        dot.style.cssText=`width:8px;height:8px;border-radius:50%;background:${st.bg};flex-shrink:0;`;
-        entry.appendChild(dot);
 
         const text=document.createElement("div");
         text.style.cssText="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;";
         text.textContent=p.sujet||p.rubrique||"—";
         entry.appendChild(text);
+
+        const dot=document.createElement("div");
+        dot.style.cssText=`width:9px;height:9px;border-radius:50%;background:${st.bg};flex:none;margin-left:auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12);`;
+        entry.appendChild(dot);
 
         entries.appendChild(entry);
       }
