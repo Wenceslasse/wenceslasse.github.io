@@ -220,6 +220,7 @@
     <div class="toolbar">
       <select class="tsel" id="issueSelect" aria-label="Choisir un numéro"></select>
       <button class="tbtn" id="btnNewIssue">+ Nouveau numéro</button>
+      <button class="tbtn" id="btnClearSelection" style="display:none; color:#9B2C1E">✕ Déselectionner</button>
       <input type="search" id="search" placeholder="Rechercher rubrique ou sujet…" aria-label="Rechercher">
       <select class="tsel" id="filterStatut" aria-label="Filtrer par statut">
         <option value="">Tous les statuts</option>
@@ -361,16 +362,13 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   el.style.userSelect="none";
   el.addEventListener("mousedown", e=>{
     if(e.button===0){
-      isDragging=true;
       dragStartPage=p.n;
-      selectedPages.clear();
-      selectedPages.add(p.n);
-      updateSelection();
       e.preventDefault();
     }
   });
   el.addEventListener("mouseenter", ()=>{
-    if(isDragging && dragStartPage!==null){
+    if(dragStartPage!==null && dragStartPage!==p.n){
+      isDragging=true;
       const min=Math.min(dragStartPage,p.n), max=Math.max(dragStartPage,p.n);
       selectedPages.clear();
       for(let i=min;i<=max;i++) selectedPages.add(i);
@@ -514,6 +512,13 @@ function renderDatalist(){
 
 function updateSelection(){
   render();
+  const btn=document.getElementById("btnClearSelection");
+  if(selectedPages.size>0){
+    btn.style.display="";
+    btn.textContent=`✕ ${selectedPages.size} page${selectedPages.size>1?"s":""} sélectionnée${selectedPages.size>1?"s":""}`;
+  } else {
+    btn.style.display="none";
+  }
 }
 
 async function applyBulkEdit(){
@@ -637,7 +642,15 @@ numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.tar
 bouclage.addEventListener("input",e=>{ if(currentIssue){ currentIssue.bouclage=e.target.value||null; debounceIssueWrite("bouclage", e.target.value||null); } });
 
 /* ---- selection & drag ---- */
+function clearSelection(){
+  selectedPages.clear();
+  dragStartPage=null;
+  isDragging=false;
+  updateSelection();
+}
+document.getElementById("btnClearSelection").addEventListener("click", clearSelection);
 document.addEventListener("mouseup",()=>{ isDragging=false; dragStartPage=null; });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && selectedPages.size>0) clearSelection(); });
 
 /* ---- filters ---- */
 document.getElementById("search").addEventListener("input",e=>{ filter.q=e.target.value; render(); });
