@@ -242,10 +242,14 @@
   /* ---- Auth screen ---- */
   .authscreen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
   .authcard{width:100%; max-width:680px; display:flex; background:var(--canvas); border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.05)}
-  .authcard-left{flex:0 0 36%; background:linear-gradient(160deg, var(--accent) 0%, #163f6b 100%); display:flex; align-items:center; justify-content:center; padding:40px}
+  .authcard-left{position:relative; flex:0 0 36%; background:linear-gradient(135deg, #9c1c40 0%, #e8467d 50%, #f4923d 100%); display:flex; align-items:center; justify-content:center; padding:40px; overflow:hidden}
+  .authcard-left::before{content:""; position:absolute; inset:0; background:#2f9e63; opacity:0; transition:opacity .55s ease}
+  .authcard-left.success::before{opacity:1}
   .authcard-right{flex:1; min-width:0; padding:38px 36px; text-align:left}
-  .authicon{width:72px; height:72px; border-radius:16px; background:rgba(255,255,255,.15); display:grid; place-items:center}
+  .authicon{position:relative; z-index:1; width:72px; height:72px; border-radius:16px; background:rgba(255,255,255,.18); display:grid; place-items:center}
   .authicon svg{width:34px; height:34px; color:#fff}
+  .authicon .lock-shackle{transition:transform .45s cubic-bezier(.34,1.56,.64,1); transform-origin:8.5px 11px}
+  .authicon.unlocked .lock-shackle{transform:translate(-1.5px,-3px) rotate(-30deg)}
   .authcard-right h1{font-size:22px; margin:0 0 4px; letter-spacing:-.02em}
   .authsub{color:var(--muted); font-size:13.5px; margin:0 0 22px}
   .authlabel{display:block; text-align:left; font-size:12.5px; color:var(--muted); margin:0 0 6px}
@@ -259,9 +263,20 @@
     .authicon{width:48px; height:48px}
     .authicon svg{width:22px; height:22px}
   }
-  #authEmail, #authEmailPwd, #authPassword{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body); font-size:15px}
-  #authEmail:focus, #authEmailPwd:focus, #authPassword:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
-  .authbtn{width:100%; justify-content:center; padding:9px 10px; border-radius:6px; font-weight:600}
+  #authEmail, #authEmailPwd, #authPassword, #visitorAnswer{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body); font-size:15px; transition:border-color .15s ease}
+  #authEmail:focus, #authEmailPwd:focus, #authPassword:focus, #visitorAnswer:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+  @keyframes field-shake{
+    10%,90%{transform:translateX(-1px)}
+    20%,80%{transform:translateX(2px)}
+    30%,50%,70%{transform:translateX(-4px)}
+    40%,60%{transform:translateX(4px)}
+  }
+  .field-error{border-color:var(--danger) !important; animation:field-shake .4s}
+  .authbtn{width:100%; justify-content:center; padding:9px 10px; border-radius:6px; font-weight:600; position:relative}
+  .authbtn .btn-spinner{display:none; width:15px; height:15px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:btn-spin .7s linear infinite}
+  .authbtn.loading .btn-label{visibility:hidden}
+  .authbtn.loading .btn-spinner{display:inline-block; position:absolute; left:50%; top:50%; margin:-8px 0 0 -8px}
+  @keyframes btn-spin{to{transform:rotate(360deg)}}
   .authmsg{margin-top:12px; font-size:13px; color:var(--muted); min-height:18px}
   .authmsg.err{color:var(--danger)}
   .authmsg.ok{color:#2C5E3E}
@@ -314,8 +329,11 @@
 <div class="authscreen" id="authScreen">
   <div class="authcard">
     <div class="authcard-left">
-      <span class="authicon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v15"/><path d="M12 5C10 3.5 6.5 3.5 4 4v14c2.5-.5 6-.5 8 1"/><path d="M12 5c2-1.5 5.5-1.5 8-1v14c-2.5-.5-6-.5-8 1"/></svg>
+      <span class="authicon" id="authLockIcon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="11" width="14" height="10" rx="2"/>
+          <path class="lock-shackle" d="M8 11V7a4 4 0 0 1 8 0v4"/>
+        </svg>
       </span>
     </div>
     <div class="authcard-right">
@@ -334,7 +352,9 @@
         </div>
         <label class="authlabel" for="visitorAnswer">Réponse</label>
         <input type="text" id="visitorAnswer" placeholder="Votre réponse" autocomplete="off">
-        <button class="ghostbtn primary authbtn" id="btnVisitorAccess" style="margin-top:12px">Accéder</button>
+        <button class="ghostbtn primary authbtn" id="btnVisitorAccess" style="margin-top:12px">
+          <span class="btn-label">Accéder</span><span class="btn-spinner" aria-hidden="true"></span>
+        </button>
       </div>
 
       <div id="methodPassword" style="display:none">
@@ -342,7 +362,9 @@
         <input type="email" id="authEmailPwd" placeholder="prenom@redaction.fr" autocomplete="email">
         <label class="authlabel" for="authPassword" style="margin-top:10px">Mot de passe</label>
         <input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password">
-        <button class="ghostbtn primary authbtn" id="btnPassword" style="margin-top:12px">Connexion</button>
+        <button class="ghostbtn primary authbtn" id="btnPassword" style="margin-top:12px">
+          <span class="btn-label">Connexion</span><span class="btn-spinner" aria-hidden="true"></span>
+        </button>
       </div>
 
       <div class="authmsg" id="authMsg"></div>
@@ -1718,30 +1740,68 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
 /* ---- authentification ---- */
 const authScreen=document.getElementById("authScreen"), appRoot=document.getElementById("app");
 const authEmailPwd=document.getElementById("authEmailPwd"), authPassword=document.getElementById("authPassword"), authMsg=document.getElementById("authMsg");
+const btnPassword=document.getElementById("btnPassword");
 function setAuthMsg(text,isErr,isOk){ authMsg.textContent=text; authMsg.className="authmsg"+(isErr?" err":isOk?" ok":""); }
+
+function setButtonLoading(btn, loading){
+  btn.disabled = loading;
+  btn.classList.toggle("loading", loading);
+}
+function flagFieldError(el){
+  el.classList.remove("field-error");
+  void el.offsetWidth; // force reflow so the shake replays
+  el.classList.add("field-error");
+  setTimeout(()=>el.classList.remove("field-error"), 500);
+}
+function playUnlockSuccess(callback){
+  document.getElementById("authLockIcon").classList.add("unlocked");
+  document.querySelector(".authcard-left").classList.add("success");
+  setTimeout(callback, 550);
+}
+function resetAuthLockIcon(){
+  document.getElementById("authLockIcon").classList.remove("unlocked");
+  document.querySelector(".authcard-left").classList.remove("success");
+}
+
+let suppressAutoShowApp = false;
 
 async function signInWithPassword(){
   const email=authEmailPwd.value.trim();
   const password=authPassword.value;
   if(!email){ setAuthMsg("Entrez votre adresse email.", true); return; }
   if(!password){ setAuthMsg("Entrez votre mot de passe.", true); return; }
-  setAuthMsg("Connexion en cours…", false);
+  setAuthMsg("", false);
+  setButtonLoading(btnPassword, true);
+  suppressAutoShowApp = true;
   try {
     const result = await sb.auth.signInWithPassword({ email, password });
     const { data, error } = result || {};
     if(error) {
       console.error("Auth error:", error);
+      suppressAutoShowApp = false;
+      setButtonLoading(btnPassword, false);
+      flagFieldError(authPassword);
       setAuthMsg(error.message || "Identifiants incorrects.", true);
       return;
     }
     if(!data?.user) {
       console.error("No user in response:", data);
+      suppressAutoShowApp = false;
+      setButtonLoading(btnPassword, false);
+      flagFieldError(authPassword);
       setAuthMsg("Erreur : vérifiez vos identifiants.", true);
       return;
     }
-    setAuthMsg("Connexion réussie !", false, true);
+    playUnlockSuccess(()=>{
+      suppressAutoShowApp = false;
+      setButtonLoading(btnPassword, false);
+      showApp(data.session);
+    });
   } catch(err) {
     console.error("Exception:", err);
+    suppressAutoShowApp = false;
+    setButtonLoading(btnPassword, false);
+    flagFieldError(authPassword);
     setAuthMsg("Erreur de connexion. Vérifiez l'email et le mot de passe.", true);
   }
 }
@@ -1774,6 +1834,7 @@ document.getElementById("btnLogout").addEventListener("click", ()=>{
 
 function showAuth(){
   authScreen.style.display="flex"; appRoot.style.display="none";
+  resetAuthLockIcon();
   if(pagesChannel){ sb.removeChannel(pagesChannel); pagesChannel=null; }
   if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
   if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
@@ -1808,13 +1869,27 @@ window.addEventListener("popstate", ()=>{
 let isVisitorMode = false;
 
 function verifyVisitorAccess() {
-  const answer = document.getElementById("visitorAnswer").value.trim().toLowerCase();
+  const answerEl = document.getElementById("visitorAnswer");
+  const answer = answerEl.value.trim().toLowerCase();
+  const btn = document.getElementById("btnVisitorAccess");
 
   if (!answer) { setAuthMsg("Veuillez compléter les paroles", true); return; }
-  if (answer !== "shazam") { setAuthMsg("Réponse incorrecte", true); return; }
 
-  setAuthMsg("", false);
-  playVisitorTransition();
+  setButtonLoading(btn, true);
+  setTimeout(() => {
+    if (answer !== "shazam") {
+      setButtonLoading(btn, false);
+      flagFieldError(answerEl);
+      setAuthMsg("Réponse incorrecte", true);
+      return;
+    }
+
+    setAuthMsg("", false);
+    playUnlockSuccess(() => {
+      setButtonLoading(btn, false);
+      playVisitorTransition();
+    });
+  }, 300);
 }
 
 function playVisitorTransition() {
@@ -1899,7 +1974,7 @@ if (document.getElementById("visitorAnswer")) {
   });
 }
 
-sb.auth.onAuthStateChange((_event, session)=>{ if(session) showApp(session); else if(!isVisitorMode) showAuth(); });
+sb.auth.onAuthStateChange((_event, session)=>{ if(session){ if(!suppressAutoShowApp) showApp(session); } else if(!isVisitorMode) showAuth(); });
 sb.auth.getSession().then(({data})=>{
   if(data.session) showApp(data.session);
   else if(localStorage.getItem("cdf_visitor_mode")==="true") enterVisitorMode();
