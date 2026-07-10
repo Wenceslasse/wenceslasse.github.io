@@ -355,7 +355,8 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   let cls="page";
   if(role==="left") cls+=" left"; else if(role==="right") cls+=" right";
   else if(role==="solo-p1") cls+=" solo p1"; else if(role==="solo-p56") cls+=" solo p56";
-  el.className=cls + (matches(p)?"":" dim") + (selectedPages.has(p.n)?" selected":"");
+  el.className=cls + (matches(p)?"":" dim");
+  if(selectedPages.has(p.n)) el.classList.add("selected");
   el.setAttribute("aria-label",`Page ${p.n}${p.sujet?" — "+p.sujet:""}`);
   el.setAttribute("data-page-n", p.n);
 
@@ -429,20 +430,56 @@ function renderGroupHeader(pages){
   const container=document.createElement("div");
   container.style.cssText="background:var(--hover); border:1px solid var(--accent); border-radius:8px; padding:14px; margin-bottom:12px; gap:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr));";
 
-  const fields=[
-    {label:"Rubrique", key:"rubrique", value:firstPage.rubrique},
-    {label:"Journaliste", key:"journaliste", value:firstPage.journaliste},
-    {label:"Statut", key:"statut", value:STATUTS[firstPage.statut].label},
-    {label:"Calibrage", key:"calib", value:firstPage.calib?`${firstPage.calib} ${firstPage.unite}`:"—"},
-    {label:"Rendu", key:"rendu", value:firstPage.rendu?frDate(firstPage.rendu):"—"},
-  ];
+  const rubField=document.createElement("div");
+  rubField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
+  rubField.innerHTML=`<label style="color:var(--muted); font-weight:600">Rubrique</label>`;
+  const rubInput=document.createElement("input");
+  rubInput.id="bulkRubrique";
+  rubInput.setAttribute("list","rubriques");
+  rubInput.style.cssText="padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;";
+  rubInput.value=firstPage.rubrique||"";
+  rubInput.placeholder="Non modifié";
+  rubField.appendChild(rubInput);
+  container.appendChild(rubField);
 
-  for(const f of fields){
-    const el=document.createElement("div");
-    el.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
-    el.innerHTML=`<span style="color:var(--muted); font-weight:600">${f.label}</span><span style="color:var(--text); font-weight:500">${esc(f.value)}</span>`;
-    container.appendChild(el);
+  const journField=document.createElement("div");
+  journField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
+  journField.innerHTML=`<label style="color:var(--muted); font-weight:600">Journaliste</label>`;
+  const journInput=document.createElement("input");
+  journInput.id="bulkJournaliste";
+  journInput.setAttribute("list","journalistes");
+  journInput.style.cssText="padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;";
+  journInput.value=firstPage.journaliste||"";
+  journInput.placeholder="Non modifié";
+  journField.appendChild(journInput);
+  container.appendChild(journField);
+
+  const statField=document.createElement("div");
+  statField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
+  statField.innerHTML=`<label style="color:var(--muted); font-weight:600">Statut</label>`;
+  const statSelect=document.createElement("select");
+  statSelect.id="bulkStatut";
+  statSelect.style.cssText="padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;";
+  const optEmpty=document.createElement("option");
+  optEmpty.value="";
+  optEmpty.textContent="Non modifié";
+  statSelect.appendChild(optEmpty);
+  for(const [k,v] of Object.entries(STATUTS)){
+    const opt=document.createElement("option");
+    opt.value=k;
+    opt.textContent=v.label;
+    if(k===firstPage.statut) opt.selected=true;
+    statSelect.appendChild(opt);
   }
+  statField.appendChild(statSelect);
+  container.appendChild(statField);
+
+  const btnApply=document.createElement("button");
+  btnApply.textContent="Appliquer";
+  btnApply.style.cssText="padding:6px 12px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:500; align-self:flex-end; margin-top:8px;";
+  btnApply.addEventListener("click",applyBulkEdit);
+  container.appendChild(btnApply);
+
   return container;
 }
 
@@ -540,6 +577,11 @@ async function applyBulkEdit(){
   const journaliste=document.getElementById("bulkJournaliste").value;
   const statut=document.getElementById("bulkStatut").value;
 
+  if(!rubrique && !journaliste && !statut){
+    alert("Veuillez remplir au moins un champ à modifier");
+    return;
+  }
+
   const updates=[];
   for(const n of selectedPages){
     const p=state.pages[n-1];
@@ -552,10 +594,8 @@ async function applyBulkEdit(){
   if(error){ alert("Erreur : "+error.message); return; }
   render();
   selectedPages.clear();
-  document.getElementById("bulkRubrique").value="";
-  document.getElementById("bulkJournaliste").value="";
-  document.getElementById("bulkStatut").value="";
-  document.getElementById("bulkEditPanel").classList.remove("open");
+  lastShiftClickPage=null;
+  updateSelection();
 }
 
 /* ---- peek editor ---- */
