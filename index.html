@@ -94,6 +94,10 @@
   .page.right .cvr, .page.solo .cvr{left:15px}
   .page.solo.p56 .cvr{right:15px; left:auto}
 
+  /* ---- Calendar and Gantt views ---- */
+  #viewCalendar, #viewGantt{width:100%;max-width:1080px;}
+  #viewGantt>div{height:calc(100vh - 280px);overflow:auto;}
+
   /* ---- Peek panel editor (Notion style) ---- */
   .scrim{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
   .scrim.open{opacity:1; pointer-events:auto}
@@ -691,64 +695,77 @@ function renderGanttView(){
   const gantt=document.getElementById("viewGantt");
   gantt.innerHTML="";
   const withDate=state.pages.filter(p=>matches(p)&&p.rendu);
-  if(withDate.length===0){ gantt.textContent="Aucun article avec date de rendu"; return; }
+  if(withDate.length===0){ gantt.innerHTML="<div style='padding:20px;color:var(--muted);'>Aucun article avec date de rendu</div>"; return; }
 
   const minDate=new Date(Math.min(...withDate.map(p=>new Date(p.rendu))));
   const maxDate=new Date(Math.max(...withDate.map(p=>new Date(p.rendu))));
-  const span=(maxDate-minDate)/(1000*60*60*24)+1;
+  const span=Math.max(14,(maxDate-minDate)/(1000*60*60*24)+1);
 
-  const container=document.createElement("div");
-  container.style.cssText="overflow-x:auto;";
-  const chart=document.createElement("div");
-  chart.style.cssText="padding:20px;min-width:1200px;";
+  const wrapper=document.createElement("div");
+  wrapper.style.cssText="background:var(--canvas);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;";
 
   const header=document.createElement("div");
-  header.style.cssText="display:flex;gap:200px;margin-bottom:20px;";
+  header.style.cssText="display:flex;border-bottom:1px solid var(--border);background:var(--body);";
   const labelCol=document.createElement("div");
-  labelCol.style.cssText="width:200px;flex-shrink:0;";
-  const timelineCol=document.createElement("div");
-  timelineCol.style.cssText="flex:1;display:flex;gap:0;";
+  labelCol.style.cssText="width:200px;flex-shrink:0;padding:12px;border-right:1px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);";
+  labelCol.textContent="Article";
+  header.appendChild(labelCol);
 
+  const timeline=document.createElement("div");
+  timeline.style.cssText="flex:1;display:flex;border-right:1px solid var(--border);background:linear-gradient(90deg, transparent 39px, var(--border) 39px, var(--border) 40px, transparent 40px);background-size:40px 100%;";
   for(let i=0;i<span;i++){
     const d=new Date(minDate);
     d.setDate(d.getDate()+i);
     const cell=document.createElement("div");
-    cell.style.cssText="width:40px;text-align:center;font-size:10px;color:var(--muted);";
-    cell.textContent=d.toLocaleDateString("fr",{month:"numeric",day:"numeric"});
-    timelineCol.appendChild(cell);
+    cell.style.cssText="width:40px;flex-shrink:0;padding:8px 2px;text-align:center;font-size:10px;color:var(--muted);border-right:1px solid var(--border);";
+    cell.textContent=d.toLocaleDateString("fr",{day:"numeric"});
+    cell.title=d.toLocaleDateString("fr",{weekday:"short",month:"short",day:"numeric"});
+    timeline.appendChild(cell);
   }
+  header.appendChild(timeline);
 
-  header.appendChild(labelCol);
-  header.appendChild(timelineCol);
-  chart.appendChild(header);
+  wrapper.appendChild(header);
+
+  const content=document.createElement("div");
+  content.style.cssText="flex:1;overflow-y:auto;";
 
   for(const p of withDate){
     const row=document.createElement("div");
-    row.style.cssText="display:flex;gap:200px;margin-bottom:8px;align-items:center;";
+    row.style.cssText="display:flex;border-bottom:1px solid var(--border);";
 
     const label=document.createElement("div");
-    label.style.cssText="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
-    label.textContent=`${p.sujet||"Sujet"}(p${p.n})`;
+    label.style.cssText="width:200px;flex-shrink:0;padding:10px 12px;border-right:1px solid var(--border);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;background:var(--body);";
+    label.textContent=`${p.sujet||"[Sujet]"} (p${p.n})`;
+    label.addEventListener("click",()=>openPeek(p.n));
+    row.appendChild(label);
 
-    const timeline=document.createElement("div");
-    timeline.style.cssText="flex:1;position:relative;height:24px;";
+    const barContainer=document.createElement("div");
+    barContainer.style.cssText="flex:1;position:relative;height:40px;display:flex;align-items:center;padding:0 8px;background:linear-gradient(90deg, transparent 39px, var(--border) 39px, var(--border) 40px, transparent 40px);background-size:40px 100%;";
 
     const pDate=new Date(p.rendu);
-    const offset=Math.max(0,(pDate-minDate)/(1000*60*60*24));
-    const bar=document.createElement("div");
-    bar.style.cssText=`position:absolute;left:${offset*40}px;width:40px;height:24px;background:var(--accent);border-radius:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:500;`;
-    bar.textContent="●";
-    bar.addEventListener("click",()=>openPeek(p.n));
-    bar.title=`${p.sujet} - ${p.rendu}`;
-    timeline.appendChild(bar);
+    const dayOffset=(pDate-minDate)/(1000*60*60*24);
+    const barStart=Math.max(0,dayOffset);
+    const barColor=getTagColor(p.rubrique||p.thematique||"");
 
-    row.appendChild(label);
-    row.appendChild(timeline);
-    chart.appendChild(row);
+    const bar=document.createElement("div");
+    bar.style.cssText=`position:absolute;left:${barStart*40+16}px;height:28px;background:${barColor.bg};border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 8px;font-size:11px;font-weight:600;color:${barColor.fg};box-shadow:0 1px 3px rgba(0,0,0,0.1);`;
+    bar.textContent=`${p.sujet.substring(0,12)}${p.sujet.length>12?"...":""}`;
+    bar.title=`${p.sujet} - Rendu: ${p.rendu}`;
+    bar.addEventListener("click",()=>openPeek(p.n));
+
+    const statusBadge=document.createElement("div");
+    const s=STATUTS[p.statut]||{label:"?",dot:"#ccc"};
+    statusBadge.style.cssText=`position:absolute;right:8px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:${s.dot};border:2px solid white;box-shadow:0 0 0 2px ${s.dot};`;
+    statusBadge.title=s.label;
+    bar.appendChild(statusBadge);
+
+    barContainer.appendChild(bar);
+    row.appendChild(barContainer);
+    content.appendChild(row);
   }
 
-  container.appendChild(chart);
-  gantt.appendChild(container);
+  wrapper.appendChild(content);
+  gantt.appendChild(wrapper);
 }
 
 function render(){
