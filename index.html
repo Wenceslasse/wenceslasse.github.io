@@ -317,7 +317,7 @@
     <p class="authsub">Connexion à l'espace éditorial</p>
 
     <div style="display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px">
-      <button class="authtab active" id="tabVisitor" data-method="visitor">Visitor</button>
+      <button class="authtab active" id="tabVisitor" data-method="visitor">Équipe</button>
       <button class="authtab" id="tabPassword" data-method="password">Connexion</button>
     </div>
 
@@ -1724,17 +1724,8 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
 
 /* ---- authentification ---- */
 const authScreen=document.getElementById("authScreen"), appRoot=document.getElementById("app");
-const authEmail=document.getElementById("authEmail"), authEmailPwd=document.getElementById("authEmailPwd"), authPassword=document.getElementById("authPassword"), authMsg=document.getElementById("authMsg");
+const authEmailPwd=document.getElementById("authEmailPwd"), authPassword=document.getElementById("authPassword"), authMsg=document.getElementById("authMsg");
 function setAuthMsg(text,isErr,isOk){ authMsg.textContent=text; authMsg.className="authmsg"+(isErr?" err":isOk?" ok":""); }
-
-async function sendMagicLink(){
-  const email=authEmail.value.trim();
-  if(!email){ setAuthMsg("Entrez votre adresse email.", true); return; }
-  setAuthMsg("Envoi en cours…", false);
-  const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: window.location.origin + window.location.pathname } });
-  if(error) setAuthMsg(error.message, true);
-  else setAuthMsg("Lien envoyé. Vérifiez votre boîte mail.", false, true);
-}
 
 async function signInWithPassword(){
   const email=authEmailPwd.value.trim();
@@ -1762,8 +1753,6 @@ async function signInWithPassword(){
   }
 }
 
-document.getElementById("btnMagicLink").addEventListener("click", sendMagicLink);
-authEmail.addEventListener("keydown", e=>{ if(e.key==="Enter") sendMagicLink(); });
 document.getElementById("btnPassword").addEventListener("click", signInWithPassword);
 authPassword.addEventListener("keydown", e=>{ if(e.key==="Enter") signInWithPassword(); });
 
@@ -1901,7 +1890,7 @@ function disableEditingUI() {
 
   // Afficher un badge visitor
   const userbar = document.getElementById("pUser");
-  if (userbar) userbar.textContent = "👁 Mode Visitor";
+  if (userbar) userbar.textContent = "👁 Mode Équipe";
 }
 
 // Vérifier si déjà en mode visitor
