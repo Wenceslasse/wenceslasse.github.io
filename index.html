@@ -319,6 +319,28 @@ const RUB_TAGS = [
 ];
 const COVER = {1:"C1",2:"C2",55:"C3",56:"C4"};
 
+// Palette de 32 couleurs pastels pour rubriques et thématiques
+const PASTEL_PALETTE = [
+  {bg:"#FFE5E5", fg:"#000000"}, {bg:"#FFD5E5", fg:"#000000"}, {bg:"#FFC5E5", fg:"#000000"}, {bg:"#FFB5E5", fg:"#000000"},
+  {bg:"#F5E5FF", fg:"#000000"}, {bg:"#E5D5FF", fg:"#000000"}, {bg:"#E5C5FF", fg:"#000000"}, {bg:"#E5B5FF", fg:"#000000"},
+  {bg:"#E5F5FF", fg:"#000000"}, {bg:"#D5EDFF", fg:"#000000"}, {bg:"#C5E5FF", fg:"#000000"}, {bg:"#B5DDFF", fg:"#000000"},
+  {bg:"#E5F5E5", fg:"#000000"}, {bg:"#D5EDCE", fg:"#000000"}, {bg:"#C5E5B5", fg:"#000000"}, {bg:"#B5DDAA", fg:"#000000"},
+  {bg:"#FFFBE5", fg:"#000000"}, {bg:"#FFF5D5", fg:"#000000"}, {bg:"#FFEDD5", fg:"#000000"}, {bg:"#FFE5C5", fg:"#000000"},
+  {bg:"#FFF0E5", fg:"#000000"}, {bg:"#FFE8D5", fg:"#000000"}, {bg:"#FFE0C5", fg:"#000000"}, {bg:"#FFD8B5", fg:"#000000"},
+  {bg:"#F0E5FF", fg:"#000000"}, {bg:"#E8D5FF", fg:"#000000"}, {bg:"#E0C5FF", fg:"#000000"}, {bg:"#D8B5FF", fg:"#000000"},
+  {bg:"#E5F0FF", fg:"#000000"}, {bg:"#D5E8FF", fg:"#000000"}, {bg:"#C5E0FF", fg:"#000000"}, {bg:"#B5D8FF", fg:"#000000"}
+];
+
+function getTagColor(text) {
+  if (!text) return PASTEL_PALETTE[0];
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return PASTEL_PALETTE[Math.abs(hash) % PASTEL_PALETTE.length];
+}
+
 /* ---- Supabase ---- */
 const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
@@ -355,7 +377,7 @@ async function reorderPages(draggedPageNums, targetPageNum){
 
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
-function rubTag(name){ if(!name) return null; let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0; return RUB_TAGS[h%RUB_TAGS.length]; }
+function rubTag(name){ if(!name) return null; return getTagColor(name); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}`; }
 function isLate(p){ return p.rendu && p.statut!=="boucle" && p.rendu < todayISO(); }
@@ -466,7 +488,8 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
 
   const separator = `<div style="border-top:1px solid var(--border);margin:8px 0;"></div>`;
   const notes = p.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4;">${esc(p.notes)}</div>`:"";
-  const thema = p.thematique?`<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:500;background:var(--hover);color:var(--text);margin-top:4px;">${esc(p.thematique)}</div>`:"";
+  const themaTag = p.thematique?getTagColor(p.thematique):null;
+  const thema = p.thematique?pillHTML(p.thematique,themaTag):"";
 
   const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
   el.innerHTML = rub + suj + separator + notes + thema + meta + folio;
