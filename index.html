@@ -448,10 +448,9 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
     }
   }, true);
 
-  const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
-  const thema = p.thematique?`<div style="font-size:12px;color:var(--muted);margin:4px 0;font-style:italic;">${esc(p.thematique)}</div>`:"";
   const rt=rubTag(p.rubrique);
   const rub = `<div class="rubrow">${rt?pillHTML(p.rubrique,rt):""}</div>`;
+  const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
 
   const bits=[];
   const sig=toSignes(p);
@@ -465,10 +464,12 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   const status=`<span class="statuswrap">${pillHTML(st.label,st)}</span>`;
   const meta=`<div class="cardmeta">${bits.join('<span class="sep">·</span>')}${status}</div>`;
 
-  const notes = p.notes?`<div style="font-size:12px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">${esc(p.notes)}</div>`:"";
+  const separator = `<div style="border-top:1px solid var(--border);margin:8px 0;"></div>`;
+  const notes = p.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4;">${esc(p.notes)}</div>`:"";
+  const thema = p.thematique?`<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:500;background:var(--hover);color:var(--text);margin-top:4px;">${esc(p.thematique)}</div>`:"";
 
   const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
-  el.innerHTML = suj + thema + rub + meta + notes + folio;
+  el.innerHTML = rub + suj + separator + notes + thema + meta + folio;
   return el;
 }
 
