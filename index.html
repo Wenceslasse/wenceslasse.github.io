@@ -230,6 +230,10 @@
         <option value="relu">Relu</option>
         <option value="boucle">Bouclé</option>
       </select>
+      <div style="border-left:1px solid var(--border);margin:0 8px;height:20px;"></div>
+      <button class="tbtn" id="btnViewGrid" title="Vue Grille">⊞ Grille</button>
+      <button class="tbtn" id="btnViewCalendar" title="Vue Calendrier">📅 Calendrier</button>
+      <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
       <span class="spacer"></span>
       <button class="tbtn" id="btnCsv">Exporter CSV</button>
       <button class="tbtn" id="btnJson">Sauvegarde</button>
@@ -244,7 +248,11 @@
 </header>
 
 <main>
-  <div class="wrap"><div class="rail" id="rail"></div></div>
+  <div class="wrap">
+    <div class="rail" id="rail"></div>
+    <div id="viewCalendar" style="display:none;"></div>
+    <div id="viewGantt" style="display:none;"></div>
+  </div>
 </main>
 
 </div>
@@ -358,6 +366,7 @@ let selectedPages = new Set();
 let lastShiftClickPage = null;
 let draggedPages = null;
 let dropTarget = null;
+let currentView = "grid"; // grid, calendar, gantt
 
 async function reorderPages(draggedPageNums, targetPageNum){
   const pages=[...state.pages];
@@ -589,8 +598,127 @@ function renderGroupHeader(pages){
   return container;
 }
 
+function renderCalendarView(){
+  const cal=document.getElementById("viewCalendar");
+  cal.innerHTML="";
+  const grouped={};
+  for(const p of state.pages){
+    if(!matches(p)) continue;
+    const d=p.rendu||"(pas de date)";
+    if(!grouped[d]) grouped[d]=[];
+    grouped[d].push(p);
+  }
+  const sorted=Object.keys(grouped).sort();
+  for(const date of sorted){
+    const section=document.createElement("div");
+    section.style.cssText="margin-bottom:20px;";
+    const h=document.createElement("h3");
+    h.style.cssText="color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px;";
+    h.textContent=date==="(pas de date)"?"Sans date de rendu":new Date(date).toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+    section.appendChild(h);
+    const items=document.createElement("div");
+    items.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;";
+    for(const p of grouped[date]){
+      const card=document.createElement("div");
+      card.style.cssText="padding:12px;background:var(--canvas);border:1px solid var(--border);border-radius:6px;cursor:pointer;";
+      const rt=rubTag(p.rubrique);
+      const rub=rt?pillHTML(p.rubrique,rt):"";
+      const themaTag=p.thematique?getTagColor(p.thematique):null;
+      const thema=p.thematique?pillHTML(p.thematique,themaTag):"";
+      const st=STATUTS[p.statut];
+      const status=pillHTML(st.label,st);
+      card.innerHTML=`<div style="font-weight:600;color:var(--text);margin-bottom:4px;">${esc(p.sujet||"Sujet à définir")}</div><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${rub}${rub?"":" "}${thema}</div><div style="font-size:12px;color:var(--muted);">Page ${p.n}</div><div style="font-size:12px;margin-top:8px;">${status}</div>`;
+      card.addEventListener("click",()=>openPeek(p.n));
+      items.appendChild(card);
+    }
+    section.appendChild(items);
+    cal.appendChild(section);
+  }
+}
+
+function renderGanttView(){
+  const gantt=document.getElementById("viewGantt");
+  gantt.innerHTML="";
+  const withDate=state.pages.filter(p=>matches(p)&&p.rendu);
+  if(withDate.length===0){ gantt.textContent="Aucun article avec date de rendu"; return; }
+
+  const minDate=new Date(Math.min(...withDate.map(p=>new Date(p.rendu))));
+  const maxDate=new Date(Math.max(...withDate.map(p=>new Date(p.rendu))));
+  const span=(maxDate-minDate)/(1000*60*60*24)+1;
+
+  const container=document.createElement("div");
+  container.style.cssText="overflow-x:auto;";
+  const chart=document.createElement("div");
+  chart.style.cssText="padding:20px;min-width:1200px;";
+
+  const header=document.createElement("div");
+  header.style.cssText="display:flex;gap:200px;margin-bottom:20px;";
+  const labelCol=document.createElement("div");
+  labelCol.style.cssText="width:200px;flex-shrink:0;";
+  const timelineCol=document.createElement("div");
+  timelineCol.style.cssText="flex:1;display:flex;gap:0;";
+
+  for(let i=0;i<span;i++){
+    const d=new Date(minDate);
+    d.setDate(d.getDate()+i);
+    const cell=document.createElement("div");
+    cell.style.cssText="width:40px;text-align:center;font-size:10px;color:var(--muted);";
+    cell.textContent=d.toLocaleDateString("fr",{month:"numeric",day:"numeric"});
+    timelineCol.appendChild(cell);
+  }
+
+  header.appendChild(labelCol);
+  header.appendChild(timelineCol);
+  chart.appendChild(header);
+
+  for(const p of withDate){
+    const row=document.createElement("div");
+    row.style.cssText="display:flex;gap:200px;margin-bottom:8px;align-items:center;";
+
+    const label=document.createElement("div");
+    label.style.cssText="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+    label.textContent=`${p.sujet||"Sujet"}(p${p.n})`;
+
+    const timeline=document.createElement("div");
+    timeline.style.cssText="flex:1;position:relative;height:24px;";
+
+    const pDate=new Date(p.rendu);
+    const offset=Math.max(0,(pDate-minDate)/(1000*60*60*24));
+    const bar=document.createElement("div");
+    bar.style.cssText=`position:absolute;left:${offset*40}px;width:40px;height:24px;background:var(--accent);border-radius:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:500;`;
+    bar.textContent="●";
+    bar.addEventListener("click",()=>openPeek(p.n));
+    bar.title=`${p.sujet} - ${p.rendu}`;
+    timeline.appendChild(bar);
+
+    row.appendChild(label);
+    row.appendChild(timeline);
+    chart.appendChild(row);
+  }
+
+  container.appendChild(chart);
+  gantt.appendChild(container);
+}
+
 function render(){
   rail.innerHTML="";
+  document.getElementById("viewCalendar").style.display="none";
+  document.getElementById("viewGantt").style.display="none";
+  rail.style.display="block";
+
+  if(currentView==="calendar"){
+    rail.style.display="none";
+    document.getElementById("viewCalendar").style.display="block";
+    renderCalendarView();
+    return;
+  }
+  if(currentView==="gantt"){
+    rail.style.display="none";
+    document.getElementById("viewGantt").style.display="block";
+    renderGanttView();
+    return;
+  }
+
   const P=state.pages;
 
   if(selectedPages.size>0){
@@ -906,6 +1034,29 @@ function subscribeIssues(){
 function slug(s){ return (s||"chemin-de-fer").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"chemin-de-fer"; }
 function download(text,name,type){ const b=new Blob([text],{type}),u=URL.createObjectURL(b);
   const a=document.createElement("a"); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
+
+/* ---- View switcher ---- */
+document.getElementById("btnViewGrid").addEventListener("click",()=>{
+  currentView="grid";
+  document.getElementById("btnViewGrid").style.opacity="1";
+  document.getElementById("btnViewCalendar").style.opacity="0.5";
+  document.getElementById("btnViewGantt").style.opacity="0.5";
+  render();
+});
+document.getElementById("btnViewCalendar").addEventListener("click",()=>{
+  currentView="calendar";
+  document.getElementById("btnViewGrid").style.opacity="0.5";
+  document.getElementById("btnViewCalendar").style.opacity="1";
+  document.getElementById("btnViewGantt").style.opacity="0.5";
+  render();
+});
+document.getElementById("btnViewGantt").addEventListener("click",()=>{
+  currentView="gantt";
+  document.getElementById("btnViewGrid").style.opacity="0.5";
+  document.getElementById("btnViewCalendar").style.opacity="0.5";
+  document.getElementById("btnViewGantt").style.opacity="1";
+  render();
+});
 
 document.getElementById("btnCsv").addEventListener("click",()=>{
   const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Feuillets","Date de rendu","Statut","Journaliste","Notes"];
