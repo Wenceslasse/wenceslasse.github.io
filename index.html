@@ -328,8 +328,7 @@ let currentIssue = null;
 let appInited = false;
 let pagesChannel = null, issuesChannel = null;
 let selectedPages = new Set();
-let dragStartPage = null;
-let isDragging = false;
+let lastShiftClickPage = null;
 
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
@@ -360,23 +359,33 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   el.setAttribute("data-page-n", p.n);
 
   el.style.userSelect="none";
-  el.addEventListener("mousedown", e=>{
-    if(e.button===0){
-      dragStartPage=p.n;
-      e.preventDefault();
-    }
-  });
-  el.addEventListener("mouseenter", ()=>{
-    if(dragStartPage!==null && dragStartPage!==p.n){
-      isDragging=true;
-      const min=Math.min(dragStartPage,p.n), max=Math.max(dragStartPage,p.n);
-      selectedPages.clear();
-      for(let i=min;i<=max;i++) selectedPages.add(i);
-      updateSelection();
-    }
-  });
   el.addEventListener("click", e=>{
-    if(!isDragging) openPeek(p.n);
+    if(e.shiftKey){
+      e.preventDefault();
+      if(lastShiftClickPage===null){
+        selectedPages.clear();
+        selectedPages.add(p.n);
+        lastShiftClickPage=p.n;
+      } else {
+        const min=Math.min(lastShiftClickPage,p.n), max=Math.max(lastShiftClickPage,p.n);
+        const isRangeSelected = min===lastShiftClickPage && max===p.n &&
+          Array.from(selectedPages).every(pn => pn>=min && pn<=max) &&
+          selectedPages.size === (max-min+1);
+
+        if(isRangeSelected){
+          selectedPages.clear();
+          lastShiftClickPage=null;
+        } else {
+          selectedPages.clear();
+          for(let i=min;i<=max;i++) selectedPages.add(i);
+          lastShiftClickPage=p.n;
+        }
+      }
+      updateSelection();
+    } else {
+      lastShiftClickPage=null;
+      openPeek(p.n);
+    }
   });
 
   const rt=rubTag(p.rubrique);
@@ -641,15 +650,13 @@ function debounceIssueWrite(field, val){
 numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.target.value; debounceIssueWrite("numero", e.target.value); } });
 bouclage.addEventListener("input",e=>{ if(currentIssue){ currentIssue.bouclage=e.target.value||null; debounceIssueWrite("bouclage", e.target.value||null); } });
 
-/* ---- selection & drag ---- */
+/* ---- selection ---- */
 function clearSelection(){
   selectedPages.clear();
-  dragStartPage=null;
-  isDragging=false;
+  lastShiftClickPage=null;
   updateSelection();
 }
 document.getElementById("btnClearSelection").addEventListener("click", clearSelection);
-document.addEventListener("mouseup",()=>{ isDragging=false; dragStartPage=null; });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && selectedPages.size>0) clearSelection(); });
 
 /* ---- filters ---- */
