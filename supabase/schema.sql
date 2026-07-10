@@ -118,7 +118,18 @@ create policy "anon read color customizations" on public.color_customizations
 
 -- ---- Realtime ---------------------------------------------------------
 -- Permet à Supabase Realtime de diffuser les changements de ces trois tables.
+-- (vérifie d'abord si la table est déjà dans la publication, pour pouvoir
+-- relancer ce script sans erreur "already member of publication")
 
-alter publication supabase_realtime add table public.issues;
-alter publication supabase_realtime add table public.pages;
-alter publication supabase_realtime add table public.color_customizations;
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='issues') then
+    alter publication supabase_realtime add table public.issues;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='pages') then
+    alter publication supabase_realtime add table public.pages;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='color_customizations') then
+    alter publication supabase_realtime add table public.color_customizations;
+  end if;
+end $$;
