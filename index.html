@@ -330,6 +330,24 @@ let appInited = false;
 let pagesChannel = null, issuesChannel = null;
 let selectedPages = new Set();
 let lastShiftClickPage = null;
+let draggedPages = null;
+let dropTarget = null;
+
+async function reorderPages(draggedPageNums, targetPageNum){
+  const pages=[...state.pages];
+  const draggedPgs=draggedPageNums.map(n=>pages[n-1]).filter(Boolean);
+  const remaining=pages.filter(p=>!draggedPgs.includes(p));
+  const targetIdx=remaining.findIndex(p=>p.n===targetPageNum);
+  remaining.splice(Math.max(0, targetIdx), 0, ...draggedPgs);
+
+  for(let i=0;i<remaining.length;i++) remaining[i].n=i+1;
+  state.pages=remaining;
+
+  const updates=remaining.map(p=>({id:p.id, n:p.n}));
+  const {error}=await sb.from("pages").upsert(updates);
+  if(error) console.error("Erreur réordonnage:",error.message);
+  render();
+}
 
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
@@ -361,6 +379,41 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   el.setAttribute("data-page-n", p.n);
 
   el.style.userSelect="none";
+  el.draggable=true;
+
+  el.addEventListener("dragstart", e=>{
+    if(selectedPages.has(p.n)) draggedPages=Array.from(selectedPages).sort((a,b)=>a-b);
+    else draggedPages=[p.n];
+    e.dataTransfer.effectAllowed="move";
+  });
+
+  el.addEventListener("dragover", e=>{
+    e.preventDefault();
+    e.dataTransfer.dropEffect="move";
+    el.style.borderTop="3px solid var(--accent)";
+    dropTarget=p.n;
+  });
+
+  el.addEventListener("dragleave", e=>{
+    el.style.borderTop="";
+    if(dropTarget===p.n) dropTarget=null;
+  });
+
+  el.addEventListener("drop", async e=>{
+    e.preventDefault();
+    el.style.borderTop="";
+    if(!draggedPages || draggedPages.length===0) return;
+    if(!draggedPages.includes(p.n)) await reorderPages(draggedPages, p.n);
+    draggedPages=null;
+    dropTarget=null;
+  });
+
+  el.addEventListener("dragend", e=>{
+    el.style.borderTop="";
+    draggedPages=null;
+    dropTarget=null;
+  });
+
   el.addEventListener("click", e=>{
     if(e.shiftKey){
       e.preventDefault();
@@ -430,6 +483,17 @@ function renderGroupHeader(pages){
   const container=document.createElement("div");
   container.style.cssText="background:var(--hover); border:1px solid var(--accent); border-radius:8px; padding:14px; margin-bottom:12px; gap:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr));";
 
+  const sujetField=document.createElement("div");
+  sujetField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px; grid-column:1/-1;";
+  sujetField.innerHTML=`<label style="color:var(--muted); font-weight:600">Sujet</label>`;
+  const sujetInput=document.createElement("input");
+  sujetInput.id="bulkSujet";
+  sujetInput.style.cssText="padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;";
+  sujetInput.value=firstPage.sujet||"";
+  sujetInput.placeholder="Non modifié";
+  sujetField.appendChild(sujetInput);
+  container.appendChild(sujetField);
+
   const rubField=document.createElement("div");
   rubField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
   rubField.innerHTML=`<label style="color:var(--muted); font-weight:600">Rubrique</label>`;
@@ -476,7 +540,7 @@ function renderGroupHeader(pages){
 
   const btnApply=document.createElement("button");
   btnApply.textContent="Appliquer";
-  btnApply.style.cssText="padding:6px 12px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:500; align-self:flex-end; margin-top:8px;";
+  btnApply.style.cssText="padding:6px 12px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:500; align-self:flex-end; margin-top:8px; grid-column:1/-1;";
   btnApply.addEventListener("click",applyBulkEdit);
   container.appendChild(btnApply);
 
@@ -573,11 +637,12 @@ function updateSelection(){
 
 async function applyBulkEdit(){
   if(selectedPages.size===0) return;
+  const sujet=document.getElementById("bulkSujet").value;
   const rubrique=document.getElementById("bulkRubrique").value;
   const journaliste=document.getElementById("bulkJournaliste").value;
   const statut=document.getElementById("bulkStatut").value;
 
-  if(!rubrique && !journaliste && !statut){
+  if(!sujet && !rubrique && !journaliste && !statut){
     alert("Veuillez remplir au moins un champ à modifier");
     return;
   }
@@ -585,10 +650,11 @@ async function applyBulkEdit(){
   const updates=[];
   for(const n of selectedPages){
     const p=state.pages[n-1];
+    if(sujet) p.sujet=sujet;
     if(rubrique) p.rubrique=rubrique;
     if(journaliste) p.journaliste=journaliste;
     if(statut) p.statut=statut;
-    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, rubrique:p.rubrique, sujet:p.sujet, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, notes:p.notes});
+    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, rubrique:p.rubrique, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, notes:p.notes});
   }
   const {error}=await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
