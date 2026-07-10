@@ -54,7 +54,7 @@
   /* ---- Page header (Notion page style) ---- */
   header{background:var(--body); position:sticky; top:0; z-index:20}
   .head-userbar{display:flex; align-items:center; gap:12px; padding:12px 6% 0; justify-content:flex-end; border-bottom:1px solid var(--border)}
-  .head-inner{padding:26px 0 14px}
+  .head-inner{padding-top:26px; padding-bottom:14px}
   .titlebar{display:flex; align-items:center; gap:12px}
   .picon{width:34px; height:34px; border-radius:7px; display:grid; place-items:center; background:var(--hover); flex:none}
   .picon svg{width:20px; height:20px; color:var(--muted)}
@@ -743,10 +743,8 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
 
   const bits=[];
-  const sig=toSignes(p);
   if(p.calib){
     let t = `${fmt(p.calib)} ${p.unite==="signes"?"sg":p.unite==="feuillets"?"f.":"mots"}`;
-    if(p.unite==="signes"&&sig) t += ` · ≈${(sig/1500).toFixed(1)} f.`;
     bits.push(`<span>${t}</span>`);
   }
   if(p.rendu) bits.push(`<span class="due${isLate(p)?" late":""}">◷ ${frDate(p.rendu)}</span>`);
@@ -1278,7 +1276,7 @@ function renderStats(){
   for(const p of state.pages){ totalSig+=toSignes(p); counts[p.statut]++; if(p.sujet) defined++;
     if(p.rendu&&p.statut!=="boucle"){ if(!next||p.rendu<next) next=p.rendu; } }
   document.getElementById("pDefined").innerHTML = `Pages calées <b>${defined}/${TOTAL}</b>`;
-  document.getElementById("pCalib").innerHTML = `Calibrage <b>${fmt(totalSig)} sg</b> ≈ ${(totalSig/1500).toFixed(0)} f.`;
+  document.getElementById("pCalib").innerHTML = `Calibrage <b>${fmt(totalSig)} sg</b>`;
   document.getElementById("pBoucle").innerHTML = `Bouclé <b>${Math.round(counts.boucle/TOTAL*100)}%</b>`;
   document.getElementById("pNext").innerHTML = `Prochain rendu <b>${next?frDate(next):"—"}</b>`;
   const lg=document.getElementById("legend"); lg.innerHTML="";
@@ -1451,7 +1449,7 @@ function renderLotChips(active){
 function updateHint(){
   const p=state.pages[current-1], sig=toSignes(p), h=document.getElementById("calibHint");
   if(!p.calib){ h.textContent=""; return; }
-  if(p.unite==="signes") h.textContent=`≈ ${(sig/1500).toFixed(1)} feuillets (1 f. = 1500 signes)`;
+  if(p.unite==="signes") h.textContent="";
   else if(p.unite==="feuillets") h.textContent=`≈ ${fmt(sig)} signes`;
   else h.textContent=`≈ ${fmt(sig)} signes (~6 sg/mot)`;
 }
@@ -1698,9 +1696,9 @@ document.getElementById("btnViewGantt").addEventListener("click",()=>{
 });
 
 document.getElementById("btnCsv").addEventListener("click",()=>{
-  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Feuillets","Date de rendu","Statut","Journaliste","Notes"];
+  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Date de rendu","Statut","Journaliste","Notes"];
   const rows=state.pages.map(p=>{ const sig=toSignes(p);
-    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),sig?(sig/1500).toFixed(2):"",p.rendu,STATUTS[p.statut].label,p.journaliste,(p.notes||"").replace(/\n/g," ")]; });
+    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),p.rendu,STATUTS[p.statut].label,p.journaliste,(p.notes||"").replace(/\n/g," ")]; });
   const q=v=>{ v=(v==null?"":String(v)); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
   const csv=[head,...rows].map(r=>r.map(q).join(";")).join("\r\n");
   download("﻿"+csv, slug(currentIssue&&currentIssue.numero)+".csv","text/csv;charset=utf-8");
