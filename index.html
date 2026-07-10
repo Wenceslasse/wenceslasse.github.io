@@ -21,7 +21,7 @@
   button,input,select,textarea{font-family:inherit; font-size:inherit; color:inherit}
   ::placeholder{color:var(--faint)}
 
-  .wrap{max-width:none; margin:0; padding:0 32px}
+  .wrap{max-width:none; margin:0; padding:0 4%}
 
   /* ---- Layout : barre latérale + contenu (pleine largeur) ---- */
   #app{display:flex; align-items:stretch; min-height:100vh}
@@ -53,6 +53,7 @@
 
   /* ---- Page header (Notion page style) ---- */
   header{background:var(--body); position:sticky; top:0; z-index:20}
+  .head-userbar{display:flex; align-items:center; gap:12px; padding:12px 4% 0; justify-content:flex-end; border-bottom:1px solid var(--border)}
   .head-inner{padding:26px 0 14px}
   .titlebar{display:flex; align-items:center; gap:12px}
   .picon{width:34px; height:34px; border-radius:7px; display:grid; place-items:center; background:var(--hover); flex:none}
@@ -180,6 +181,29 @@
   .g2-scope button:hover{background:var(--hover)}
   .g2-scope button.on{background:#000; color:#fff}
 
+  /* ---- Color customization panel ---- */
+  .colormgr{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
+  .colormgr.open{opacity:1; pointer-events:auto}
+  .colormgr-panel{
+    position:fixed; top:0; right:0; height:100%; width:min(520px,94vw); background:var(--canvas);
+    border-left:1px solid var(--border); transform:translateX(100%); transition:transform .2s ease;
+    z-index:50; display:flex; flex-direction:column; box-shadow:-8px 0 30px rgba(15,15,15,.08);
+  }
+  .colormgr-panel.open{transform:none}
+  .colormgr-head{display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border)}
+  .colormgr-head h3{margin:0; font-size:16px; font-weight:600}
+  .colormgr-head button{border:none; background:transparent; cursor:pointer; font-size:18px; color:var(--muted); padding:4px 6px}
+  .colormgr-head button:hover{color:var(--text)}
+  .colormgr-body{flex:1; overflow-y:auto; padding:14px}
+  .colormgr-section{margin-bottom:20px}
+  .colormgr-sectiontitle{font-size:12px; font-weight:600; text-transform:uppercase; color:var(--muted); margin-bottom:8px; letter-spacing:.05em}
+  .colortagitem{display:flex; align-items:center; gap:10px; padding:8px; border-radius:6px; background:var(--hover); margin-bottom:6px}
+  .colortag-name{flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .colortag-preview{display:flex; gap:4px; align-items:center}
+  .colorpicker-btn{width:32px; height:32px; border:1px solid var(--border); border-radius:5px; cursor:pointer; padding:0; background:white}
+  .colorpicker-btn:hover{border-color:var(--border-strong)}
+  .colorpicker-input{position:absolute; opacity:0; width:0; height:0}
+
   /* ---- Peek panel editor (Notion style) ---- */
   .scrim{position:fixed; inset:0; background:rgba(15,15,15,.28); opacity:0; pointer-events:none; transition:opacity .16s; z-index:40}
   .scrim.open{opacity:1; pointer-events:auto}
@@ -242,6 +266,36 @@
     .legend{margin-left:0; width:100%}
     .prow{grid-template-columns:1fr}
   }
+  /* ---- Visitor Auth Screen ---- */
+  .visitor-auth-screen{position:fixed; inset:0; background:var(--body); display:flex; align-items:center; justify-content:center; z-index:100}
+  .visitor-card{background:var(--canvas); border:1px solid var(--border); border-radius:12px; max-width:520px; width:90%; box-shadow:0 4px 12px rgba(0,0,0,.1)}
+  .visitor-header{background:linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border-radius:12px 12px 0 0; overflow:hidden; position:relative; min-height:240px; display:flex; align-items:center; justify-content:center}
+  .visitor-anim-container{width:100%; height:100%; position:relative; display:flex; align-items:center; justify-content:center}
+  .visitor-anim-bg{position:absolute; inset:0; background:#000000}
+  .visitor-anim-text{position:relative; z-index:1; color:#fff; font-size:48px; font-weight:700; text-align:center; white-space:nowrap}
+  .visitor-body{padding:24px}
+  .visitor-question{margin-bottom:16px; text-align:center}
+  .visitor-question p{margin:0 0 8px; color:var(--muted); font-size:14px}
+  .visitor-lyrics{font-size:16px; font-weight:500; color:var(--text); font-style:italic; margin:12px 0 0 !important}
+  .visitor-msg{margin-top:12px; padding:10px; border-radius:6px; font-size:13px; text-align:center}
+  .visitor-msg.error{background:#FFE2DD; color:#9B2C1E}
+  .visitor-msg.success{background:#DBEDDB; color:#2C5E3E}
+
+  @keyframes visitor-zoom-fade{
+    0%{opacity:0; transform:scale(0.98) translateY(8px)}
+    100%{opacity:1; transform:scale(1) translateY(0)}
+  }
+  @keyframes visitor-bg-invert{
+    0%{background:#000000}
+    100%{background:#FBFBFA}
+  }
+  @keyframes visitor-text-invert{
+    0%{color:#FFFFFF; text-shadow:none}
+    100%{color:#37352F; text-shadow:none}
+  }
+  .visitor-anim-container.playing .visitor-anim-bg{animation:visitor-bg-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
+  .visitor-anim-container.playing .visitor-anim-text{animation:visitor-zoom-fade 0.6s cubic-bezier(0.16,1,0.3,1) forwards, visitor-text-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
+
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
   @media print{
     .toolbar,.legend,.scrim,.peek,.prop-inline input{display:none!important}
@@ -263,11 +317,17 @@
     <p class="authsub">Connexion à l'espace éditorial</p>
 
     <div style="display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px">
-      <button class="authtab active" id="tabPassword" data-method="password">Connexion</button>
-      <button class="authtab" id="tabMagicLink" data-method="magiclink">Lien magique</button>
+      <button class="authtab active" id="tabVisitor" data-method="visitor">Visitor</button>
+      <button class="authtab" id="tabPassword" data-method="password">Connexion</button>
     </div>
 
-    <div id="methodPassword">
+    <div id="methodVisitor">
+      <label class="authlabel" for="visitorPassword">Mot de passe</label>
+      <input type="password" id="visitorPassword" placeholder="Votre mot de passe" autocomplete="off">
+      <button class="ghostbtn primary authbtn" id="btnVisitorPassword" style="margin-top:12px">Suivant</button>
+    </div>
+
+    <div id="methodPassword" style="display:none">
       <label class="authlabel" for="authEmailPwd">Adresse email</label>
       <input type="email" id="authEmailPwd" placeholder="prenom@redaction.fr" autocomplete="email">
       <label class="authlabel" for="authPassword" style="margin-top:10px">Mot de passe</label>
@@ -275,13 +335,30 @@
       <button class="ghostbtn primary authbtn" id="btnPassword" style="margin-top:12px">Connexion</button>
     </div>
 
-    <div id="methodMagicLink" style="display:none">
-      <label class="authlabel" for="authEmail">Adresse email</label>
-      <input type="email" id="authEmail" placeholder="prenom@redaction.fr" autocomplete="email">
-      <button class="ghostbtn primary authbtn" id="btnMagicLink">Envoyer le lien magique</button>
-    </div>
-
     <div class="authmsg" id="authMsg"></div>
+  </div>
+</div>
+
+<!-- VISITOR SECURITY SCREEN -->
+<div class="visitor-auth-screen" id="visitorSecurityScreen" style="display:none">
+  <div class="visitor-card">
+    <div class="visitor-header">
+      <div class="visitor-anim-container" id="visitorAnimContainer">
+        <div class="visitor-anim-bg" id="visitorAnimBg"></div>
+        <div class="visitor-anim-text" id="visitorAnimText">Shazam, ouvre toi !</div>
+      </div>
+    </div>
+    <div class="visitor-body">
+      <div class="visitor-question">
+        <p>Complétez les paroles de <strong>Melodrama</strong> (Theodora & Disiz) :</p>
+        <p class="visitor-lyrics">Je suis comme un son que t'aurais pas...</p>
+      </div>
+      <label class="authlabel" for="visitorAnswer" style="margin-top:16px">Réponse</label>
+      <input type="text" id="visitorAnswer" placeholder="Votre réponse" autocomplete="off">
+      <button class="ghostbtn primary authbtn" id="btnVisitorAnswer" style="margin-top:12px">Accéder</button>
+      <button class="ghostbtn authbtn" id="btnBackToPassword" style="margin-top:8px">← Retour</button>
+      <div class="authmsg" id="visitorMsg"></div>
+    </div>
   </div>
 </div>
 
@@ -299,6 +376,10 @@
 </aside>
 <div id="appmain">
 <header>
+  <div class="head-userbar">
+    <span class="userbar" id="pUser"></span>
+    <button class="tbtn" id="btnLogout">Déconnexion</button>
+  </div>
   <div class="wrap head-inner">
     <div class="titlebar">
       <button class="sb-toggle" id="btnToggleSidebar" title="Afficher/masquer le menu" aria-label="Afficher ou masquer le menu">☰</button>
@@ -333,14 +414,13 @@
       <button class="tbtn" id="btnViewCalendar" title="Vue Calendrier">📅 Calendrier</button>
       <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
       <span class="spacer"></span>
+      <button class="tbtn" id="btnColorMgr" title="Personnaliser les couleurs">🎨 Couleurs</button>
       <button class="tbtn" id="btnCsv">Exporter CSV</button>
       <button class="tbtn" id="btnJson">Sauvegarde</button>
       <button class="tbtn" id="btnImport">Importer</button>
       <button class="tbtn" id="btnPrint">Imprimer</button>
       <button class="tbtn" id="btnReset">Réinitialiser</button>
       <input type="file" id="fileInput" accept="application/json" hidden>
-      <span class="userbar" id="pUser"></span>
-      <button class="tbtn" id="btnLogout">Déconnexion</button>
     </div>
   </div>
 </header>
@@ -411,6 +491,15 @@
   </div>
 </aside>
 
+<div class="colormgr" id="colorMgrScrim"></div>
+<aside class="colormgr-panel" id="colorMgrPanel" aria-label="Personnaliser les couleurs">
+  <div class="colormgr-head">
+    <h3>Couleurs</h3>
+    <button id="closeColorMgr" title="Fermer">✕</button>
+  </div>
+  <div class="colormgr-body" id="colorMgrBody"></div>
+</aside>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
@@ -447,8 +536,15 @@ const PASTEL_PALETTE = [
   {bg:"#E5F0FF", fg:"#000000"}, {bg:"#D5E8FF", fg:"#000000"}, {bg:"#C5E0FF", fg:"#000000"}, {bg:"#B5D8FF", fg:"#000000"}
 ];
 
-function getTagColor(text) {
+function getTagColor(text, fieldType) {
   if (!text) return PASTEL_PALETTE[0];
+  // Check for custom color
+  const key = fieldType ? `${fieldType}:${text}` : `rubrique:${text}`;
+  if (colorCustomizations[key]) return colorCustomizations[key];
+  // Fallback to default colors
+  if (fieldType === "statut" && STATUTS[text]) return STATUTS[text];
+  if (fieldType === "lot" && LOTS[text]) return LOTS[text];
+  // Hash-based color for rubriques/thématiques
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
     hash = ((hash << 5) - hash) + text.charCodeAt(i);
@@ -469,7 +565,7 @@ let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
 let issuesCache = [];
 let currentIssue = null;
 let appInited = false;
-let pagesChannel = null, issuesChannel = null;
+let pagesChannel = null, issuesChannel = null, colorsChannel = null;
 let selectedPages = new Set();
 let lastShiftClickPage = null;
 let draggedPages = null;
@@ -478,6 +574,7 @@ let currentView = "grid"; // grid, calendar, gantt
 let currentCalendarMonth = new Date();
 let ganttScope = "month"; // month | week
 let ganttAnchor = new Date();
+let colorCustomizations = {}; // { "rubrique:name": {bg, fg}, "statut:name": {bg, fg}, "lot:name": {bg, fg} }
 
 async function reorderPages(draggedPageNums, targetPageNum){
   const pages=[...state.pages];
@@ -493,6 +590,30 @@ async function reorderPages(draggedPageNums, targetPageNum){
   const {error}=await sb.from("pages").upsert(updates);
   if(error) console.error("Erreur réordonnage:",error.message);
   render();
+}
+
+async function loadColorCustomizations(issueId) {
+  const { data, error } = await sb.from("color_customizations").select("*").eq("issue_id", issueId);
+  if (error) { console.error("Erreur chargement couleurs :", error.message); return; }
+  colorCustomizations = {};
+  (data || []).forEach(row => {
+    const key = `${row.field_type}:${row.tag_name}`;
+    colorCustomizations[key] = { bg: row.bg_color, fg: row.fg_color };
+  });
+}
+
+async function saveColorCustomization(fieldType, tagName, bgColor, fgColor) {
+  if (!currentIssue) return;
+  const { error } = await sb.from("color_customizations").upsert({
+    issue_id: currentIssue.id,
+    field_type: fieldType,
+    tag_name: tagName,
+    bg_color: bgColor,
+    fg_color: fgColor
+  });
+  if (error) { console.error("Erreur sauvegarde couleur :", error.message); return; }
+  const key = `${fieldType}:${tagName}`;
+  colorCustomizations[key] = { bg: bgColor, fg: fgColor };
 }
 
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
@@ -590,8 +711,8 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
     }
   }, true);
 
-  const rt=rubTag(p.rubrique);
-  const rub = `<div class="rubrow">${rt?pillHTML(p.rubrique,rt):""}</div>`;
+  const rt=getTagColor(p.rubrique, "rubrique");
+  const rub = `<div class="rubrow">${p.rubrique?pillHTML(p.rubrique,rt):""}</div>`;
   const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
 
   const bits=[];
@@ -602,13 +723,14 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
     bits.push(`<span>${t}</span>`);
   }
   if(p.rendu) bits.push(`<span class="due${isLate(p)?" late":""}">◷ ${frDate(p.rendu)}</span>`);
-  const st=STATUTS[p.statut];
-  const status=`<span class="statuswrap">${pillHTML(st.label,st)}</span>`;
+  const st=getTagColor(p.statut, "statut");
+  const statLabel=STATUTS[p.statut]?STATUTS[p.statut].label:p.statut;
+  const status=`<span class="statuswrap">${pillHTML(statLabel,st)}</span>`;
   const meta=`<div class="cardmeta">${bits.join('<span class="sep">·</span>')}${status}</div>`;
 
   const separator = `<div style="border-top:1px solid var(--border);margin:8px 0;"></div>`;
   const notes = p.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4;">${esc(p.notes)}</div>`:"";
-  const themaTag = p.thematique?getTagColor(p.thematique):null;
+  const themaTag = p.thematique?getTagColor(p.thematique, "thematique"):null;
   const thema = p.thematique?pillHTML(p.thematique,themaTag):"";
 
   const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
@@ -714,51 +836,86 @@ function renderCalendarView(){
   cal.innerHTML="";
 
   const grouped={};
+  let firstRenduDate=null;
   for(const p of state.pages){
     if(!matches(p)||!p.rendu) continue;
     const d=p.rendu;
     if(!grouped[d]) grouped[d]=[];
     grouped[d].push(p);
+    if(!firstRenduDate||d<firstRenduDate) firstRenduDate=d;
   }
 
   const container=document.createElement("div");
-  container.style.cssText="padding:20px;";
+  container.style.cssText="display:flex;flex-direction:column;gap:16px;padding:20px;";
 
+  // Header avec navigation
   const header=document.createElement("div");
-  header.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;";
+  header.style.cssText="display:flex;align-items:center;justify-content:space-between;";
+
+  const nav=document.createElement("div");
+  nav.style.cssText="display:flex;align-items:center;gap:12px;";
 
   const prevBtn=document.createElement("button");
   prevBtn.textContent="◀";
-  prevBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:20px;padding:4px 8px;";
+  prevBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:18px;padding:6px 10px;border-radius:5px;";
   prevBtn.addEventListener("click",()=>{
     currentCalendarMonth.setMonth(currentCalendarMonth.getMonth()-1);
     renderCalendarView();
   });
 
-  const title=document.createElement("h2");
-  title.style.cssText="margin:0;font-size:18px;color:var(--text);font-weight:600;";
+  const title=document.createElement("div");
+  title.style.cssText="font-size:16px;font-weight:600;min-width:160px;text-align:center;";
   title.textContent=currentCalendarMonth.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
 
   const nextBtn=document.createElement("button");
   nextBtn.textContent="▶";
-  nextBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:20px;padding:4px 8px;";
+  nextBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:18px;padding:6px 10px;border-radius:5px;";
   nextBtn.addEventListener("click",()=>{
     currentCalendarMonth.setMonth(currentCalendarMonth.getMonth()+1);
     renderCalendarView();
   });
 
-  header.appendChild(prevBtn);
-  header.appendChild(title);
-  header.appendChild(nextBtn);
+  nav.appendChild(prevBtn);
+  nav.appendChild(title);
+  nav.appendChild(nextBtn);
+
+  const actions=document.createElement("div");
+  actions.style.cssText="display:flex;gap:8px;";
+
+  const jumpBtn=document.createElement("button");
+  jumpBtn.textContent="⏭ Premier rendu";
+  jumpBtn.style.cssText="border:1px solid var(--border);background:var(--canvas);border-radius:5px;padding:6px 12px;cursor:pointer;font-size:13px;color:var(--muted);";
+  jumpBtn.addEventListener("click",()=>{
+    if(firstRenduDate){
+      const d=new Date(firstRenduDate+"T00:00:00");
+      currentCalendarMonth.setMonth(d.getMonth());
+      currentCalendarMonth.setFullYear(d.getFullYear());
+      renderCalendarView();
+    }
+  });
+
+  const todayBtn=document.createElement("button");
+  todayBtn.textContent="Aujourd'hui";
+  todayBtn.style.cssText="border:1px solid var(--border);background:var(--canvas);border-radius:5px;padding:6px 12px;cursor:pointer;font-size:13px;color:var(--muted);";
+  todayBtn.addEventListener("click",()=>{
+    currentCalendarMonth=new Date();
+    renderCalendarView();
+  });
+
+  actions.appendChild(jumpBtn);
+  actions.appendChild(todayBtn);
+  header.appendChild(nav);
+  header.appendChild(actions);
   container.appendChild(header);
 
+  // Grille du calendrier
   const calGrid=document.createElement("div");
   calGrid.style.cssText="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;";
 
   const dayNames=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
   for(const day of dayNames){
     const dayEl=document.createElement("div");
-    dayEl.style.cssText="background:var(--hover);padding:8px;text-align:center;font-weight:600;color:var(--muted);font-size:12px;";
+    dayEl.style.cssText="background:var(--hover);padding:9px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;";
     dayEl.textContent=day;
     calGrid.appendChild(dayEl);
   }
@@ -768,27 +925,58 @@ function renderCalendarView(){
   const startDate=new Date(firstDay);
   startDate.setDate(startDate.getDate()-(firstDay.getDay()+6)%7);
 
+  const today=todayISO();
   let currentDate=new Date(startDate);
   while(currentDate<=lastDay||currentDate.getDay()!==1){
     const dateStr=currentDate.toISOString().split("T")[0];
     const dayEl=document.createElement("div");
-    dayEl.style.cssText=`background:var(--canvas);padding:8px;min-height:100px;border:1px solid var(--border);${currentDate.getMonth()!==currentCalendarMonth.getMonth()?'opacity:0.3;':''}`;
+    const isToday=dateStr===today;
+    const isOtherMonth=currentDate.getMonth()!==currentCalendarMonth.getMonth();
+    dayEl.style.cssText=`background:${isToday?'rgba(35,131,226,0.04)':'var(--canvas)'};min-height:140px;padding:8px;position:relative;display:flex;flex-direction:column;${isOtherMonth?'opacity:0.3;background:var(--body);':''}${isToday?'border:2px solid var(--accent);':'border:1px solid var(--border);'}`;
 
     const dateNum=document.createElement("div");
-    dateNum.style.cssText="font-weight:600;color:var(--text);margin-bottom:4px;";
+    dateNum.style.cssText=`font-weight:600;font-size:${isToday?'13':'12'}px;color:${isToday?'var(--accent)':'var(--text)'};margin-bottom:8px;padding-right:40px;`;
     dateNum.textContent=currentDate.getDate();
     dayEl.appendChild(dateNum);
 
+    if(isToday){
+      const badge=document.createElement("div");
+      badge.style.cssText="position:absolute;top:2px;right:2px;font-size:9px;font-weight:700;color:var(--accent);background:white;padding:1px 3px;border-radius:2px;";
+      badge.textContent="auj.";
+      dayEl.appendChild(badge);
+    }
+
+    const entries=document.createElement("div");
+    entries.style.cssText="display:flex;flex-direction:column;gap:6px;";
+
     if(grouped[dateStr]){
       for(const p of grouped[dateStr]){
+        const entry=document.createElement("div");
+        const st=getTagColor(p.statut, "statut");
+        entry.style.cssText=`background:${st.bg};color:${st.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;border-left:4px solid ${st.bg};`;
+        entry.addEventListener("click",()=>openPeek(p.n));
+        entry.addEventListener("mouseenter",()=>{ entry.style.boxShadow="0 2px 6px rgba(0,0,0,0.1)"; entry.style.transform="translateX(2px)"; });
+        entry.addEventListener("mouseleave",()=>{ entry.style.boxShadow=""; entry.style.transform=""; });
+
         const dot=document.createElement("div");
-        const st=STATUTS[p.statut];
-        dot.style.cssText=`width:6px;height:6px;border-radius:50%;background:${st.dot};display:inline-block;margin-right:2px;cursor:pointer;`;
-        dot.title=p.sujet;
-        dot.addEventListener("click",()=>openPeek(p.n));
-        dayEl.appendChild(dot);
+        dot.style.cssText=`width:8px;height:8px;border-radius:50%;background:${st.bg};flex-shrink:0;`;
+        entry.appendChild(dot);
+
+        const text=document.createElement("div");
+        text.style.cssText="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;";
+        text.textContent=p.sujet||p.rubrique||"—";
+        entry.appendChild(text);
+
+        entries.appendChild(entry);
       }
+    } else {
+      const empty=document.createElement("div");
+      empty.style.cssText="color:var(--faint);font-size:12px;font-style:italic;";
+      empty.textContent="—";
+      entries.appendChild(empty);
     }
+
+    dayEl.appendChild(entries);
     calGrid.appendChild(dayEl);
     currentDate.setDate(currentDate.getDate()+1);
   }
@@ -938,8 +1126,9 @@ function renderGanttView(){
     row.appendChild(label);
 
     const track=document.createElement("div"); track.className="g2-track";
-    const col=getTagColor(g.rubrique||g.thematique||"");
-    const s=STATUTS[g.statut]||{label:"?",dot:"#ccc"};
+    const col=getTagColor(g.rubrique||g.thematique||"", g.rubrique?"rubrique":"thematique");
+    const s=getTagColor(g.statut, "statut");
+    const sLabel=STATUTS[g.statut]?STATUTS[g.statut].label:g.statut;
     const late=g.rendu && g.statut!=="boucle" && g.rendu<todayISO();
     let left=pct(start), right=pct(gAdd(end,1));
     left=Math.max(0,left); right=Math.min(100,right);
@@ -947,8 +1136,8 @@ function renderGanttView(){
     const bar=document.createElement("div");
     bar.className="g2-bar"+(late?" late":"");
     bar.style.cssText=`left:${left}%;width:${width}%;background:${col.bg};color:${col.fg}`;
-    bar.innerHTML=`<span class="cap">${esc(g.sujet||g.rubrique||"—")}</span><span class="endpt" style="background:${s.dot}"></span>`;
-    bar.title=`${g.sujet||"[Sujet]"} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)} · ${s.label}`;
+    bar.innerHTML=`<span class="cap">${esc(g.sujet||g.rubrique||"—")}</span><span class="endpt" style="background:${s.bg}"></span>`;
+    bar.title=`${g.sujet||"[Sujet]"} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)} · ${sLabel}`;
     bar.addEventListener("click",()=>openPeek(pmin));
     track.appendChild(bar);
     row.appendChild(track);
@@ -1075,6 +1264,79 @@ function renderDatalist(){
   document.getElementById("journalistes").innerHTML=setJ.map(r=>`<option value="${esc(r)}">`).join("");
 }
 
+const colorMgrScrim=document.getElementById("colorMgrScrim"), colorMgrPanel=document.getElementById("colorMgrPanel");
+function openColorMgr(){
+  renderColorMgr();
+  colorMgrPanel.classList.add("open");
+  colorMgrScrim.classList.add("open");
+}
+function closeColorMgr(){
+  colorMgrPanel.classList.remove("open");
+  colorMgrScrim.classList.remove("open");
+}
+function renderColorMgr(){
+  const body=document.getElementById("colorMgrBody"); body.innerHTML="";
+
+  // Rubrique section
+  const rubSection=document.createElement("div"); rubSection.className="colormgr-section";
+  const rubTitle=document.createElement("div"); rubTitle.className="colormgr-sectiontitle"; rubTitle.textContent="Rubriques"; rubSection.appendChild(rubTitle);
+  const rubiques=new Set(state.pages.map(p=>p.rubrique).filter(Boolean));
+  for(const r of [...rubiques].sort()){
+    const item=document.createElement("div"); item.className="colortagitem";
+    const name=document.createElement("div"); name.className="colortag-name"; name.textContent=r;
+    const color=getTagColor(r, "rubrique");
+    const preview=document.createElement("div"); preview.className="colortag-preview";
+    const bg=document.createElement("button"); bg.className="colorpicker-btn"; bg.style.background=color.bg; bg.style.borderColor=color.fg; bg.title="Couleur de fond";
+    bg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.bg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("rubrique", r, c, color.fg); renderColorMgr(); }); input.click(); });
+    const fg=document.createElement("button"); fg.className="colorpicker-btn"; fg.style.background=color.fg; fg.title="Couleur du texte";
+    fg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.fg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("rubrique", r, color.bg, c); renderColorMgr(); }); input.click(); });
+    preview.appendChild(bg); preview.appendChild(fg);
+    item.appendChild(name); item.appendChild(preview);
+    rubSection.appendChild(item);
+  }
+  body.appendChild(rubSection);
+
+  // Statut section
+  const statSection=document.createElement("div"); statSection.className="colormgr-section";
+  const statTitle=document.createElement("div"); statTitle.className="colormgr-sectiontitle"; statTitle.textContent="Statuts"; statSection.appendChild(statTitle);
+  for(const [k,s] of Object.entries(STATUTS)){
+    const item=document.createElement("div"); item.className="colortagitem";
+    const name=document.createElement("div"); name.className="colortag-name"; name.textContent=s.label;
+    const color=getTagColor(k, "statut");
+    const preview=document.createElement("div"); preview.className="colortag-preview";
+    const bg=document.createElement("button"); bg.className="colorpicker-btn"; bg.style.background=color.bg; bg.style.borderColor=color.fg; bg.title="Couleur de fond";
+    bg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.bg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("statut", k, c, color.fg); renderColorMgr(); }); input.click(); });
+    const fg=document.createElement("button"); fg.className="colorpicker-btn"; fg.style.background=color.fg; fg.title="Couleur du texte";
+    fg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.fg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("statut", k, color.bg, c); renderColorMgr(); }); input.click(); });
+    preview.appendChild(bg); preview.appendChild(fg);
+    item.appendChild(name); item.appendChild(preview);
+    statSection.appendChild(item);
+  }
+  body.appendChild(statSection);
+
+  // Lot section
+  const lotSection=document.createElement("div"); lotSection.className="colormgr-section";
+  const lotTitle=document.createElement("div"); lotTitle.className="colormgr-sectiontitle"; lotTitle.textContent="Lots"; lotSection.appendChild(lotTitle);
+  for(const [k,s] of Object.entries(LOTS)){
+    const item=document.createElement("div"); item.className="colortagitem";
+    const name=document.createElement("div"); name.className="colortag-name"; name.textContent=s.label;
+    const color=getTagColor(k, "lot");
+    const preview=document.createElement("div"); preview.className="colortag-preview";
+    const bg=document.createElement("button"); bg.className="colorpicker-btn"; bg.style.background=color.bg; bg.style.borderColor=color.fg; bg.title="Couleur de fond";
+    bg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.bg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("lot", k, c, color.fg); renderColorMgr(); }); input.click(); });
+    const fg=document.createElement("button"); fg.className="colorpicker-btn"; fg.style.background=color.fg; fg.title="Couleur du texte";
+    fg.addEventListener("click",()=>{ const input=document.createElement("input"); input.type="color"; input.value=color.fg; input.addEventListener("input",e=>{ const c=e.target.value; saveColorCustomization("lot", k, color.bg, c); renderColorMgr(); }); input.click(); });
+    preview.appendChild(bg); preview.appendChild(fg);
+    item.appendChild(name); item.appendChild(preview);
+    lotSection.appendChild(item);
+  }
+  body.appendChild(lotSection);
+}
+
+document.getElementById("closeColorMgr").addEventListener("click", closeColorMgr);
+colorMgrScrim.addEventListener("click", closeColorMgr);
+document.getElementById("btnColorMgr").addEventListener("click", openColorMgr);
+
 function updateSelection(){
   const scrollY = window.scrollY;
   render();
@@ -1141,19 +1403,19 @@ function openPeek(n){
 function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; }
 function renderChips(active){
   const c=document.getElementById("chips"); c.innerHTML="";
-  for(const k in STATUTS){ const s=STATUTS[k];
+  for(const k in STATUTS){ const defaultS=STATUTS[k]; const s=getTagColor(k, "statut");
     const b=document.createElement("button"); b.type="button"; b.className="opt"+(k===active?" active":"");
-    b.innerHTML=pillHTML(s.label,s);
+    b.innerHTML=pillHTML(defaultS.label,s);
     b.addEventListener("click",()=>{ commit("statut",k); renderChips(k); });
     c.appendChild(b);
   }
 }
 function renderLotChips(active){
   const c=document.getElementById("lotChips"); c.innerHTML="";
-  for(const k in LOTS){ const s=LOTS[k];
+  for(const k in LOTS){ const defaultS=LOTS[k]; const s=getTagColor(k, "lot");
     const b=document.createElement("button"); b.type="button"; b.className="opt"+(k===active?" active":"");
-    b.title=k===active?"Cliquer pour retirer du lot":"Affecter au "+s.label;
-    b.innerHTML=pillHTML(s.label,s);
+    b.title=k===active?"Cliquer pour retirer du lot":"Affecter au "+defaultS.label;
+    b.innerHTML=pillHTML(defaultS.label,s);
     b.addEventListener("click",()=>{ const nv=(active===k)?"":k; commit("lot",nv); renderLotChips(nv); });
     c.appendChild(b);
   }
@@ -1287,6 +1549,7 @@ async function selectIssue(id, pushUrl){
     const r = (data||[]).find(x=>x.n===i+1);
     return r ? rowToPage(r) : blankPage(i+1);
   });
+  await loadColorCustomizations(id);
   render();
   subscribePages(id);
 }
@@ -1308,6 +1571,8 @@ async function duplicateIssue(id){
   if(!confirm(`Dupliquer « ${src.numero||"ce numéro"} » ?\n\nUn nouveau chemin de fer sera créé avec une copie de toutes les pages.`)) return;
   const { data: srcPages, error:e0 } = await sb.from("pages").select("*").eq("issue_id", id);
   if(e0){ alert("Erreur de lecture des pages : "+e0.message); return; }
+  const { data: srcColors, error:e1 } = await sb.from("color_customizations").select("*").eq("issue_id", id);
+  if(e1){ alert("Erreur de lecture des couleurs : "+e1.message); return; }
   const { data: newIss, error } = await sb.from("issues").insert({ numero:(src.numero||"Sans nom")+" (copie)", bouclage: src.bouclage||null }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
   const bySrcN={}; (srcPages||[]).forEach(p=>{ bySrcN[p.n]=p; });
@@ -1317,6 +1582,11 @@ async function duplicateIssue(id){
       journaliste:s.journaliste||"", lot:s.lot||"", notes:s.notes||"" }; });
   const { error:e2 } = await sb.from("pages").insert(pages);
   if(e2){ alert("Erreur de copie des pages : "+e2.message); return; }
+  if((srcColors||[]).length>0){
+    const newColors = (srcColors||[]).map(c=>({ issue_id:newIss.id, field_type:c.field_type, tag_name:c.tag_name, bg_color:c.bg_color, fg_color:c.fg_color }));
+    const { error:e3 } = await sb.from("color_customizations").insert(newColors);
+    if(e3) console.error("Erreur copie couleurs :", e3.message);
+  }
   if(!issuesCache.find(i=>i.id===newIss.id)) issuesCache.push(newIss);
   populateIssueSelect();
   await selectIssue(newIss.id);
@@ -1338,6 +1608,13 @@ function subscribePages(issueId){
       state.pages[row.n-1] = np;
       render();
       refreshPeekIfIdle(row.n);
+    })
+    .subscribe();
+
+  if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
+  colorsChannel = sb.channel("colors-"+issueId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"color_customizations",filter:`issue_id=eq.${issueId}`}, payload=>{
+      loadColorCustomizations(issueId).then(()=>{ render(); });
     })
     .subscribe();
 }
@@ -1439,6 +1716,8 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   }));
   const { error } = await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
+  await sb.from("color_customizations").delete().eq("issue_id", currentIssue.id);
+  colorCustomizations={};
   state.pages = updates.map(rowToPage);
   render();
 });
@@ -1488,19 +1767,22 @@ authEmail.addEventListener("keydown", e=>{ if(e.key==="Enter") sendMagicLink(); 
 document.getElementById("btnPassword").addEventListener("click", signInWithPassword);
 authPassword.addEventListener("keydown", e=>{ if(e.key==="Enter") signInWithPassword(); });
 
-document.getElementById("tabPassword").addEventListener("click", e=>{
-  document.getElementById("methodPassword").style.display="";
-  document.getElementById("methodMagicLink").style.display="none";
-  document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
-  e.target.classList.add("active");
-  setAuthMsg("", false);
-});
-document.getElementById("tabMagicLink").addEventListener("click", e=>{
-  document.getElementById("methodMagicLink").style.display="";
+document.getElementById("tabVisitor").addEventListener("click", e=>{
+  document.getElementById("methodVisitor").style.display="";
   document.getElementById("methodPassword").style.display="none";
   document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
   e.target.classList.add("active");
   setAuthMsg("", false);
+  document.getElementById("visitorPassword").focus();
+});
+
+document.getElementById("tabPassword").addEventListener("click", e=>{
+  document.getElementById("methodPassword").style.display="";
+  document.getElementById("methodVisitor").style.display="none";
+  document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
+  e.target.classList.add("active");
+  setAuthMsg("", false);
+  document.getElementById("authEmailPwd").focus();
 });
 
 document.getElementById("btnLogout").addEventListener("click", ()=>sb.auth.signOut());
@@ -1509,7 +1791,9 @@ function showAuth(){
   authScreen.style.display="flex"; appRoot.style.display="none";
   if(pagesChannel){ sb.removeChannel(pagesChannel); pagesChannel=null; }
   if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
+  if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
   appInited=false; currentIssue=null; issuesCache=[];
+  colorCustomizations={};
 }
 async function showApp(session){
   authScreen.style.display="none"; appRoot.style.display="";
@@ -1533,8 +1817,117 @@ window.addEventListener("popstate", ()=>{
   const id = new URL(window.location.href).searchParams.get("issue");
   if(id && issuesCache.find(i=>i.id===id) && (!currentIssue || currentIssue.id!==id)) selectIssue(id, false);
 });
+
+/* ---- VISITOR MODE ---- */
+const VISITOR_PASSWORD_HASH = "4e7462f7ad59e8fcaa009233b030bd9d501bbe811600c4496bed7d026b85e1b6";
+let isVisitorMode = false;
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function verifyVisitorPassword() {
+  const pwd = document.getElementById("visitorPassword").value.trim();
+  if (!pwd) { setAuthMsg("Veuillez entrer un mot de passe", true); return; }
+
+  const hash = await sha256(pwd);
+  if (hash !== VISITOR_PASSWORD_HASH) { setAuthMsg("Mot de passe incorrect", true); return; }
+
+  // Afficher l'animation et la question de sécurité
+  showVisitorSecurityScreen();
+}
+
+function showVisitorSecurityScreen() {
+  document.getElementById("visitorSecurityScreen").style.display = "flex";
+  playVisitorAnimation();
+  document.getElementById("visitorAnswer").focus();
+}
+
+function playVisitorAnimation() {
+  const container = document.getElementById("visitorAnimContainer");
+  const bg = document.getElementById("visitorAnimBg");
+  const text = document.getElementById("visitorAnimText");
+
+  container.classList.remove("playing");
+  void bg.offsetWidth; // Force reflow
+  container.classList.add("playing");
+}
+
+function verifyVisitorAnswer() {
+  const answer = document.getElementById("visitorAnswer").value.trim().toLowerCase();
+  const visitorMsg = document.getElementById("visitorMsg");
+
+  if (answer !== "shazam") {
+    visitorMsg.className = "authmsg error";
+    visitorMsg.textContent = "Réponse incorrecte";
+    return;
+  }
+
+  // Authentification réussie
+  activateVisitorMode();
+}
+
+function activateVisitorMode() {
+  isVisitorMode = true;
+  localStorage.setItem("cdf_visitor_mode", "true");
+  document.getElementById("visitorSecurityScreen").style.display = "none";
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+
+  // Désactiver les boutons d'édition
+  disableEditingUI();
+}
+
+function disableEditingUI() {
+  // Désactiver tous les boutons et champs d'édition
+  const disableSelectors = [
+    "#btnNewIssue", "#btnClearSelection", "#btnColorMgr", "#btnCsv", "#btnJson",
+    "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#btnPassword",
+    "#btnMagicLink", ".ghostbtn.primary", "#dtitle", "[id^='f']", "#numero"
+  ];
+
+  disableSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => {
+      if (el.id !== "btnLogout") {
+        el.disabled = true;
+        el.style.opacity = "0.5";
+        el.style.cursor = "not-allowed";
+      }
+    });
+  });
+
+  // Afficher un badge visitor
+  const userbar = document.getElementById("pUser");
+  if (userbar) userbar.textContent = "👁 Mode Visitor";
+}
+
+// Vérifier si déjà en mode visitor
+if (localStorage.getItem("cdf_visitor_mode") === "true") {
+  isVisitorMode = true;
+}
+
+document.getElementById("btnVisitorPassword").addEventListener("click", verifyVisitorPassword);
+document.getElementById("visitorPassword").addEventListener("keydown", e => {
+  if (e.key === "Enter") verifyVisitorPassword();
+});
+
+document.getElementById("btnVisitorAnswer").addEventListener("click", verifyVisitorAnswer);
+document.getElementById("visitorAnswer").addEventListener("keydown", e => {
+  if (e.key === "Enter") verifyVisitorAnswer();
+});
+
+document.getElementById("btnBackToPassword").addEventListener("click", () => {
+  document.getElementById("visitorSecurityScreen").style.display = "none";
+  document.getElementById("visitorAnswer").value = "";
+  document.getElementById("visitorMsg").textContent = "";
+  document.getElementById("visitorPassword").focus();
+});
 sb.auth.onAuthStateChange((_event, session)=>{ if(session) showApp(session); else showAuth(); });
 sb.auth.getSession().then(({data})=>{ if(data.session) showApp(data.session); else showAuth(); });
 </script>
 </body>
 </html>
+<!-- Updated at Fri Jul 10 15:22:22 UTC 2026 -->
