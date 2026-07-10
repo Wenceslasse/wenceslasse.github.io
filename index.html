@@ -262,6 +262,10 @@
         <div class="pval"><input id="fRubrique" list="rubriques" placeholder="Vide"><datalist id="rubriques"></datalist></div>
       </div>
       <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16M4 12h16M4 20h12"/></svg>Thématique</div>
+        <div class="pval"><input id="fThematique" placeholder="Vide"></div>
+      </div>
+      <div class="prow">
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Calibrage</div>
         <div class="pval">
           <div class="calibgrid">
@@ -320,8 +324,8 @@ const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", journaliste:"", notes:""}; }
-function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", journaliste:r.journaliste||"", notes:r.notes||""}; }
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", journaliste:"", notes:""}; }
+function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", journaliste:r.journaliste||"", notes:r.notes||""}; }
 
 let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
 let issuesCache = [];
@@ -444,9 +448,10 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
     }
   }, true);
 
+  const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
+  const thema = p.thematique?`<div style="font-size:12px;color:var(--muted);margin:4px 0;font-style:italic;">${esc(p.thematique)}</div>`:"";
   const rt=rubTag(p.rubrique);
   const rub = `<div class="rubrow">${rt?pillHTML(p.rubrique,rt):""}</div>`;
-  const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
 
   const bits=[];
   const sig=toSignes(p);
@@ -460,8 +465,10 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   const status=`<span class="statuswrap">${pillHTML(st.label,st)}</span>`;
   const meta=`<div class="cardmeta">${bits.join('<span class="sep">·</span>')}${status}</div>`;
 
+  const notes = p.notes?`<div style="font-size:12px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">${esc(p.notes)}</div>`:"";
+
   const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
-  el.innerHTML = rub + suj + meta + folio;
+  el.innerHTML = suj + thema + rub + meta + notes + folio;
   return el;
 }
 
@@ -493,6 +500,17 @@ function renderGroupHeader(pages){
   sujetInput.placeholder="Non modifié";
   sujetField.appendChild(sujetInput);
   container.appendChild(sujetField);
+
+  const themaField=document.createElement("div");
+  themaField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px; grid-column:1/-1;";
+  themaField.innerHTML=`<label style="color:var(--muted); font-weight:600">Thématique</label>`;
+  const themaInput=document.createElement("input");
+  themaInput.id="bulkThematique";
+  themaInput.style.cssText="padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;";
+  themaInput.value=firstPage.thematique||"";
+  themaInput.placeholder="Non modifié";
+  themaField.appendChild(themaInput);
+  container.appendChild(themaField);
 
   const rubField=document.createElement("div");
   rubField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
@@ -638,11 +656,12 @@ function updateSelection(){
 async function applyBulkEdit(){
   if(selectedPages.size===0) return;
   const sujet=document.getElementById("bulkSujet").value;
+  const thematique=document.getElementById("bulkThematique").value;
   const rubrique=document.getElementById("bulkRubrique").value;
   const journaliste=document.getElementById("bulkJournaliste").value;
   const statut=document.getElementById("bulkStatut").value;
 
-  if(!sujet && !rubrique && !journaliste && !statut){
+  if(!sujet && !thematique && !rubrique && !journaliste && !statut){
     alert("Veuillez remplir au moins un champ à modifier");
     return;
   }
@@ -651,10 +670,11 @@ async function applyBulkEdit(){
   for(const n of selectedPages){
     const p=state.pages[n-1];
     if(sujet) p.sujet=sujet;
+    if(thematique) p.thematique=thematique;
     if(rubrique) p.rubrique=rubrique;
     if(journaliste) p.journaliste=journaliste;
     if(statut) p.statut=statut;
-    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, rubrique:p.rubrique, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, notes:p.notes});
+    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique, rubrique:p.rubrique, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, notes:p.notes});
   }
   const {error}=await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
@@ -667,7 +687,7 @@ async function applyBulkEdit(){
 /* ---- peek editor ---- */
 const peek=document.getElementById("peek"), scrim=document.getElementById("scrim");
 let current=null;
-const F={rub:document.getElementById("fRubrique"),calib:document.getElementById("fCalib"),
+const F={rub:document.getElementById("fRubrique"),thematique:document.getElementById("fThematique"),calib:document.getElementById("fCalib"),
   unite:document.getElementById("fUnite"),rendu:document.getElementById("fRendu"),
   journaliste:document.getElementById("fJournaliste"),notes:document.getElementById("fNotes")};
 const dtitle=document.getElementById("dtitle");
@@ -676,7 +696,7 @@ function autoGrow(t){ t.style.height="auto"; t.style.height=t.scrollHeight+"px";
 function openPeek(n){
   current=n; const p=state.pages[n-1];
   document.getElementById("dnum").textContent = "Page "+n+(COVER[n]?"  ·  "+COVER[n]:"");
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
   renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
@@ -724,6 +744,7 @@ async function persistField(p, field){
 }
 dtitle.addEventListener("input",e=>{ autoGrow(e.target); commit("sujet",e.target.value); });
 F.rub.addEventListener("input",e=>commit("rubrique",e.target.value));
+F.thematique.addEventListener("input",e=>commit("thematique",e.target.value));
 F.calib.addEventListener("input",e=>commit("calib",e.target.value));
 F.unite.addEventListener("change",e=>commit("unite",e.target.value));
 F.rendu.addEventListener("input",e=>commit("rendu",e.target.value));
@@ -739,7 +760,7 @@ function refreshPeekIfIdle(n){
   if(current!==n || !peek.classList.contains("open")) return;
   if(peek.contains(document.activeElement)) return; // ne pas couper la frappe en cours
   const p=state.pages[n-1];
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
   renderChips(p.statut); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
 }
 
