@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chemin de fer</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://aedgayenmptowhornxcv.supabase.co" crossorigin>
 <style>
   :root{
     --canvas:#FFFFFF; --body:#FBFBFA;
@@ -409,7 +411,7 @@
   </div>
 </aside>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
 const TOTAL = 56;
@@ -971,7 +973,15 @@ function renderGanttView(){
   gantt.style.height=Math.max(460, window.innerHeight-top-24)+"px";
 }
 
+// Rendu coalescé : pendant la frappe, on regroupe les re-rendus (150 ms)
+// au lieu de reconstruire les 56 fiches à chaque caractère.
+let renderTimer=null;
+function scheduleRender(delay){
+  clearTimeout(renderTimer);
+  renderTimer=setTimeout(()=>{ renderTimer=null; render(); }, delay||150);
+}
 function render(){
+  if(renderTimer){ clearTimeout(renderTimer); renderTimer=null; }
   rail.innerHTML="";
   document.getElementById("viewCalendar").style.display="none";
   document.getElementById("viewGantt").style.display="none";
@@ -991,6 +1001,7 @@ function render(){
   }
 
   const P=state.pages;
+  const frag=document.createDocumentFragment();
 
   if(selectedPages.size>0){
     const groups=getPageGroups();
@@ -1021,20 +1032,21 @@ function render(){
         pagesContainer.appendChild(el);
       }
       groupContainer.appendChild(pagesContainer);
-      rail.appendChild(groupContainer);
+      frag.appendChild(groupContainer);
 
       currentIndex=maxN+1;
     }
 
     if(currentIndex<=TOTAL){
-      for(let n=currentIndex;n<=54;n+=2) rail.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
-      if(currentIndex<=56) rail.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
+      for(let n=currentIndex;n<=54;n+=2) frag.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
+      if(currentIndex<=56) frag.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
     }
   } else {
-    rail.appendChild(row("Couverture", pageCard(null,"blank"), pageCard(P[0],"solo-p1")));
-    for(let n=2;n<=54;n+=2) rail.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
-    rail.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
+    frag.appendChild(row("Couverture", pageCard(null,"blank"), pageCard(P[0],"solo-p1")));
+    for(let n=2;n<=54;n+=2) frag.appendChild(row(`${n}–${n+1}`, pageCard(P[n-1],"left"), pageCard(P[n],"right")));
+    frag.appendChild(row("Dos", pageCard(P[55],"solo-p56"), pageCard(null,"blank")));
   }
+  rail.appendChild(frag);
   renderStats(); renderDatalist();
 }
 function row(label,a,b){
@@ -1161,8 +1173,8 @@ function commit(field,val){
   const p = state.pages[current-1];
   p[field]=val;
   if(["calib","unite"].includes(field)) updateHint();
-  render();
-  if(field==="statut"||field==="lot"){ persistField(p, field); return; }
+  if(field==="statut"||field==="lot"){ render(); persistField(p, field); return; }
+  scheduleRender(150); // frappe au clavier : rendu coalescé
   const key = p.id+":"+field;
   clearTimeout(writeTimers[key]);
   writeTimers[key]=setTimeout(()=>persistField(p, field), 350);
@@ -1224,7 +1236,7 @@ document.getElementById("btnClearSelection").addEventListener("click", clearSele
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && selectedPages.size>0) clearSelection(); });
 
 /* ---- filters ---- */
-document.getElementById("search").addEventListener("input",e=>{ filter.q=e.target.value; render(); });
+document.getElementById("search").addEventListener("input",e=>{ filter.q=e.target.value; scheduleRender(150); });
 document.getElementById("filterStatut").addEventListener("change",e=>{ filter.statut=e.target.value; render(); });
 
 /* ---- issues (numéros) ---- */
@@ -1251,7 +1263,7 @@ function renderIssueList(){
   }
 }
 async function loadIssues(){
-  const { data, error } = await sb.from("issues").select("*").order("created_at",{ascending:true});
+  const { data, error } = await sb.from("issues").select("id,numero,bouclage,created_at").order("created_at",{ascending:true});
   if(error){ alert("Erreur de chargement des numéros : "+error.message); return []; }
   return data||[];
 }
@@ -1320,7 +1332,10 @@ function subscribePages(issueId){
     .on("postgres_changes",{event:"*",schema:"public",table:"pages",filter:`issue_id=eq.${issueId}`}, payload=>{
       const row = payload.new && Object.keys(payload.new).length ? payload.new : null;
       if(!row) return;
-      state.pages[row.n-1] = rowToPage(row);
+      const np = rowToPage(row);
+      // Écho de notre propre sauvegarde : rien n'a changé, on ne re-rend pas.
+      if(JSON.stringify(np)===JSON.stringify(state.pages[row.n-1])) return;
+      state.pages[row.n-1] = np;
       render();
       refreshPeekIfIdle(row.n);
     })
