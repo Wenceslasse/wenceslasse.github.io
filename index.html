@@ -241,15 +241,24 @@
 
   /* ---- Auth screen ---- */
   .authscreen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
-  .authcard{width:100%; max-width:360px; background:var(--canvas); border:1px solid var(--border); border-radius:10px; padding:32px 28px; text-align:center}
-  .authicon{width:44px; height:44px; border-radius:9px; background:var(--hover); display:grid; place-items:center; margin:0 auto 14px}
-  .authicon svg{width:24px; height:24px; color:var(--muted)}
-  .authcard h1{font-size:22px; margin:0 0 4px; letter-spacing:-.02em}
+  .authcard{width:100%; max-width:680px; display:flex; background:var(--canvas); border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.05)}
+  .authcard-left{flex:0 0 36%; background:linear-gradient(160deg, var(--accent) 0%, #163f6b 100%); display:flex; align-items:center; justify-content:center; padding:40px}
+  .authcard-right{flex:1; min-width:0; padding:38px 36px; text-align:left}
+  .authicon{width:72px; height:72px; border-radius:16px; background:rgba(255,255,255,.15); display:grid; place-items:center}
+  .authicon svg{width:34px; height:34px; color:#fff}
+  .authcard-right h1{font-size:22px; margin:0 0 4px; letter-spacing:-.02em}
   .authsub{color:var(--muted); font-size:13.5px; margin:0 0 22px}
   .authlabel{display:block; text-align:left; font-size:12.5px; color:var(--muted); margin:0 0 6px}
+  .authtabs{display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px}
   .authtab{border:none; background:transparent; padding:10px 12px; cursor:pointer; color:var(--muted); font-size:13.5px; border-bottom:2px solid transparent; font-weight:500}
   .authtab:hover{color:var(--text)}
   .authtab.active{color:var(--text); border-bottom-color:var(--accent)}
+  @media (max-width:560px){
+    .authcard{flex-direction:column}
+    .authcard-left{padding:22px; flex:none}
+    .authicon{width:48px; height:48px}
+    .authicon svg{width:22px; height:22px}
+  }
   #authEmail, #authEmailPwd, #authPassword{width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:9px 10px; margin-bottom:12px; background:var(--body); font-size:15px}
   #authEmail:focus, #authEmailPwd:focus, #authPassword:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
   .authbtn{width:100%; justify-content:center; padding:9px 10px; border-radius:6px; font-weight:600}
@@ -304,38 +313,40 @@
 
 <div class="authscreen" id="authScreen">
   <div class="authcard">
-    <span class="authicon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v15"/><path d="M12 5C10 3.5 6.5 3.5 4 4v14c2.5-.5 6-.5 8 1"/><path d="M12 5c2-1.5 5.5-1.5 8-1v14c-2.5-.5-6-.5-8 1"/></svg>
-    </span>
-    <h1>Chemin de fer</h1>
-    <p class="authsub">Connexion à l'espace éditorial</p>
-
-    <div style="display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px">
-      <button class="authtab active" id="tabVisitor" data-method="visitor">Équipe</button>
-      <button class="authtab" id="tabPassword" data-method="password">Connexion</button>
+    <div class="authcard-left">
+      <span class="authicon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v15"/><path d="M12 5C10 3.5 6.5 3.5 4 4v14c2.5-.5 6-.5 8 1"/><path d="M12 5c2-1.5 5.5-1.5 8-1v14c-2.5-.5-6-.5-8 1"/></svg>
+      </span>
     </div>
+    <div class="authcard-right">
+      <h1>Chemin de fer</h1>
+      <p class="authsub">Connexion à l'espace éditorial</p>
 
-    <div id="methodVisitor">
-      <label class="authlabel" for="visitorPassword">Mot de passe</label>
-      <input type="password" id="visitorPassword" placeholder="Votre mot de passe" autocomplete="off">
-      <div class="visitor-question">
-        <p>Complétez les paroles de <strong>Melodrama</strong> (Theodora &amp; Disiz) :</p>
-        <p class="visitor-lyrics">Je suis comme un son que t'aurais pas...</p>
+      <div class="authtabs">
+        <button class="authtab active" id="tabVisitor" data-method="visitor">Équipe</button>
+        <button class="authtab" id="tabPassword" data-method="password">Connexion</button>
       </div>
-      <label class="authlabel" for="visitorAnswer">Réponse</label>
-      <input type="text" id="visitorAnswer" placeholder="Votre réponse" autocomplete="off">
-      <button class="ghostbtn primary authbtn" id="btnVisitorAccess" style="margin-top:12px">Accéder</button>
-    </div>
 
-    <div id="methodPassword" style="display:none">
-      <label class="authlabel" for="authEmailPwd">Adresse email</label>
-      <input type="email" id="authEmailPwd" placeholder="prenom@redaction.fr" autocomplete="email">
-      <label class="authlabel" for="authPassword" style="margin-top:10px">Mot de passe</label>
-      <input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password">
-      <button class="ghostbtn primary authbtn" id="btnPassword" style="margin-top:12px">Connexion</button>
-    </div>
+      <div id="methodVisitor">
+        <div class="visitor-question">
+          <p>Complétez les paroles de <strong>Melodrama</strong> (Theodora &amp; Disiz) :</p>
+          <p class="visitor-lyrics">Je suis comme un son que t'aurais pas...</p>
+        </div>
+        <label class="authlabel" for="visitorAnswer">Réponse</label>
+        <input type="text" id="visitorAnswer" placeholder="Votre réponse" autocomplete="off">
+        <button class="ghostbtn primary authbtn" id="btnVisitorAccess" style="margin-top:12px">Accéder</button>
+      </div>
 
-    <div class="authmsg" id="authMsg"></div>
+      <div id="methodPassword" style="display:none">
+        <label class="authlabel" for="authEmailPwd">Adresse email</label>
+        <input type="email" id="authEmailPwd" placeholder="prenom@redaction.fr" autocomplete="email">
+        <label class="authlabel" for="authPassword" style="margin-top:10px">Mot de passe</label>
+        <input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password">
+        <button class="ghostbtn primary authbtn" id="btnPassword" style="margin-top:12px">Connexion</button>
+      </div>
+
+      <div class="authmsg" id="authMsg"></div>
+    </div>
   </div>
 </div>
 
@@ -1744,7 +1755,7 @@ document.getElementById("tabVisitor").addEventListener("click", e=>{
   document.querySelectorAll(".authtab").forEach(b=>b.classList.remove("active"));
   e.target.classList.add("active");
   setAuthMsg("", false);
-  document.getElementById("visitorPassword").focus();
+  document.getElementById("visitorAnswer").focus();
 });
 
 document.getElementById("tabPassword").addEventListener("click", e=>{
@@ -1792,29 +1803,14 @@ window.addEventListener("popstate", ()=>{
   if(id && issuesCache.find(i=>i.id===id) && (!currentIssue || currentIssue.id!==id)) selectIssue(id, false);
 });
 
-/* ---- VISITOR (ÉQUIPE) MODE : mot de passe + question, en une seule étape ---- */
-const VISITOR_PASSWORD_HASH = "4e7462f7ad59e8fcaa009233b030bd9d501bbe811600c4496bed7d026b85e1b6";
+/* ---- VISITOR (ÉQUIPE) MODE : question de sécurité, en une seule étape ---- */
 let isVisitorMode = false;
 
-async function sha256(message) {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-async function verifyVisitorAccess() {
-  const pwd = document.getElementById("visitorPassword").value.trim();
+function verifyVisitorAccess() {
   const answer = document.getElementById("visitorAnswer").value.trim().toLowerCase();
 
-  if (!pwd) { setAuthMsg("Veuillez entrer un mot de passe", true); return; }
   if (!answer) { setAuthMsg("Veuillez compléter les paroles", true); return; }
-
-  const hash = await sha256(pwd);
-  if (hash !== VISITOR_PASSWORD_HASH || answer !== "shazam") {
-    setAuthMsg("Mot de passe ou réponse incorrecte", true);
-    return;
-  }
+  if (answer !== "shazam") { setAuthMsg("Réponse incorrecte", true); return; }
 
   setAuthMsg("", false);
   playVisitorTransition();
@@ -1858,7 +1854,6 @@ async function enterVisitorMode() {
 function exitVisitorMode() {
   isVisitorMode = false;
   localStorage.removeItem("cdf_visitor_mode");
-  document.getElementById("visitorPassword").value = "";
   document.getElementById("visitorAnswer").value = "";
   showAuth();
 }
@@ -1884,11 +1879,6 @@ function disableEditingUI() {
 // Visitor authentication event listeners
 if (document.getElementById("btnVisitorAccess")) {
   document.getElementById("btnVisitorAccess").addEventListener("click", verifyVisitorAccess);
-}
-if (document.getElementById("visitorPassword")) {
-  document.getElementById("visitorPassword").addEventListener("keydown", e => {
-    if (e.key === "Enter") verifyVisitorAccess();
-  });
 }
 if (document.getElementById("visitorAnswer")) {
   document.getElementById("visitorAnswer").addEventListener("keydown", e => {
