@@ -59,6 +59,16 @@ create table if not exists public.color_customizations (
   unique (issue_id, field_type, tag_name)
 );
 
+-- Commentaires par page (fil de discussion attaché à une page)
+create table if not exists public.page_comments (
+  id uuid primary key default gen_random_uuid(),
+  page_id uuid not null references public.pages(id) on delete cascade,
+  author text not null default '',
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists page_comments_page_id_idx on public.page_comments(page_id);
+
 -- ---- Row Level Security ---------------------------------------------
 
 alter table public.issues enable row level security;
@@ -125,6 +135,24 @@ drop policy if exists "anon read color customizations" on public.color_customiza
 create policy "anon read color customizations" on public.color_customizations
   for select to anon using (true);
 
+alter table public.page_comments enable row level security;
+
+drop policy if exists "authenticated read comments" on public.page_comments;
+drop policy if exists "authenticated insert comments" on public.page_comments;
+drop policy if exists "authenticated delete comments" on public.page_comments;
+
+create policy "authenticated read comments" on public.page_comments
+  for select to authenticated using (true);
+create policy "authenticated insert comments" on public.page_comments
+  for insert to authenticated with check (true);
+create policy "authenticated delete comments" on public.page_comments
+  for delete to authenticated using (true);
+
+-- Les visiteurs (anon) peuvent lire les commentaires mais pas en publier.
+drop policy if exists "anon read comments" on public.page_comments;
+create policy "anon read comments" on public.page_comments
+  for select to anon using (true);
+
 -- ---- Realtime ---------------------------------------------------------
 -- Permet à Supabase Realtime de diffuser les changements de ces trois tables.
 -- (vérifie d'abord si la table est déjà dans la publication, pour pouvoir
@@ -140,5 +168,8 @@ begin
   end if;
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='color_customizations') then
     alter publication supabase_realtime add table public.color_customizations;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='page_comments') then
+    alter publication supabase_realtime add table public.page_comments;
   end if;
 end $$;

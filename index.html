@@ -54,6 +54,11 @@
   /* ---- Page header (Notion page style) ---- */
   header{background:var(--body); position:sticky; top:0; z-index:20}
   .head-userbar{display:flex; align-items:center; gap:12px; padding:12px 6% 0; justify-content:flex-end; border-bottom:1px solid var(--border)}
+  .presence{display:inline-flex; align-items:center}
+  .presence-badge{width:26px; height:26px; border-radius:50%; display:inline-grid; place-items:center; font-size:11px; font-weight:700; color:#fff; border:2px solid var(--body); margin-left:-8px; box-shadow:0 0 0 .5px rgba(0,0,0,.08)}
+  .presence-badge:first-child{margin-left:0}
+  .presence-badge.me{outline:2px solid var(--accent); outline-offset:1px}
+  .presence-more{width:26px; height:26px; border-radius:50%; display:inline-grid; place-items:center; font-size:10.5px; font-weight:700; color:var(--muted); background:var(--hover); border:2px solid var(--body); margin-left:-8px}
   .head-inner{padding-top:26px; padding-bottom:14px}
   .titlebar{display:flex; align-items:center; gap:12px}
   .picon{width:34px; height:34px; border-radius:7px; display:grid; place-items:center; background:var(--hover); flex:none}
@@ -84,6 +89,20 @@
   .tbtn:hover{background:var(--hover); color:var(--text)}
   .tbtn:disabled{opacity:.4; cursor:not-allowed}
   .tbtn:disabled:hover{background:transparent; color:var(--muted)}
+  /* Toast de confirmation d'enregistrement */
+  .save-toast{position:fixed; bottom:20px; right:22px; z-index:300; background:#2C5E3E; color:#fff; font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.18); display:flex; align-items:center; gap:7px; opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .2s ease, transform .2s ease}
+  .save-toast.show{opacity:1; transform:translateY(0)}
+  /* Mode compact : cartes plus denses */
+  #app.compact .page{min-height:118px; padding:10px 12px 26px}
+  #app.compact .sujet{font-size:14px}
+  #app.compact .rubrow{margin-bottom:5px}
+  #app.compact .cardmeta{padding-top:6px}
+  #app.compact .spreadlabel{margin-bottom:3px}
+  #app.compact .rail{gap:12px}
+  /* Barre de progression du bouclage */
+  .boucle-wrap{display:flex; align-items:center; gap:8px}
+  .boucle-bar{width:64px; height:6px; border-radius:3px; background:var(--border); overflow:hidden; flex:none}
+  .boucle-bar > span{display:block; height:100%; background:#4B8B5B; border-radius:3px; transition:width .3s ease}
   .tsel{border:none; background:transparent; padding:5px 6px; border-radius:5px; color:var(--muted); cursor:pointer}
   .tsel:hover{background:var(--hover)}
   /* Sélecteur de numéro : apparence de bouton noir */
@@ -200,6 +219,10 @@
   .pill-recolor svg{width:8px; height:8px}
   .pill:hover .pill-recolor{width:12px; opacity:1; margin-left:1px}
   .pill-recolor:hover{background:rgba(0,0,0,.28)}
+  /* Sur écrans tactiles (pas de survol), le point de recouleur reste visible */
+  @media (hover: none){
+    .pill-recolor{width:12px; opacity:1; margin-left:1px}
+  }
 
   /* ---- Tag color picker popover ---- */
   .tagcolor-popover{position:fixed; z-index:200; background:var(--canvas); border:1px solid var(--border); border-radius:12px; box-shadow:0 14px 34px rgba(15,15,15,.16), 0 2px 8px rgba(15,15,15,.06); padding:12px; width:206px}
@@ -247,6 +270,24 @@
   .ghostbtn:hover{background:var(--hover); color:var(--text)}
   .primary{background:var(--accent); color:#fff}
   .primary:hover{background:#1a72cc; color:#fff}
+
+  /* ---- Commentaires par page ---- */
+  .comments{margin-top:22px; padding-top:16px; border-top:1px solid var(--border)}
+  .comments-title{font-size:13px; font-weight:600; color:var(--muted); margin-bottom:12px}
+  .comments-list{display:flex; flex-direction:column; gap:10px; margin-bottom:12px}
+  .comment{background:var(--hover); border-radius:8px; padding:9px 11px; position:relative}
+  .comment-head{display:flex; align-items:baseline; gap:8px; margin-bottom:3px}
+  .comment-author{font-size:12.5px; font-weight:600; color:var(--text)}
+  .comment-time{font-size:11px; color:var(--faint)}
+  .comment-body{font-size:13.5px; line-height:1.45; white-space:pre-wrap; word-break:break-word}
+  .comment-del{position:absolute; top:6px; right:7px; border:none; background:transparent; cursor:pointer; color:var(--faint); font-size:13px; padding:2px 5px; border-radius:4px; opacity:0}
+  .comment:hover .comment-del{opacity:1}
+  .comment-del:hover{background:var(--border); color:var(--danger)}
+  .comments-empty{font-size:13px; color:var(--faint); font-style:italic}
+  .comments-add{display:flex; gap:8px; align-items:flex-end}
+  .comments-add textarea{flex:1; border:1px solid var(--border-strong); border-radius:6px; padding:8px 10px; font-size:13.5px; resize:none; min-height:36px; line-height:1.4; background:var(--body)}
+  .comments-add textarea:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+  .comments-add button{white-space:nowrap; padding:8px 12px; border-radius:6px}
 
   /* ---- Auth screen ---- */
   .authscreen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
@@ -417,6 +458,7 @@
 <div id="appmain">
 <header>
   <div class="head-userbar">
+    <span class="presence" id="presence" title="Personnes présentes sur ce numéro"></span>
     <span class="userbar" id="pUser"></span>
     <button class="tbtn" id="btnLogout">Déconnexion</button>
   </div>
@@ -440,7 +482,7 @@
     <div class="toolbar">
       <select class="tsel" id="issueSelect" aria-label="Choisir un numéro" hidden></select>
       <button class="tbtn" id="btnClearSelection" style="display:none; color:#9B2C1E">✕ Déselectionner</button>
-      <input type="search" id="search" placeholder="Rechercher rubrique ou sujet…" aria-label="Rechercher">
+      <input type="search" id="search" placeholder="Rechercher (rubrique, sujet, thématique, journaliste)…" aria-label="Rechercher">
       <select class="tsel" id="filterStatut" aria-label="Filtrer par statut">
         <option value="">Tous les statuts</option>
         <option value="a_caler">À caler</option>
@@ -452,6 +494,7 @@
       <button class="tbtn" id="btnViewGrid" title="Vue Grille">⊞ Grille</button>
       <button class="tbtn" id="btnViewCalendar" title="Vue Calendrier">📅 Calendrier</button>
       <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
+      <button class="tbtn" id="btnCompact" title="Affichage compact / confortable">⊟ Compact</button>
       <button class="tbtn" id="btnUndo" title="Annuler la dernière action (Ctrl+Z)" disabled>↶ Annuler</button>
       <span class="spacer"></span>
       <div class="more-menu-wrap" id="moreMenuWrap">
@@ -526,6 +569,15 @@
         <div class="pval"><textarea id="fNotes" placeholder="Vide"></textarea></div>
       </div>
     </div>
+
+    <div class="comments" id="commentsSection">
+      <div class="comments-title">Commentaires</div>
+      <div class="comments-list" id="commentsList"></div>
+      <div class="comments-add" id="commentsAdd">
+        <textarea id="commentInput" rows="1" placeholder="Ajouter un commentaire…"></textarea>
+        <button class="ghostbtn primary" id="btnAddComment">Envoyer</button>
+      </div>
+    </div>
   </div>
   <div class="peek-foot">
     <button class="ghostbtn" id="prevPage">← Précédente</button>
@@ -534,6 +586,8 @@
     <button class="ghostbtn primary" id="closePeek">Fermer</button>
   </div>
 </aside>
+
+<div class="save-toast" id="saveToast" aria-live="polite">✓ Enregistré</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js"></script>
 <script>
@@ -620,6 +674,8 @@ let currentCalendarMonth = new Date();
 let ganttScope = "month"; // month | week
 let ganttAnchor = new Date();
 let colorCustomizations = {}; // { "rubrique:name": {bg, fg}, "statut:name": {bg, fg}, "lot:name": {bg, fg} }
+let currentUserEmail = "";
+let commentsChannel = null;
 
 async function reorderPages(draggedPageNums, targetPageNum){
   pushUndo("Déplacement de pages", state.pages.map(p=>({...p})));
@@ -642,7 +698,7 @@ async function reorderPages(draggedPageNums, targetPageNum){
     console.error("Erreur réordonnage:",error.message);
     alert("Erreur lors du réordonnancement des pages :\n"+error.message+"\n\nLa vue va être resynchronisée.");
     if(currentIssue) await selectIssue(currentIssue.id, false);
-  }
+  } else flashSaved("✓ Pages réordonnées");
 }
 
 /* ---- Annuler (undo) : pile d'états précédents des pages affectées ---- */
@@ -695,8 +751,8 @@ async function undoLast(){
     if(error){
       console.error("Erreur d'annulation :", error.message);
       if(currentIssue) await selectIssue(currentIssue.id, false);
-    }
-  }
+    } else flashSaved("↶ Action annulée");
+  } else flashSaved("↶ Action annulée");
 }
 
 async function loadColorCustomizations(issueId) {
@@ -707,6 +763,122 @@ async function loadColorCustomizations(issueId) {
     const key = `${row.field_type}:${row.tag_name}`;
     colorCustomizations[key] = { bg: row.bg_color, fg: row.fg_color };
   });
+}
+
+/* ---- Présence collaborative : qui est sur ce numéro ---- */
+let presenceChannel = null;
+function _initials(email){
+  const name=(email||"").split("@")[0].replace(/[._-]+/g," ").trim();
+  const parts=name.split(" ").filter(Boolean);
+  if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase();
+  return (name.slice(0,2)||"?").toUpperCase();
+}
+function _colorFor(str){
+  let h=0; for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h&=h; }
+  const palette=["#9c1c40","#e8467d","#f4923d","#2f9e63","#2383E2","#5B3E7A","#24547A","#7C5E00"];
+  return palette[Math.abs(h)%palette.length];
+}
+function renderPresence(emails){
+  const box=document.getElementById("presence"); if(!box) return;
+  const others=[...new Set(emails)].filter(e=>e && e!==currentUserEmail);
+  const all=[currentUserEmail, ...others].filter(Boolean);
+  box.innerHTML="";
+  all.slice(0,5).forEach(e=>{
+    const b=document.createElement("span"); b.className="presence-badge"+(e===currentUserEmail?" me":"");
+    b.textContent=_initials(e); b.title=e+(e===currentUserEmail?" (vous)":""); b.style.background=_colorFor(e);
+    box.appendChild(b);
+  });
+  if(all.length>5){ const m=document.createElement("span"); m.className="presence-more"; m.textContent="+"+(all.length-5); box.appendChild(m); }
+}
+function joinPresence(issueId){
+  if(presenceChannel){ sb.removeChannel(presenceChannel); presenceChannel=null; }
+  if(!issueId || !currentUserEmail) return; // les visiteurs anonymes ne sont pas suivis
+  try{
+    presenceChannel = sb.channel("presence-"+issueId, { config:{ presence:{ key: currentUserEmail } } });
+    presenceChannel.on("presence", {event:"sync"}, ()=>{
+      try{ renderPresence(Object.keys(presenceChannel.presenceState())); }catch(_){}
+    }).subscribe(async (status)=>{
+      if(status==="SUBSCRIBED"){ try{ await presenceChannel.track({ email: currentUserEmail, at: Date.now() }); }catch(_){} }
+    });
+  }catch(e){ console.error("Présence indisponible :", e.message); }
+}
+function leavePresence(){
+  if(presenceChannel){ sb.removeChannel(presenceChannel); presenceChannel=null; }
+  const box=document.getElementById("presence"); if(box) box.innerHTML="";
+}
+
+/* ---- Commentaires par page ---- */
+function relTime(iso){
+  const d=new Date(iso), now=new Date(), s=Math.round((now-d)/1000);
+  if(s<60) return "à l'instant";
+  const m=Math.round(s/60); if(m<60) return `il y a ${m} min`;
+  const h=Math.round(m/60); if(h<24) return `il y a ${h} h`;
+  const j=Math.round(h/24); if(j<7) return `il y a ${j} j`;
+  return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+}
+function renderComments(list){
+  const box=document.getElementById("commentsList"); if(!box) return;
+  box.innerHTML="";
+  if(!list || list.length===0){
+    box.innerHTML=`<div class="comments-empty">Aucun commentaire pour cette page.</div>`;
+    return;
+  }
+  for(const c of list){
+    const el=document.createElement("div"); el.className="comment";
+    const canDelete = !isVisitorMode && c.author===currentUserEmail;
+    el.innerHTML=`<div class="comment-head"><span class="comment-author">${esc(c.author||"—")}</span><span class="comment-time">${relTime(c.created_at)}</span></div><div class="comment-body">${esc(c.body)}</div>`;
+    if(canDelete){
+      const del=document.createElement("button"); del.className="comment-del"; del.textContent="✕"; del.title="Supprimer";
+      del.addEventListener("click",()=>deleteComment(c.id));
+      el.appendChild(del);
+    }
+    box.appendChild(el);
+  }
+}
+async function loadComments(pageId){
+  renderComments([]); // reset immédiat
+  if(!pageId) return;
+  const { data, error } = await sb.from("page_comments").select("*").eq("page_id", pageId).order("created_at",{ascending:true});
+  if(error){ console.error("Erreur chargement commentaires :", error.message); return; }
+  renderComments(data||[]);
+  subscribeComments(pageId);
+}
+function subscribeComments(pageId){
+  if(commentsChannel){ sb.removeChannel(commentsChannel); commentsChannel=null; }
+  commentsChannel = sb.channel("comments-"+pageId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"page_comments",filter:"page_id=eq."+pageId}, ()=>{
+      // recharge la liste si le peek est encore ouvert sur cette page
+      if(current!=null && state.pages[current-1] && state.pages[current-1].id===pageId){
+        sb.from("page_comments").select("*").eq("page_id", pageId).order("created_at",{ascending:true})
+          .then(({data})=>renderComments(data||[]));
+      }
+    }).subscribe();
+}
+function unsubscribeComments(){
+  if(commentsChannel){ sb.removeChannel(commentsChannel); commentsChannel=null; }
+}
+async function addComment(){
+  if(isVisitorMode || current==null) return;
+  const input=document.getElementById("commentInput");
+  const body=input.value.trim();
+  if(!body) return;
+  const p=state.pages[current-1];
+  if(!p.id){ alert("Cette page n'est pas encore enregistrée."); return; }
+  input.value=""; input.style.height="auto";
+  const { error } = await sb.from("page_comments").insert({ page_id:p.id, author:currentUserEmail, body });
+  if(error){ console.error("Erreur ajout commentaire :", error.message); alert("Erreur : "+error.message); input.value=body; return; }
+  flashSaved("✓ Commentaire ajouté");
+  const { data } = await sb.from("page_comments").select("*").eq("page_id", p.id).order("created_at",{ascending:true});
+  renderComments(data||[]);
+}
+async function deleteComment(id){
+  const { error } = await sb.from("page_comments").delete().eq("id", id);
+  if(error){ console.error("Erreur suppression commentaire :", error.message); return; }
+  if(current!=null){
+    const p=state.pages[current-1];
+    const { data } = await sb.from("page_comments").select("*").eq("page_id", p.id).order("created_at",{ascending:true});
+    renderComments(data||[]);
+  }
 }
 
 async function saveColorCustomization(fieldType, tagName, bgColor, fgColor) {
@@ -721,6 +893,7 @@ async function saveColorCustomization(fieldType, tagName, bgColor, fgColor) {
   if (error) { console.error("Erreur sauvegarde couleur :", error.message); return; }
   const key = `${fieldType}:${tagName}`;
   colorCustomizations[key] = { bg: bgColor, fg: fgColor };
+  flashSaved("✓ Couleur enregistrée");
 }
 
 /* ---- Sélecteur de couleur : cliquer sur n'importe quel tag (rubrique, thématique, statut, lot) ---- */
@@ -816,10 +989,24 @@ function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `
 function isLate(p){ return p.rendu && p.statut!=="boucle" && p.rendu < todayISO(); }
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
+let _toastTimer=null;
+function flashSaved(text){
+  const el=document.getElementById("saveToast");
+  if(!el || isVisitorMode) return;
+  el.textContent = text || "✓ Enregistré";
+  el.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove("show"), 1400);
+}
+
 let filter={q:"",statut:""};
 function matches(p){
   if(filter.statut && p.statut!==filter.statut) return false;
-  if(filter.q){ const q=filter.q.toLowerCase(); if(!((p.rubrique||"").toLowerCase().includes(q)||(p.sujet||"").toLowerCase().includes(q))) return false; }
+  if(filter.q){
+    const q=filter.q.toLowerCase();
+    const hay=[p.rubrique,p.sujet,p.thematique,p.journaliste];
+    if(!hay.some(h=>(h||"").toLowerCase().includes(q))) return false;
+  }
   return true;
 }
 
@@ -1471,7 +1658,8 @@ function renderStats(){
   for(const p of state.pages){ counts[p.statut]++; if(p.sujet) defined++;
     if(p.rendu&&p.statut!=="boucle"){ if(!next||p.rendu<next) next=p.rendu; } }
   document.getElementById("pDefined").innerHTML = `Pages calées <b>${defined}/${TOTAL}</b>`;
-  document.getElementById("pBoucle").innerHTML = `Bouclé <b>${Math.round(counts.boucle/TOTAL*100)}%</b>`;
+  const pct=Math.round(counts.boucle/TOTAL*100);
+  document.getElementById("pBoucle").innerHTML = `<span class="boucle-wrap">Bouclé <b>${pct}%</b><span class="boucle-bar" title="${counts.boucle}/${TOTAL} pages bouclées"><span style="width:${pct}%"></span></span></span>`;
   document.getElementById("pNext").innerHTML = `Prochain rendu <b>${next?frDate(next):"—"}</b>`;
   const lg=document.getElementById("legend"); lg.innerHTML="";
   for(const k in STATUTS){ const s=STATUTS[k];
@@ -1525,6 +1713,7 @@ async function applyBulkEdit(){
   }
   const {error}=await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
+  flashSaved(`✓ ${updates.length} page${updates.length>1?"s":""} modifiée${updates.length>1?"s":""}`);
   render();
   selectedPages.clear();
   lastShiftClickPage=null;
@@ -1548,9 +1737,11 @@ function openPeek(n){
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
   document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
+  document.getElementById("commentsAdd").style.display = isVisitorMode ? "none" : "flex";
+  loadComments(p.id);
   setTimeout(()=>dtitle.focus(),120);
 }
-function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; }
+function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; unsubscribeComments(); }
 function renderChips(active){
   const c=document.getElementById("chips"); c.innerHTML="";
   for(const k in STATUTS){ const defaultS=STATUTS[k]; const s=getTagColor(k, "statut");
@@ -1600,6 +1791,7 @@ async function persistField(p, field){
   if(field==="rendu" && val==="") val=null;
   const { error } = await sb.from("pages").update({ [field]: val }).eq("id", p.id);
   if(error) console.error("Erreur de sauvegarde de la page :", error.message);
+  else flashSaved();
 }
 dtitle.addEventListener("input",e=>{ autoGrow(e.target); commit("sujet",e.target.value); });
 F.rub.addEventListener("input",e=>commit("rubrique",e.target.value));
@@ -1627,6 +1819,11 @@ document.getElementById("prevPage").addEventListener("click",()=>{ if(current>1)
 document.getElementById("nextPage").addEventListener("click",()=>{ if(current<TOTAL) openPeek(current+1); });
 scrim.addEventListener("click",closePeek);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&current!=null) closePeek(); });
+
+document.getElementById("btnAddComment").addEventListener("click", addComment);
+const commentInput=document.getElementById("commentInput");
+commentInput.addEventListener("input", e=>autoGrow(e.target));
+commentInput.addEventListener("keydown", e=>{ if(e.key==="Enter" && (e.ctrlKey||e.metaKey)){ e.preventDefault(); addComment(); } });
 
 function refreshPeekIfIdle(n){
   if(current!==n || !peek.classList.contains("open")) return;
@@ -1700,6 +1897,7 @@ async function selectIssue(id, pushUrl){
   if(!iss) return;
   currentIssue = iss;
   undoStack.length=0; updateUndoButton(); // l'historique d'annulation est propre à un numéro
+  joinPresence(id);
   localStorage.setItem("cdf_last_issue", id);
   issueSelect.value = id;
   renderIssueList();
@@ -1915,6 +2113,19 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
 });
 
 document.getElementById("btnUndo").addEventListener("click", undoLast);
+
+// Affichage compact / confortable (préférence mémorisée)
+function applyCompact(on){
+  document.getElementById("app").classList.toggle("compact", on);
+  const btn=document.getElementById("btnCompact");
+  btn.textContent = on ? "⊞ Confortable" : "⊟ Compact";
+  localStorage.setItem("cdf_compact", on?"1":"0");
+}
+document.getElementById("btnCompact").addEventListener("click",()=>{
+  applyCompact(!document.getElementById("app").classList.contains("compact"));
+});
+if(localStorage.getItem("cdf_compact")==="1") applyCompact(true);
+
 document.addEventListener("keydown", e=>{
   if((e.ctrlKey||e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase()==="z"){
     const t=e.target;
@@ -2030,11 +2241,14 @@ function showAuth(){
   if(pagesChannel){ sb.removeChannel(pagesChannel); pagesChannel=null; }
   if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
   if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
+  unsubscribeComments();
+  leavePresence();
   appInited=false; currentIssue=null; issuesCache=[];
   colorCustomizations={};
 }
 async function showApp(session){
   authScreen.style.display="none"; appRoot.style.display="";
+  currentUserEmail = session.user.email;
   document.getElementById("pUser").textContent = session.user.email;
   enableEditingUI();
   if(appInited) return;
@@ -2209,7 +2423,8 @@ function exitVisitorMode() {
 const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
   "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#dtitle", "#numero",
-  "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fRendu", "#fJournaliste", "#fNotes"
+  "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fRendu", "#fJournaliste", "#fNotes",
+  "#commentInput", "#btnAddComment"
 ];
 
 function disableEditingUI() {
