@@ -38,6 +38,15 @@ alter table public.pages add column if not exists thematique text not null defau
 -- Ajouter le champ "lot" (Lot 1 à 4) sans affecter les données existantes
 alter table public.pages add column if not exists lot text not null default '';
 
+-- Rendre la contrainte d'unicité (issue_id, n) DÉFERRÉE : lors d'un réordonnancement
+-- de pages, plusieurs lignes échangent leur numéro « n » dans un même upsert. Avec une
+-- contrainte immédiate, l'état transitoire (deux lignes avec le même n pendant la mise à
+-- jour) déclenche « duplicate key value violates unique constraint pages_issue_id_n_key ».
+-- En la différant, la vérification a lieu à la fin de la transaction, quand l'état est
+-- de nouveau cohérent.
+alter table public.pages drop constraint if exists pages_issue_id_n_key;
+alter table public.pages add constraint pages_issue_id_n_key unique (issue_id, n) deferrable initially deferred;
+
 create table if not exists public.color_customizations (
   id uuid primary key default gen_random_uuid(),
   issue_id uuid not null references public.issues(id) on delete cascade,

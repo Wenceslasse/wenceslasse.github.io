@@ -82,6 +82,8 @@
   .toolbar input[type=search]:focus{outline:none; background:var(--canvas); box-shadow:var(--ring)}
   .tbtn{border:none; background:transparent; border-radius:5px; padding:5px 9px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-size:13.5px}
   .tbtn:hover{background:var(--hover); color:var(--text)}
+  .tbtn:disabled{opacity:.4; cursor:not-allowed}
+  .tbtn:disabled:hover{background:transparent; color:var(--muted)}
   .tsel{border:none; background:transparent; padding:5px 6px; border-radius:5px; color:var(--muted); cursor:pointer}
   .tsel:hover{background:var(--hover)}
   /* Sélecteur de numéro : apparence de bouton noir */
@@ -450,6 +452,7 @@
       <button class="tbtn" id="btnViewGrid" title="Vue Grille">⊞ Grille</button>
       <button class="tbtn" id="btnViewCalendar" title="Vue Calendrier">📅 Calendrier</button>
       <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
+      <button class="tbtn" id="btnUndo" title="Annuler la dernière action (Ctrl+Z)" disabled>↶ Annuler</button>
       <span class="spacer"></span>
       <div class="more-menu-wrap" id="moreMenuWrap">
         <button class="tbtn" id="btnMoreActions" title="Plus d'actions" aria-haspopup="true" aria-expanded="false">⋯</button>
@@ -619,6 +622,7 @@ let ganttAnchor = new Date();
 let colorCustomizations = {}; // { "rubrique:name": {bg, fg}, "statut:name": {bg, fg}, "lot:name": {bg, fg} }
 
 async function reorderPages(draggedPageNums, targetPageNum){
+  pushUndo("Déplacement de pages", state.pages.map(p=>({...p})));
   const pages=[...state.pages];
   const draggedPgs=draggedPageNums.map(n=>pages[n-1]).filter(Boolean);
   const remaining=pages.filter(p=>!draggedPgs.includes(p));
@@ -627,11 +631,72 @@ async function reorderPages(draggedPageNums, targetPageNum){
 
   for(let i=0;i<remaining.length;i++) remaining[i].n=i+1;
   state.pages=remaining;
+  render(); // mise à jour optimiste immédiate
 
-  const updates=remaining.map(p=>({id:p.id, n:p.n}));
+  // Ne persiste que les pages réellement enregistrées (id non nul).
+  const updates=remaining.filter(p=>p.id).map(p=>({id:p.id, n:p.n}));
+  if(updates.length===0) return;
+
   const {error}=await sb.from("pages").upsert(updates);
-  if(error) console.error("Erreur réordonnage:",error.message);
+  if(error){
+    console.error("Erreur réordonnage:",error.message);
+    alert("Erreur lors du réordonnancement des pages :\n"+error.message+"\n\nLa vue va être resynchronisée.");
+    if(currentIssue) await selectIssue(currentIssue.id, false);
+  }
+}
+
+/* ---- Annuler (undo) : pile d'états précédents des pages affectées ---- */
+const undoStack = [];
+const UNDO_LIMIT = 60;
+
+function snapshotPages(pageNums){
+  return [...new Set(pageNums)].map(n=>({...state.pages[n-1]})).filter(Boolean);
+}
+function pushUndo(label, prevRows){
+  if(!prevRows || prevRows.length===0) return;
+  undoStack.push({ label, prev: prevRows.map(p=>({...p})) });
+  if(undoStack.length>UNDO_LIMIT) undoStack.shift();
+  updateUndoButton();
+}
+function updateUndoButton(){
+  const btn=document.getElementById("btnUndo");
+  if(!btn) return;
+  const has=undoStack.length>0 && !isVisitorMode;
+  btn.disabled=!has;
+  const last=undoStack[undoStack.length-1];
+  btn.title=has ? `Annuler : ${last.label} (Ctrl+Z)` : "Rien à annuler";
+}
+function pageToRow(p){
+  return {
+    id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique,
+    rubrique:p.rubrique, calib:(p.calib===""||p.calib==null?null:Number(p.calib)),
+    unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste,
+    lot:p.lot, notes:p.notes
+  };
+}
+async function undoLast(){
+  if(isVisitorMode) return;
+  const entry=undoStack.pop();
+  updateUndoButton();
+  if(!entry) return;
+  // Restaure l'état local des pages concernées (par id, sinon par n)
+  for(const prev of entry.prev){
+    let idx = prev.id ? state.pages.findIndex(p=>p.id===prev.id) : -1;
+    if(idx<0) idx = state.pages.findIndex(p=>p.n===prev.n);
+    if(idx>=0) state.pages[idx]={...prev};
+  }
+  state.pages.sort((a,b)=>a.n-b.n);
   render();
+  if(current!=null) refreshPeekIfIdle(current);
+  // Persiste les lignes restaurées
+  const rows=entry.prev.filter(p=>p.id).map(pageToRow);
+  if(rows.length){
+    const {error}=await sb.from("pages").upsert(rows);
+    if(error){
+      console.error("Erreur d'annulation :", error.message);
+      if(currentIssue) await selectIssue(currentIssue.id, false);
+    }
+  }
 }
 
 async function loadColorCustomizations(issueId) {
@@ -961,6 +1026,27 @@ function renderGroupHeader(pages){
   }
   statField.appendChild(statSelect);
   container.appendChild(statField);
+
+  const lotField=document.createElement("div");
+  lotField.style.cssText="font-size:12px; display:flex; flex-direction:column; gap:4px;";
+  lotField.innerHTML=`<label style="color:var(--muted); font-weight:600">Lot</label>`;
+  const lotSelect=document.createElement("select");
+  lotSelect.id="bulkLot";
+  lotSelect.style.cssText="padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;";
+  const lotOptEmpty=document.createElement("option");
+  lotOptEmpty.value=""; lotOptEmpty.textContent="Non modifié";
+  lotSelect.appendChild(lotOptEmpty);
+  const lotOptClear=document.createElement("option");
+  lotOptClear.value="__clear__"; lotOptClear.textContent="— Aucun lot —";
+  lotSelect.appendChild(lotOptClear);
+  for(const [k,v] of Object.entries(LOTS)){
+    const opt=document.createElement("option");
+    opt.value=k; opt.textContent=v.label;
+    if(k===firstPage.lot) opt.selected=true;
+    lotSelect.appendChild(opt);
+  }
+  lotField.appendChild(lotSelect);
+  container.appendChild(lotField);
 
   const btnApply=document.createElement("button");
   btnApply.textContent="Appliquer";
@@ -1424,12 +1510,14 @@ async function applyBulkEdit(){
   const rubrique=document.getElementById("bulkRubrique").value;
   const journaliste=document.getElementById("bulkJournaliste").value;
   const statut=document.getElementById("bulkStatut").value;
+  const lot=document.getElementById("bulkLot").value;
 
-  if(!sujet && !thematique && !rubrique && !journaliste && !statut){
+  if(!sujet && !thematique && !rubrique && !journaliste && !statut && !lot){
     alert("Veuillez remplir au moins un champ à modifier");
     return;
   }
 
+  pushUndo("Modification groupée", snapshotPages(Array.from(selectedPages)));
   const updates=[];
   for(const n of selectedPages){
     const p=state.pages[n-1];
@@ -1438,6 +1526,7 @@ async function applyBulkEdit(){
     if(rubrique) p.rubrique=rubrique;
     if(journaliste) p.journaliste=journaliste;
     if(statut) p.statut=statut;
+    if(lot) p.lot = (lot==="__clear__" ? "" : lot);
     updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique, rubrique:p.rubrique, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, lot:p.lot, notes:p.notes});
   }
   const {error}=await sb.from("pages").upsert(updates);
@@ -1473,7 +1562,7 @@ function renderChips(active){
   for(const k in STATUTS){ const defaultS=STATUTS[k]; const s=getTagColor(k, "statut");
     const b=document.createElement("div"); b.setAttribute("role","button"); b.tabIndex=0; b.className="opt"+(k===active?" active":"");
     b.innerHTML=pillHTML(defaultS.label,s,"statut",k);
-    b.addEventListener("click",()=>{ commit("statut",k); renderChips(k); });
+    b.addEventListener("click",()=>{ if(current!=null&&state.pages[current-1].statut!==k){ pushUndo("Statut page "+current, [{...state.pages[current-1]}]); } commit("statut",k); renderChips(k); });
     b.addEventListener("keydown", e=>{ if(e.target!==b) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } });
     c.appendChild(b);
   }
@@ -1484,7 +1573,7 @@ function renderLotChips(active){
     const b=document.createElement("div"); b.setAttribute("role","button"); b.tabIndex=0; b.className="opt"+(k===active?" active":"");
     b.title=k===active?"Cliquer pour retirer du lot":"Affecter au "+defaultS.label;
     b.innerHTML=pillHTML(defaultS.label,s,"lot",k);
-    b.addEventListener("click",()=>{ const nv=(active===k)?"":k; commit("lot",nv); renderLotChips(nv); });
+    b.addEventListener("click",()=>{ const nv=(active===k)?"":k; if(current!=null){ pushUndo("Lot page "+current, [{...state.pages[current-1]}]); } commit("lot",nv); renderLotChips(nv); });
     b.addEventListener("keydown", e=>{ if(e.target!==b) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } });
     c.appendChild(b);
   }
@@ -1526,6 +1615,19 @@ F.unite.addEventListener("change",e=>commit("unite",e.target.value));
 F.rendu.addEventListener("input",e=>commit("rendu",e.target.value));
 F.journaliste.addEventListener("input",e=>commit("journaliste",e.target.value));
 F.notes.addEventListener("input",e=>{ autoGrow(e.target); commit("notes",e.target.value); });
+
+// Annulation des champs texte : instantané avant édition (focus) → poussé si modifié (blur)
+let _fieldEditSnap=null, _fieldEditPageN=null;
+[dtitle,F.rub,F.thematique,F.calib,F.rendu,F.journaliste,F.notes].forEach(el=>{
+  el.addEventListener("focus",()=>{ if(current!=null){ _fieldEditSnap={...state.pages[current-1]}; _fieldEditPageN=current; } });
+  el.addEventListener("blur",()=>{
+    if(_fieldEditSnap==null||_fieldEditPageN==null){ _fieldEditSnap=null; return; }
+    const now=state.pages[_fieldEditPageN-1];
+    if(now && JSON.stringify(_fieldEditSnap)!==JSON.stringify(now)) pushUndo("Édition page "+_fieldEditPageN, [_fieldEditSnap]);
+    _fieldEditSnap=null; _fieldEditPageN=null;
+  });
+});
+
 document.getElementById("closePeek").addEventListener("click",closePeek);
 document.getElementById("prevPage").addEventListener("click",()=>{ if(current>1) openPeek(current-1); });
 document.getElementById("nextPage").addEventListener("click",()=>{ if(current<TOTAL) openPeek(current+1); });
@@ -1603,6 +1705,7 @@ async function selectIssue(id, pushUrl){
   const iss = issuesCache.find(i=>i.id===id);
   if(!iss) return;
   currentIssue = iss;
+  undoStack.length=0; updateUndoButton(); // l'historique d'annulation est propre à un numéro
   localStorage.setItem("cdf_last_issue", id);
   issueSelect.value = id;
   renderIssueList();
@@ -1813,7 +1916,20 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   await sb.from("color_customizations").delete().eq("issue_id", currentIssue.id);
   colorCustomizations={};
   state.pages = updates.map(rowToPage);
+  undoStack.length=0; updateUndoButton(); // la réinitialisation vide l'historique d'annulation
   render();
+});
+
+document.getElementById("btnUndo").addEventListener("click", undoLast);
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase()==="z"){
+    const t=e.target;
+    const inEditable = t && (t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable);
+    if(inEditable) return; // laisser l'annulation native dans les champs de saisie
+    if(isVisitorMode || document.getElementById("authScreen").style.display!=="none") return;
+    e.preventDefault();
+    undoLast();
+  }
 });
 
 /* ---- authentification ---- */
@@ -2113,6 +2229,7 @@ function disableEditingUI() {
       }
     });
   });
+  updateUndoButton();
 }
 
 function enableEditingUI() {
@@ -2124,6 +2241,7 @@ function enableEditingUI() {
       el.style.cursor = "";
     });
   });
+  updateUndoButton();
 }
 
 sb.auth.onAuthStateChange((_event, session)=>{ if(session){ if(!suppressAutoShowApp) showApp(session); } else if(!isVisitorMode) showAuth(); });
