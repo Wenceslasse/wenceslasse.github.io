@@ -811,7 +811,6 @@ document.addEventListener("keydown", (e) => {
 
 function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") return v*1500; if(p.unite==="mots") return v*6; return v; }
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
-function rubTag(name){ if(!name) return null; return getTagColor(name); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}`; }
 function isLate(p){ return p.rendu && p.statut!=="boucle" && p.rendu < todayISO(); }
@@ -1225,11 +1224,6 @@ function gIsoWeek(d){
   const firstThu=new Date(Date.UTC(t.getUTCFullYear(),0,4));
   firstThu.setUTCDate(firstThu.getUTCDate()-((firstThu.getUTCDay()+6)%7)+3);
   return 1+Math.round((t-firstThu)/(7*86400000));
-}
-function gLead(p){ // fenêtre de préparation (jours) avant le rendu, selon le calibrage
-  const sig=toSignes(p);
-  if(!sig) return 7;
-  return Math.max(3,Math.min(28,Math.round(sig/1500*2)));
 }
 function formatPages(ns){ // [3,4,5,8] -> "3-5, 8"
   const s=[...new Set(ns)].sort((a,b)=>a-b); const parts=[]; let a=s[0], prev=s[0];
