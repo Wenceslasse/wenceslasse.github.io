@@ -351,7 +351,16 @@
     .spread .page.right{border-radius:0 0 8px 8px; box-shadow:none}
     .legend{margin-left:0; width:100%}
     .prow{grid-template-columns:1fr}
+    /* Sidebar en tiroir superposé plutôt qu'en colonne qui écrase le contenu */
+    #sidebar{position:fixed; left:0; top:0; height:100dvh; width:min(280px,82vw); z-index:70;
+      transform:translateX(0); transition:transform .22s ease; box-shadow:2px 0 24px rgba(0,0,0,.18)}
+    #app.sb-hidden #sidebar{display:flex; transform:translateX(-100%)}
+    #sbBackdrop{position:fixed; inset:0; background:rgba(15,15,15,.42); z-index:65; opacity:1; transition:opacity .2s ease}
+    #app.sb-hidden #sbBackdrop{opacity:0; pointer-events:none}
+    .head-userbar{padding-left:16px; padding-right:16px}
   }
+  #sbBackdrop{display:none}
+  @media (max-width:760px){ #sbBackdrop{display:block} }
   /* ---- Visitor Auth : machine à écrire + saisie en continuation ---- */
   #methodVisitor{
     cursor:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><text x="0" y="26" font-size="26">🎤</text></svg>') 4 30, auto;
@@ -456,6 +465,7 @@
 </div>
 
 <div id="app" style="display:none">
+<div id="sbBackdrop"></div>
 <aside id="sidebar">
   <div class="sb-brand">
     <span class="picon" aria-hidden="true">
@@ -1957,7 +1967,7 @@ function renderIssueList(){
     item.className="sb-item"+(currentIssue&&currentIssue.id===iss.id?" active":"");
     const name=document.createElement("button"); name.type="button"; name.className="sb-item-name";
     name.textContent=iss.numero||"(sans nom)"; name.title=iss.numero||"(sans nom)";
-    name.addEventListener("click",()=>selectIssue(iss.id));
+    name.addEventListener("click",()=>{ selectIssue(iss.id); if(_mqMobile.matches) document.getElementById("app").classList.add("sb-hidden"); });
     const dup=document.createElement("button"); dup.type="button"; dup.className="sb-item-dup"; dup.title="Dupliquer ce chemin de fer";
     dup.textContent="⧉";
     dup.addEventListener("click",(e)=>{ e.stopPropagation(); duplicateIssue(iss.id); });
@@ -2053,6 +2063,12 @@ async function duplicateIssue(id){
 issueSelect.addEventListener("change", e=>selectIssue(e.target.value));
 document.getElementById("btnNewIssue").addEventListener("click", createIssue);
 document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{ document.getElementById("app").classList.toggle("sb-hidden"); });
+// Sur mobile, la barre latérale démarre repliée et se referme après une sélection ou un tap sur le fond
+const _mqMobile = window.matchMedia("(max-width:760px)");
+function _syncSidebarForViewport(){ if(_mqMobile.matches) document.getElementById("app").classList.add("sb-hidden"); }
+_syncSidebarForViewport();
+_mqMobile.addEventListener("change", _syncSidebarForViewport);
+document.getElementById("sbBackdrop").addEventListener("click", ()=>document.getElementById("app").classList.add("sb-hidden"));
 
 /* ---- Supabase Realtime ---- */
 function subscribePages(issueId){
@@ -2506,7 +2522,7 @@ function exitVisitorMode() {
 
 const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
-  "#btnImport", "#btnPrint", "#btnReset", "#closePeek", "#dtitle", "#numero",
+  "#btnImport", "#btnPrint", "#btnReset", "#dtitle", "#numero",
   "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fRendu", "#fJournaliste", "#fNotes",
   "#commentInput", "#btnAddComment"
 ];
