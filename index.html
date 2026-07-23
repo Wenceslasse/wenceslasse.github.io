@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chemin de fer</title>
+<title>SacemMag - Chemin de fer</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="preconnect" href="https://aedgayenmptowhornxcv.supabase.co" crossorigin>
 <style>
@@ -289,6 +289,18 @@
   .comments-add textarea:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
   .comments-add button{white-space:nowrap; padding:8px 12px; border-radius:6px}
 
+  /* ---- Journal d'activité ---- */
+  .activity-panel .peek-top{gap:8px}
+  .activity-body{padding:14px 18px; overflow:auto; flex:1}
+  .activity-item{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border)}
+  .activity-item:last-child{border-bottom:none}
+  .activity-avatar{width:26px; height:26px; border-radius:50%; flex:none; display:grid; place-items:center; font-size:10.5px; font-weight:700; color:#fff}
+  .activity-main{flex:1; min-width:0}
+  .activity-summary{font-size:13.5px; line-height:1.4; color:var(--text)}
+  .activity-summary b{font-weight:600}
+  .activity-meta{font-size:11.5px; color:var(--faint); margin-top:2px}
+  .activity-empty{font-size:13px; color:var(--faint); font-style:italic; padding:8px 0}
+
   /* ---- Auth screen ---- */
   .authscreen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
   .authcard{width:100%; max-width:680px; display:flex; background:var(--canvas); border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.05)}
@@ -500,6 +512,7 @@
       <div class="more-menu-wrap" id="moreMenuWrap">
         <button class="tbtn" id="btnMoreActions" title="Plus d'actions" aria-haspopup="true" aria-expanded="false">⋯</button>
         <div class="more-menu" id="moreMenu">
+          <button class="more-menu-item" id="btnActivity">🕑 Journal d'activité</button>
           <button class="more-menu-item" id="btnCsv">Exporter CSV</button>
           <button class="more-menu-item" id="btnJson">Sauvegarde</button>
           <button class="more-menu-item" id="btnImport">Importer</button>
@@ -585,6 +598,16 @@
     <span class="spacer"></span>
     <button class="ghostbtn primary" id="closePeek">Fermer</button>
   </div>
+</aside>
+
+<div class="scrim" id="activityScrim"></div>
+<aside class="peek activity-panel" id="activityPanel" aria-label="Journal d'activité">
+  <div class="peek-top">
+    <span>Journal d'activité</span>
+    <span class="spacer"></span>
+    <button class="ghostbtn" id="closeActivity" title="Fermer">✕</button>
+  </div>
+  <div class="activity-body" id="activityBody"></div>
 </aside>
 
 <div class="save-toast" id="saveToast" aria-live="polite">✓ Enregistré</div>
@@ -676,6 +699,7 @@ let ganttAnchor = new Date();
 let colorCustomizations = {}; // { "rubrique:name": {bg, fg}, "statut:name": {bg, fg}, "lot:name": {bg, fg} }
 let currentUserEmail = "";
 let commentsChannel = null;
+let activityChannel = null;
 
 async function reorderPages(draggedPageNums, targetPageNum){
   pushUndo("Déplacement de pages", state.pages.map(p=>({...p})));
@@ -698,7 +722,7 @@ async function reorderPages(draggedPageNums, targetPageNum){
     console.error("Erreur réordonnage:",error.message);
     alert("Erreur lors du réordonnancement des pages :\n"+error.message+"\n\nLa vue va être resynchronisée.");
     if(currentIssue) await selectIssue(currentIssue.id, false);
-  } else flashSaved("✓ Pages réordonnées");
+  } else { flashSaved("✓ Pages réordonnées"); logActivity("a réordonné les pages du numéro", null); }
 }
 
 /* ---- Annuler (undo) : pile d'états précédents des pages affectées ---- */
@@ -807,6 +831,49 @@ function leavePresence(){
   const box=document.getElementById("presence"); if(box) box.innerHTML="";
 }
 
+/* ---- Journal d'activité (traçabilité append-only) ---- */
+function logActivity(summary, pageN){
+  if(isVisitorMode || !currentIssue) return; // les visiteurs ne journalisent rien
+  sb.from("activity_log").insert({
+    issue_id: currentIssue.id, page_n: (pageN==null?null:pageN),
+    author: currentUserEmail, summary
+  }).then(({error})=>{ if(error) console.error("Erreur journal :", error.message); });
+}
+function shortName(email){ return (email||"").split("@")[0].replace(/[._-]+/g," ").replace(/\b\w/g,c=>c.toUpperCase()).trim() || "—"; }
+function renderActivity(list){
+  const box=document.getElementById("activityBody"); if(!box) return;
+  box.innerHTML="";
+  if(!list || list.length===0){ box.innerHTML=`<div class="activity-empty">Aucune activité enregistrée pour ce numéro.</div>`; return; }
+  for(const a of list){
+    const it=document.createElement("div"); it.className="activity-item";
+    const av=document.createElement("span"); av.className="activity-avatar"; av.textContent=_initials(a.author); av.style.background=_colorFor(a.author||"?");
+    const main=document.createElement("div"); main.className="activity-main";
+    main.innerHTML=`<div class="activity-summary"><b>${esc(shortName(a.author))}</b> ${esc(a.summary)}</div><div class="activity-meta">${relTime(a.created_at)}${a.page_n?` · page ${a.page_n}`:""}</div>`;
+    it.appendChild(av); it.appendChild(main); box.appendChild(it);
+  }
+}
+async function loadActivity(){
+  if(!currentIssue) return;
+  renderActivity([{author:"",summary:"Chargement…",created_at:new Date().toISOString()}]);
+  const { data, error } = await sb.from("activity_log").select("*").eq("issue_id", currentIssue.id).order("created_at",{ascending:false}).limit(150);
+  if(error){ console.error("Erreur chargement journal :", error.message); renderActivity([]); return; }
+  renderActivity(data||[]);
+}
+function subscribeActivity(issueId){
+  if(activityChannel){ sb.removeChannel(activityChannel); activityChannel=null; }
+  if(!issueId) return;
+  activityChannel = sb.channel("activity-"+issueId)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"activity_log",filter:"issue_id=eq."+issueId}, ()=>{
+      if(document.getElementById("activityPanel").classList.contains("open")) loadActivity();
+    }).subscribe();
+}
+const activityScrim=document.getElementById("activityScrim"), activityPanel=document.getElementById("activityPanel");
+function openActivity(){ activityPanel.classList.add("open"); activityScrim.classList.add("open"); loadActivity(); }
+function closeActivity(){ activityPanel.classList.remove("open"); activityScrim.classList.remove("open"); }
+document.getElementById("btnActivity").addEventListener("click", openActivity);
+document.getElementById("closeActivity").addEventListener("click", closeActivity);
+activityScrim.addEventListener("click", closeActivity);
+
 /* ---- Commentaires par page ---- */
 function relTime(iso){
   const d=new Date(iso), now=new Date(), s=Math.round((now-d)/1000);
@@ -868,6 +935,7 @@ async function addComment(){
   const { error } = await sb.from("page_comments").insert({ page_id:p.id, author:currentUserEmail, body });
   if(error){ console.error("Erreur ajout commentaire :", error.message); alert("Erreur : "+error.message); input.value=body; return; }
   flashSaved("✓ Commentaire ajouté");
+  logActivity(`a commenté la page ${current}`, current);
   const { data } = await sb.from("page_comments").select("*").eq("page_id", p.id).order("created_at",{ascending:true});
   renderComments(data||[]);
 }
@@ -988,6 +1056,11 @@ function todayISO(){ return new Date().toISOString().slice(0,10); }
 function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}`; }
 function isLate(p){ return p.rendu && p.statut!=="boucle" && p.rendu < todayISO(); }
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function setDocTitle(name){
+  const n=(name||"").trim();
+  document.title = n ? `${n} - Chemin de fer` : "SacemMag - Chemin de fer";
+}
 
 let _toastTimer=null;
 function flashSaved(text){
@@ -1714,6 +1787,7 @@ async function applyBulkEdit(){
   const {error}=await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
   flashSaved(`✓ ${updates.length} page${updates.length>1?"s":""} modifiée${updates.length>1?"s":""}`);
+  { const ns=Array.from(selectedPages).sort((a,b)=>a-b); logActivity(`a modifié en lot ${ns.length} pages (${formatPages(ns)})`, ns[0]); }
   render();
   selectedPages.clear();
   lastShiftClickPage=null;
@@ -1747,7 +1821,7 @@ function renderChips(active){
   for(const k in STATUTS){ const defaultS=STATUTS[k]; const s=getTagColor(k, "statut");
     const b=document.createElement("div"); b.setAttribute("role","button"); b.tabIndex=0; b.className="opt"+(k===active?" active":"");
     b.innerHTML=pillHTML(defaultS.label,s,"statut",k);
-    b.addEventListener("click",()=>{ if(current!=null&&state.pages[current-1].statut!==k){ pushUndo("Statut page "+current, [{...state.pages[current-1]}]); } commit("statut",k); renderChips(k); });
+    b.addEventListener("click",()=>{ if(current!=null&&state.pages[current-1].statut!==k){ pushUndo("Statut page "+current, [{...state.pages[current-1]}]); logActivity(`a passé la page ${current} en « ${STATUTS[k].label} »`, current); } commit("statut",k); renderChips(k); });
     b.addEventListener("keydown", e=>{ if(e.target!==b) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } });
     c.appendChild(b);
   }
@@ -1758,7 +1832,7 @@ function renderLotChips(active){
     const b=document.createElement("div"); b.setAttribute("role","button"); b.tabIndex=0; b.className="opt"+(k===active?" active":"");
     b.title=k===active?"Cliquer pour retirer du lot":"Affecter au "+defaultS.label;
     b.innerHTML=pillHTML(defaultS.label,s,"lot",k);
-    b.addEventListener("click",()=>{ const nv=(active===k)?"":k; if(current!=null){ pushUndo("Lot page "+current, [{...state.pages[current-1]}]); } commit("lot",nv); renderLotChips(nv); });
+    b.addEventListener("click",()=>{ const nv=(active===k)?"":k; if(current!=null){ pushUndo("Lot page "+current, [{...state.pages[current-1]}]); logActivity(nv ? `a affecté la page ${current} au ${LOTS[nv].label}` : `a retiré la page ${current} de son lot`, current); } commit("lot",nv); renderLotChips(nv); });
     b.addEventListener("keydown", e=>{ if(e.target!==b) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } });
     c.appendChild(b);
   }
@@ -1803,13 +1877,18 @@ F.journaliste.addEventListener("input",e=>commit("journaliste",e.target.value));
 F.notes.addEventListener("input",e=>{ autoGrow(e.target); commit("notes",e.target.value); });
 
 // Annulation des champs texte : instantané avant édition (focus) → poussé si modifié (blur)
+const FIELD_LABELS={sujet:"le sujet",rubrique:"la rubrique",thematique:"la thématique",calib:"le calibrage",unite:"l'unité",rendu:"la date de rendu",journaliste:"le journaliste",notes:"les notes"};
 let _fieldEditSnap=null, _fieldEditPageN=null;
 [dtitle,F.rub,F.thematique,F.calib,F.rendu,F.journaliste,F.notes].forEach(el=>{
   el.addEventListener("focus",()=>{ if(current!=null){ _fieldEditSnap={...state.pages[current-1]}; _fieldEditPageN=current; } });
   el.addEventListener("blur",()=>{
     if(_fieldEditSnap==null||_fieldEditPageN==null){ _fieldEditSnap=null; return; }
     const now=state.pages[_fieldEditPageN-1];
-    if(now && JSON.stringify(_fieldEditSnap)!==JSON.stringify(now)) pushUndo("Édition page "+_fieldEditPageN, [_fieldEditSnap]);
+    if(now && JSON.stringify(_fieldEditSnap)!==JSON.stringify(now)){
+      pushUndo("Édition page "+_fieldEditPageN, [_fieldEditSnap]);
+      const changed=Object.keys(FIELD_LABELS).filter(k=>_fieldEditSnap[k]!==now[k]).map(k=>FIELD_LABELS[k]);
+      if(changed.length) logActivity(`a modifié ${changed.join(", ")} de la page ${_fieldEditPageN}`, _fieldEditPageN);
+    }
     _fieldEditSnap=null; _fieldEditPageN=null;
   });
 });
@@ -1847,7 +1926,7 @@ function debounceIssueWrite(field, val){
     if(field==="numero") populateIssueSelect();
   }, 400);
 }
-numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.target.value; debounceIssueWrite("numero", e.target.value); } });
+numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.target.value; setDocTitle(e.target.value); debounceIssueWrite("numero", e.target.value); } });
 bouclage.addEventListener("input",e=>{ if(currentIssue){ currentIssue.bouclage=e.target.value||null; debounceIssueWrite("bouclage", e.target.value||null); } });
 
 /* ---- selection ---- */
@@ -1898,6 +1977,8 @@ async function selectIssue(id, pushUrl){
   currentIssue = iss;
   undoStack.length=0; updateUndoButton(); // l'historique d'annulation est propre à un numéro
   joinPresence(id);
+  subscribeActivity(id);
+  setDocTitle(iss.numero);
   localStorage.setItem("cdf_last_issue", id);
   issueSelect.value = id;
   renderIssueList();
@@ -2109,6 +2190,7 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   colorCustomizations={};
   state.pages = updates.map(rowToPage);
   undoStack.length=0; updateUndoButton(); // la réinitialisation vide l'historique d'annulation
+  logActivity("a réinitialisé le numéro", null);
   render();
 });
 
@@ -2241,8 +2323,10 @@ function showAuth(){
   if(pagesChannel){ sb.removeChannel(pagesChannel); pagesChannel=null; }
   if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
   if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
+  if(activityChannel){ sb.removeChannel(activityChannel); activityChannel=null; }
   unsubscribeComments();
   leavePresence();
+  setDocTitle("");
   appInited=false; currentIssue=null; issuesCache=[];
   colorCustomizations={};
 }

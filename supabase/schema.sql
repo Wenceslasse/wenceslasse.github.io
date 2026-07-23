@@ -69,6 +69,17 @@ create table if not exists public.page_comments (
 );
 create index if not exists page_comments_page_id_idx on public.page_comments(page_id);
 
+-- Journal d'activité (traçabilité append-only des modifications d'un numéro)
+create table if not exists public.activity_log (
+  id uuid primary key default gen_random_uuid(),
+  issue_id uuid not null references public.issues(id) on delete cascade,
+  page_n int,
+  author text not null default '',
+  summary text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists activity_log_issue_id_idx on public.activity_log(issue_id, created_at desc);
+
 -- ---- Row Level Security ---------------------------------------------
 
 alter table public.issues enable row level security;
@@ -153,6 +164,21 @@ drop policy if exists "anon read comments" on public.page_comments;
 create policy "anon read comments" on public.page_comments
   for select to anon using (true);
 
+alter table public.activity_log enable row level security;
+
+drop policy if exists "authenticated read activity" on public.activity_log;
+drop policy if exists "authenticated insert activity" on public.activity_log;
+
+create policy "authenticated read activity" on public.activity_log
+  for select to authenticated using (true);
+create policy "authenticated insert activity" on public.activity_log
+  for insert to authenticated with check (true);
+
+-- Les visiteurs (anon) peuvent consulter le journal mais pas y écrire.
+drop policy if exists "anon read activity" on public.activity_log;
+create policy "anon read activity" on public.activity_log
+  for select to anon using (true);
+
 -- ---- Realtime ---------------------------------------------------------
 -- Permet à Supabase Realtime de diffuser les changements de ces trois tables.
 -- (vérifie d'abord si la table est déjà dans la publication, pour pouvoir
@@ -171,5 +197,8 @@ begin
   end if;
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='page_comments') then
     alter publication supabase_realtime add table public.page_comments;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='activity_log') then
+    alter publication supabase_realtime add table public.activity_log;
   end if;
 end $$;
