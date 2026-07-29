@@ -664,18 +664,18 @@
 <div class="modal" id="rythmeModal" role="dialog" aria-modal="true" aria-labelledby="rythmeTitle">
   <div class="modal-h"><span id="rythmeTitle">Rythme du numéro</span><span class="spacer"></span><button class="ghostbtn" id="closeRythme" title="Fermer">✕</button></div>
   <div class="modal-b">
-    <p class="modal-i">Les durées habituelles de votre chaîne, réglées une seule fois. Chaque dossier n'a plus qu'<b>une date à saisir</b> : les quatre autres s'en déduisent.</p>
+    <p class="modal-i">Les durées habituelles de votre chaîne, réglées une seule fois. Chaque dossier n'a plus qu'<b>une date à saisir</b> : les quatre autres s'en déduisent. Tout est compté en <b>jours ouvrés</b> — les week-ends sont sautés.</p>
     <div class="rythme-grid">
       <label for="rRetours">Retours après la V1</label>
-      <div class="rythme-in"><input id="rRetours" type="number" min="0" max="60" step="1"><span>j</span></div>
+      <div class="rythme-in"><input id="rRetours" type="number" min="0" max="60" step="1"><span>j ouvrés</span></div>
       <label for="rV2">Reprise V2 après les retours</label>
-      <div class="rythme-in"><input id="rV2" type="number" min="0" max="60" step="1"><span>j</span></div>
+      <div class="rythme-in"><input id="rV2" type="number" min="0" max="60" step="1"><span>j ouvrés</span></div>
       <label>Durée du SR <span class="rythme-note">défaut, ajustable par dossier</span></label>
       <div class="jsr" role="group" aria-label="Durée du SR par défaut">
         <button type="button" data-rsr="1">1 j</button><button type="button" data-rsr="2">2 j</button>
       </div>
       <label for="rAgence">Intégration par Les Jumelles</label>
-      <div class="rythme-in"><input id="rAgence" type="number" min="0" max="60" step="1"><span>j</span></div>
+      <div class="rythme-in"><input id="rAgence" type="number" min="0" max="60" step="1"><span>j ouvrés</span></div>
     </div>
     <p class="modal-i" id="rythmeTotal"></p>
   </div>
@@ -714,7 +714,8 @@ const MILESTONES = [
   {key:"sr",      field:"d_sr",     label:"Sortie de SR",     short:"SR",  who:"Secrétariat de rédaction", from:"sr",       statut:"agence",  gap:"r_sr_duree"},
   {key:"agence",  field:"d_agence", label:"Mise en page",     short:"MEP", who:"Les Jumelles",             from:"agence",   statut:"boucle",  gap:"r_agence"},
 ];
-const RYTHME_DEFAUT = { r_retours:3, r_v2:5, r_sr_duree:1, r_agence:4 };
+// Durées exprimées en JOURS OUVRÉS (cf. addOuvres).
+const RYTHME_DEFAUT = { r_retours:1, r_v2:1, r_sr_duree:1, r_agence:4 };
 // Nombre de jalons franchis correspondant à chaque statut (a_caler = rien de planifié).
 const STATUT_STEP = { a_caler:0, ecriture:0, retours:1, reprise:2, sr:3, agence:4, boucle:5 };
 // Palette « Encre & lumière » : fond pastel + texte encre profonde de la même
@@ -1099,8 +1100,20 @@ function rythme(){
 }
 // Durée du SR retenue pour une page : son réglage propre, sinon celui du numéro.
 function srDuree(p){ return p.sr_duree===1||p.sr_duree===2 ? p.sr_duree : rythme().r_sr_duree; }
-function addISO(iso, days){
-  const d = gParse(iso); d.setUTCDate(d.getUTCDate()+days);
+/* Décalage en JOURS OUVRÉS : les retours de la rédaction, le SR et la mise en
+   page ne se font pas le week-end, donc une V1 rendue le vendredi n'attend pas
+   des retours le samedi. `n` peut être négatif pour remonter la chaîne. Une
+   date saisie à la main reste intacte, même posée un samedi : c'est un choix
+   de l'utilisateur, pas un calcul. */
+function addOuvres(iso, n){
+  const d = gParse(iso);
+  if(n === 0) return iso;
+  const step = n > 0 ? 1 : -1;
+  let reste = Math.abs(n);
+  while(reste > 0){
+    d.setUTCDate(d.getUTCDate() + step);
+    if(!gWeekend(d)) reste--;
+  }
   return d.toISOString().slice(0,10);
 }
 // Renvoie les cinq dates du circuit, chacune avec son origine (saisie ou calculée).
@@ -1111,8 +1124,8 @@ function chainDates(p){
   const out = raw.slice();
   const first = raw.findIndex(Boolean);
   if(first < 0) return MILESTONES.map(m => ({...m, date:"", auto:true}));
-  for(let i=first-1; i>=0; i--) out[i] = addISO(out[i+1], -gaps[i+1]);
-  for(let i=first+1; i<MILESTONES.length; i++) if(!out[i]) out[i] = addISO(out[i-1], gaps[i]);
+  for(let i=first-1; i>=0; i--) out[i] = addOuvres(out[i+1], -gaps[i+1]);
+  for(let i=first+1; i<MILESTONES.length; i++) if(!out[i]) out[i] = addOuvres(out[i-1], gaps[i]);
   return MILESTONES.map((m,i) => ({...m, date:out[i], auto:!raw[i]}));
 }
 // Nombre de jalons franchis, d'après le statut de la page.
@@ -2235,8 +2248,13 @@ function refreshRythmeUI(){
   const r=rythme();
   rythmeModal.querySelectorAll("[data-rsr]").forEach(b=>b.classList.toggle("on", Number(b.dataset.rsr)===r.r_sr_duree));
   const total=r.r_retours+r.r_v2+r.r_sr_duree+r.r_agence;
+  // L'exemple est calculé, pas additionné : avec des jours ouvrés, le nombre de
+  // jours calendaires dépend des week-ends traversés.
+  const lundi=gMonday(gParse(todayISO())).toISOString().slice(0,10);
+  const fin=addOuvres(lundi, total);
+  const cal=gDiff(gParse(lundi), gParse(fin));
   document.getElementById("rythmeTotal").innerHTML =
-    `Soit <b>${total} jours</b> entre la livraison V1 et la mise en page. Une V1 attendue le 1er sort de chez Les Jumelles le ${total+1}.`;
+    `Soit <b>${total} jours ouvrés</b> entre la livraison V1 et la mise en page. Une V1 rendue un lundi sort de chez Les Jumelles le ${frDate(fin)}, soit ${cal} jours calendaires plus tard.`;
 }
 function setRythme(field, val){
   if(!currentIssue || isVisitorMode) return;
