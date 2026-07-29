@@ -742,14 +742,36 @@ const LOTS = {
 };
 const COVER = {1:"C1",2:"C2",55:"C3",56:"C4"};
 
-// Palette de 24 couleurs pastels proposées dans le sélecteur de couleur des tags
+// Palette de 24 couleurs pastels proposées dans le sélecteur de couleur des
+// tags, dans la même famille « Encre & lumière » que TAG_PALETTE (fond pastel,
+// texte en encre profonde de la même teinte, ≥ 7:1 AAA) : les 12 couleurs
+// automatiques, complétées de 12 teintes intermédiaires pour combler la roue
+// chromatique et doubler le choix disponible.
 const COLOR_PICKER_PALETTE = [
-  {bg:"#E9E9E7", fg:"#5B5B58"}, {bg:"#EEE0DA", fg:"#64473A"}, {bg:"#FADEC9", fg:"#8A4B00"}, {bg:"#FDECC8", fg:"#7C5E00"},
-  {bg:"#F5EBC7", fg:"#7A6414"}, {bg:"#E3EFC7", fg:"#4C6B1F"}, {bg:"#E5EAC9", fg:"#5C6B1F"}, {bg:"#DBEDDB", fg:"#2C5E3E"},
-  {bg:"#D6F0E0", fg:"#1F6B4A"}, {bg:"#D3EFE7", fg:"#1F6B57"}, {bg:"#D3E9EF", fg:"#1F5A6B"}, {bg:"#D6E8F5", fg:"#1F5A8C"},
-  {bg:"#D3E5EF", fg:"#24547A"}, {bg:"#DCDFF7", fg:"#35398C"}, {bg:"#E6DFF5", fg:"#4A3A8C"}, {bg:"#E8DEEE", fg:"#5B3E7A"},
-  {bg:"#EBD8F5", fg:"#6B2D8C"}, {bg:"#F5DCEF", fg:"#8C2D74"}, {bg:"#F5E0E9", fg:"#7A2E58"}, {bg:"#F0DDE6", fg:"#8C3A5E"},
-  {bg:"#FFE2DD", fg:"#9B2C1E"}, {bg:"#FADCDC", fg:"#A83232"}, {bg:"#FADFD3", fg:"#A8482E"}, {bg:"#FFEEDD", fg:"#A8601F"}
+  {bg:"#EAE3DA", fg:"#514534"}, // taupe
+  {bg:"#EFE1DC", fg:"#6B3A2E"}, // terracotta
+  {bg:"#F6DDCF", fg:"#713619"}, // corail
+  {bg:"#F3DBDB", fg:"#872121"}, // rouge brique
+  {bg:"#F0DCE4", fg:"#7A2242"}, // mûre
+  {bg:"#F5DCDD", fg:"#76323D"}, // rose poudré
+  {bg:"#F3DCE9", fg:"#7A2258"}, // magenta sourdine
+  {bg:"#EBDCEA", fg:"#6B2E64"}, // prune
+  {bg:"#E9DCF0", fg:"#5C2E82"}, // violet améthyste
+  {bg:"#E2DEF2", fg:"#463A8C"}, // lavande
+  {bg:"#DCDCF0", fg:"#39358C"}, // indigo
+  {bg:"#D6E1EE", fg:"#233F6B"}, // bleu nuit
+  {bg:"#D4E3EC", fg:"#1E4B6C"}, // bleu ardoise
+  {bg:"#D2E7E6", fg:"#19514D"}, // cyan glacier
+  {bg:"#DDE7E9", fg:"#224E56"}, // pétrole
+  {bg:"#D2E4D8", fg:"#1E4A30"}, // vert bouteille
+  {bg:"#D3E5DE", fg:"#1A5043"}, // émeraude sourdine
+  {bg:"#DCEAD3", fg:"#285424"}, // sauge
+  {bg:"#DFEAC6", fg:"#395115"}, // vert prairie
+  {bg:"#F5EAC2", fg:"#5D4909"}, // miel
+  {bg:"#EFE7C4", fg:"#504B0B"}, // olive doré
+  {bg:"#F3E0C9", fg:"#6A3F0A"}, // ambre
+  {bg:"#E4E4E1", fg:"#4A4A44"}, // gris chaud
+  {bg:"#DEE3E6", fg:"#3C4951"}, // gris bleuté
 ];
 
 function getTagColor(text, fieldType) {
