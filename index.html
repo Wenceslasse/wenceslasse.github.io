@@ -346,23 +346,6 @@
   .primary{background:var(--accent); color:#fff}
   .primary:hover{background:#1a72cc; color:#fff}
 
-  /* ---- Commentaires par page ---- */
-  .comments{margin-top:22px; padding-top:16px; border-top:1px solid var(--border)}
-  .comments-title{font-size:13px; font-weight:600; color:var(--muted); margin-bottom:12px}
-  .comments-list{display:flex; flex-direction:column; gap:10px; margin-bottom:12px}
-  .comment{background:var(--hover); border-radius:8px; padding:9px 11px; position:relative}
-  .comment-head{display:flex; align-items:baseline; gap:8px; margin-bottom:3px}
-  .comment-author{font-size:12.5px; font-weight:600; color:var(--text)}
-  .comment-time{font-size:11px; color:var(--faint)}
-  .comment-body{font-size:13.5px; line-height:1.45; white-space:pre-wrap; word-break:break-word}
-  .comment-del{position:absolute; top:6px; right:7px; border:none; background:transparent; cursor:pointer; color:var(--faint); font-size:13px; padding:2px 5px; border-radius:4px; opacity:0}
-  .comment:hover .comment-del{opacity:1}
-  .comment-del:hover{background:var(--border); color:var(--danger)}
-  .comments-empty{font-size:13px; color:var(--faint); font-style:italic}
-  .comments-add{display:flex; gap:8px; align-items:flex-end}
-  .comments-add textarea{flex:1; border:1px solid var(--border-strong); border-radius:6px; padding:8px 10px; font-size:13.5px; resize:none; min-height:36px; line-height:1.4; background:var(--body)}
-  .comments-add textarea:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
-  .comments-add button{white-space:nowrap; padding:8px 12px; border-radius:6px}
 
   /* ---- Journal d'activité ---- */
   .activity-panel .peek-top{gap:8px}
@@ -658,15 +641,6 @@
     </div>
 
     <div class="circuit" id="circuit"></div>
-
-    <div class="comments" id="commentsSection">
-      <div class="comments-title">Commentaires</div>
-      <div class="comments-list" id="commentsList"></div>
-      <div class="comments-add" id="commentsAdd">
-        <textarea id="commentInput" rows="1" placeholder="Ajouter un commentaire…"></textarea>
-        <button class="ghostbtn primary" id="btnAddComment">Envoyer</button>
-      </div>
-    </div>
   </div>
   <div class="peek-foot">
     <button class="ghostbtn" id="prevPage">← Précédente</button>
@@ -820,7 +794,6 @@ let ganttScope = "month"; // month | week
 let ganttAnchor = new Date();
 let colorCustomizations = {}; // { "rubrique:name": {bg, fg}, "statut:name": {bg, fg}, "lot:name": {bg, fg} }
 let currentUserEmail = "";
-let commentsChannel = null;
 let activityChannel = null;
 
 async function reorderPages(draggedPageNums, targetPageNum){
@@ -998,7 +971,7 @@ document.getElementById("btnActivity").addEventListener("click", openActivity);
 document.getElementById("closeActivity").addEventListener("click", closeActivity);
 activityScrim.addEventListener("click", closeActivity);
 
-/* ---- Commentaires par page ---- */
+// Horodatage relatif du journal d'activité.
 function relTime(iso){
   const d=new Date(iso), now=new Date(), s=Math.round((now-d)/1000);
   if(s<60) return "à l'instant";
@@ -1007,72 +980,6 @@ function relTime(iso){
   const j=Math.round(h/24); if(j<7) return `il y a ${j} j`;
   return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
 }
-function renderComments(list){
-  const box=document.getElementById("commentsList"); if(!box) return;
-  box.innerHTML="";
-  if(!list || list.length===0){
-    box.innerHTML=`<div class="comments-empty">Aucun commentaire pour cette page.</div>`;
-    return;
-  }
-  for(const c of list){
-    const el=document.createElement("div"); el.className="comment";
-    const canDelete = !isVisitorMode && c.author===currentUserEmail;
-    el.innerHTML=`<div class="comment-head"><span class="comment-author">${esc(c.author||"—")}</span><span class="comment-time">${relTime(c.created_at)}</span></div><div class="comment-body">${esc(c.body)}</div>`;
-    if(canDelete){
-      const del=document.createElement("button"); del.className="comment-del"; del.textContent="✕"; del.title="Supprimer";
-      del.addEventListener("click",()=>deleteComment(c.id));
-      el.appendChild(del);
-    }
-    box.appendChild(el);
-  }
-}
-async function loadComments(pageId){
-  renderComments([]); // reset immédiat
-  if(!pageId) return;
-  const { data, error } = await sb.from("page_comments").select("*").eq("page_id", pageId).order("created_at",{ascending:true});
-  if(error){ console.error("Erreur chargement commentaires :", error.message); return; }
-  renderComments(data||[]);
-  subscribeComments(pageId);
-}
-function subscribeComments(pageId){
-  if(commentsChannel){ sb.removeChannel(commentsChannel); commentsChannel=null; }
-  commentsChannel = sb.channel("comments-"+pageId)
-    .on("postgres_changes",{event:"*",schema:"public",table:"page_comments",filter:"page_id=eq."+pageId}, ()=>{
-      // recharge la liste si le peek est encore ouvert sur cette page
-      if(current!=null && state.pages[current-1] && state.pages[current-1].id===pageId){
-        sb.from("page_comments").select("*").eq("page_id", pageId).order("created_at",{ascending:true})
-          .then(({data})=>renderComments(data||[]));
-      }
-    }).subscribe();
-}
-function unsubscribeComments(){
-  if(commentsChannel){ sb.removeChannel(commentsChannel); commentsChannel=null; }
-}
-async function addComment(){
-  if(isVisitorMode || current==null) return;
-  const input=document.getElementById("commentInput");
-  const body=input.value.trim();
-  if(!body) return;
-  const p=state.pages[current-1];
-  if(!p.id){ alert("Cette page n'est pas encore enregistrée."); return; }
-  input.value=""; input.style.height="auto";
-  const { error } = await sb.from("page_comments").insert({ page_id:p.id, author:currentUserEmail, body });
-  if(error){ console.error("Erreur ajout commentaire :", error.message); alert("Erreur : "+error.message); input.value=body; return; }
-  flashSaved("✓ Commentaire ajouté");
-  logActivity(`a commenté la page ${current}`, current);
-  const { data } = await sb.from("page_comments").select("*").eq("page_id", p.id).order("created_at",{ascending:true});
-  renderComments(data||[]);
-}
-async function deleteComment(id){
-  const { error } = await sb.from("page_comments").delete().eq("id", id);
-  if(error){ console.error("Erreur suppression commentaire :", error.message); return; }
-  if(current!=null){
-    const p=state.pages[current-1];
-    const { data } = await sb.from("page_comments").select("*").eq("page_id", p.id).order("created_at",{ascending:true});
-    renderComments(data||[]);
-  }
-}
-
 async function saveColorCustomization(fieldType, tagName, bgColor, fgColor) {
   if (!currentIssue) return;
   const { error } = await sb.from("color_customizations").upsert({
@@ -2106,11 +2013,9 @@ function openPeek(n){
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
   document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
-  document.getElementById("commentsAdd").style.display = isVisitorMode ? "none" : "flex";
-  loadComments(p.id);
   setTimeout(()=>dtitle.focus(),120);
 }
-function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; unsubscribeComments(); }
+function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; }
 /* ---- Le fil vertical des cinq jalons -------------------------------
    Une pastille par jalon : cliquer dessus marque le jalon comme franchi (et
    les précédents avec lui), ce dont découle le statut de la page. La date à
@@ -2289,10 +2194,6 @@ document.getElementById("nextPage").addEventListener("click",()=>{ if(current<TO
 scrim.addEventListener("click",closePeek);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&current!=null) closePeek(); });
 
-document.getElementById("btnAddComment").addEventListener("click", addComment);
-const commentInput=document.getElementById("commentInput");
-commentInput.addEventListener("input", e=>autoGrow(e.target));
-commentInput.addEventListener("keydown", e=>{ if(e.key==="Enter" && (e.ctrlKey||e.metaKey)){ e.preventDefault(); addComment(); } });
 
 function refreshPeekIfIdle(n){
   if(current!==n || !peek.classList.contains("open")) return;
@@ -2783,7 +2684,6 @@ function showAuth(){
   if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
   if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
   if(activityChannel){ sb.removeChannel(activityChannel); activityChannel=null; }
-  unsubscribeComments();
   leavePresence();
   setDocTitle("");
   appInited=false; currentIssue=null; issuesCache=[];
@@ -2967,7 +2867,6 @@ const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
   "#btnImport", "#btnPrint", "#btnReset", "#dtitle", "#numero",
   "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes",
-  "#commentInput", "#btnAddComment",
   // Circuit de production : dates, pastilles de jalon et réglage du SR
   ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence"
 ];
