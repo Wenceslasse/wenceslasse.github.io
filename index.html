@@ -700,7 +700,7 @@
       <div class="jsr" role="group" aria-label="Durée du SR par défaut">
         <button type="button" data-rsr="1">1 j</button><button type="button" data-rsr="2">2 j</button>
       </div>
-      <label for="rAgence">Intégration par l'agence</label>
+      <label for="rAgence">Intégration par Les Jumelles</label>
       <div class="rythme-in"><input id="rAgence" type="number" min="0" max="60" step="1"><span>j</span></div>
     </div>
     <p class="modal-i" id="rythmeTotal"></p>
@@ -722,7 +722,7 @@ const STATUTS = {
   retours: {label:"Retours",     bg:"#FADEC9", fg:"#8A4B00", dot:"#C1741A"},
   reprise: {label:"Reprise V2",  bg:"#FDECC8", fg:"#7C5E00", dot:"#C99A2E"},
   sr:      {label:"En SR",       bg:"#E8DEEE", fg:"#5B3E7A", dot:"#8256A8"},
-  agence:  {label:"Chez l'agence",bg:"#D6E8F5", fg:"#1F5A8C", dot:"#3D82B8"},
+  agence:  {label:"Chez Les Jumelles",bg:"#D6E8F5", fg:"#1F5A8C", dot:"#3D82B8"},
   boucle:  {label:"Bouclé",      bg:"#DBEDDB", fg:"#2C5E3E", dot:"#4B8B5B"},
 };
 // Anciennes valeurs, au cas où une page n'aurait pas encore été migrée en base.
@@ -738,7 +738,7 @@ const MILESTONES = [
   {key:"retours", field:"d_retours",label:"Retours rédaction",short:"RET", who:"Rédac chef + interne",     from:"retours",  statut:"reprise", gap:"r_retours"},
   {key:"v2",      field:"d_v2",     label:"Livraison V2",     short:"V2",  who:"Journaliste",              from:"reprise",  statut:"sr",      gap:"r_v2"},
   {key:"sr",      field:"d_sr",     label:"Sortie de SR",     short:"SR",  who:"Secrétariat de rédaction", from:"sr",       statut:"agence",  gap:"r_sr_duree"},
-  {key:"agence",  field:"d_agence", label:"Mise en page",     short:"MEP", who:"Agence",                   from:"agence",   statut:"boucle",  gap:"r_agence"},
+  {key:"agence",  field:"d_agence", label:"Mise en page",     short:"MEP", who:"Les Jumelles",             from:"agence",   statut:"boucle",  gap:"r_agence"},
 ];
 const RYTHME_DEFAUT = { r_retours:3, r_v2:5, r_sr_duree:1, r_agence:4 };
 // Nombre de jalons franchis correspondant à chaque statut (a_caler = rien de planifié).
@@ -1556,7 +1556,7 @@ function renderCalendarView(){
   cal.innerHTML="";
 
   // Une entrée par jalon daté, filtrable par étape : le SR ne veut voir que ses
-  // sorties de SR, l'agence que ses mises en page.
+  // sorties de SR, Les Jumelles que leurs mises en page.
   const grouped={};
   let firstRenduDate=null;
   for(const g of visibleDossiers()){
@@ -2336,7 +2336,7 @@ function refreshRythmeUI(){
   rythmeModal.querySelectorAll("[data-rsr]").forEach(b=>b.classList.toggle("on", Number(b.dataset.rsr)===r.r_sr_duree));
   const total=r.r_retours+r.r_v2+r.r_sr_duree+r.r_agence;
   document.getElementById("rythmeTotal").innerHTML =
-    `Soit <b>${total} jours</b> entre la livraison V1 et la mise en page. Une V1 attendue le 1er sort de l'agence le ${total+1}.`;
+    `Soit <b>${total} jours</b> entre la livraison V1 et la mise en page. Une V1 attendue le 1er sort de chez Les Jumelles le ${total+1}.`;
 }
 function setRythme(field, val){
   if(!currentIssue || isVisitorMode) return;
@@ -3007,4 +3007,3 @@ sb.auth.getSession().then(({data})=>{
 </script>
 </body>
 </html>
-<!-- Updated at Fri Jul 10 15:22:22 UTC 2026 -->
