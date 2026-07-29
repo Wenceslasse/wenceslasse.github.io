@@ -202,6 +202,24 @@
   /* Mini-jauge d'avancement d'un dossier aux statuts mixtes */
   .g2-bar .g2-prog{display:flex; gap:1.5px; align-items:center; flex:none; margin-left:auto}
   .g2-bar .g2-prog i{display:block; width:4px; height:10px; border-radius:1px}
+  /* Barre segmentée : une tranche par étape du circuit, plus un losange par jalon */
+  .g2-seg{position:absolute; top:50%; transform:translateY(-50%); height:22px; display:flex; align-items:center;
+          padding:0 6px 0 11px; font-size:10.5px; font-weight:700; letter-spacing:.02em; overflow:hidden; cursor:pointer;
+          box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+  .g2-seg:first-of-type{border-radius:5px 0 0 5px}
+  .g2-seg.tail{border-radius:0 5px 5px 0}
+  .g2-seg.only{border-radius:5px}
+  .g2-seg.done{opacity:.5}
+  .g2-seg.late{box-shadow:inset 0 0 0 1.5px var(--danger)}
+  .g2-seg span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .g2-mk{position:absolute; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px; transform:rotate(45deg);
+         background:var(--canvas); border:1.5px solid var(--muted); z-index:3; pointer-events:none;
+         box-shadow:0 0 0 1.5px var(--canvas)}
+  .g2-mk.done{background:#4B8B5B; border-color:#4B8B5B}
+  .g2-caption{position:absolute; top:50%; transform:translateY(-50%); font-size:11px; font-weight:600;
+              color:var(--muted); white-space:nowrap; padding-left:8px; pointer-events:none; z-index:2}
+  .g2-legend{display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; margin-top:12px; font-size:11.5px; color:var(--muted)}
+  .g2-legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; vertical-align:-1px}
   .g2-today{position:absolute; top:0; bottom:0; width:2px; background:var(--danger); z-index:4; pointer-events:none}
   .g2-today::before{content:"Auj."; position:absolute; top:2px; left:3px; font-size:9px; color:var(--danger); font-weight:700; background:var(--canvas); padding:0 2px; border-radius:3px}
   .g2-empty{padding:40px 24px; color:var(--faint); font-size:14px; text-align:center}
@@ -268,6 +286,60 @@
   .opt{border:1px solid transparent; cursor:pointer; background:transparent; padding:2px 2px; border-radius:5px}
   .opt.active{box-shadow:0 0 0 2px var(--text) inset; border-radius:5px}
   .opt .pill{cursor:pointer}
+  /* ---- Circuit de production (fil vertical des cinq jalons) ---- */
+  .circuit{margin-top:20px; padding-top:16px; border-top:1px solid var(--border)}
+  .circuit-h{display:flex; align-items:baseline; gap:8px; margin-bottom:4px}
+  .circuit-h .t{font-size:13px; font-weight:600; color:var(--muted)}
+  .circuit-h .sub{font-size:12px; color:var(--faint)}
+  .circuit-h .spacer{flex:1}
+  .jalons{position:relative}
+  /* Le fil qui relie les pastilles, tracé derrière elles. */
+  .jalons::before{content:""; position:absolute; left:8px; top:20px; bottom:20px; width:2px; background:var(--border)}
+  .jalon{display:grid; grid-template-columns:18px 1fr auto; align-items:center; gap:10px; padding:6px 0; position:relative}
+  .jbul{width:17px; height:17px; border-radius:50%; border:2px solid var(--border); background:var(--canvas);
+        display:grid; place-items:center; font-size:10px; line-height:1; color:#fff; cursor:pointer; padding:0; flex:none}
+  .jbul:hover{border-color:var(--muted)}
+  .jbul:focus-visible{outline:none; box-shadow:var(--ring)}
+  .jalon.done .jbul{background:#4B8B5B; border-color:#4B8B5B}
+  .jalon.next .jbul{border-color:var(--accent); box-shadow:0 0 0 3px rgba(35,131,226,.16)}
+  .jname{font-size:13.5px; min-width:0}
+  .jalon.done .jname{color:var(--muted)}
+  .jname .who{display:block; font-size:11.5px; color:var(--faint)}
+  .jdate{font-family:var(--mono,ui-monospace,monospace); font-size:12.5px; border:1px solid var(--border); border-radius:5px;
+         padding:5px 7px; background:var(--canvas); color:var(--text); width:132px}
+  .jdate.auto{border-style:dashed; color:var(--faint); background:transparent}
+  .jdate:hover{background:var(--hover)}
+  .jdate:focus{outline:none; background:var(--canvas); box-shadow:var(--ring)}
+  .jalon.late .jdate{border-color:#D9534F; color:#9B2C1E}
+  .jsr{display:inline-flex; border:1px solid var(--border); border-radius:5px; overflow:hidden; margin-left:8px; vertical-align:middle}
+  .jsr button{border:0; border-left:1px solid var(--border); background:var(--canvas); color:var(--muted);
+              font-size:11px; padding:2px 7px; cursor:pointer; font-family:inherit}
+  .jsr button:first-child{border-left:0}
+  .jsr button.on{background:#5B3E7A; color:#fff; font-weight:600}
+  .circuit-foot{font-size:11.5px; color:var(--faint); line-height:1.55; margin-top:10px}
+  .circuit-foot b{color:var(--muted); font-weight:600}
+  .linkbtn{border:0; background:transparent; padding:0; color:var(--accent); font:inherit; font-size:11.5px; cursor:pointer; text-decoration:underline}
+  .linkbtn:hover{color:#1a72cc}
+
+  /* ---- Boîte de dialogue « Rythme du numéro » ---- */
+  .modal{position:fixed; left:50%; top:50%; transform:translate(-50%,-46%) scale(.98); z-index:60;
+         width:min(440px, calc(100vw - 32px)); background:var(--canvas); border:1px solid var(--border-strong);
+         border-radius:10px; box-shadow:0 18px 48px rgba(15,15,15,.18); opacity:0; pointer-events:none;
+         transition:opacity .16s, transform .16s}
+  .modal.open{opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1)}
+  .modal-h{display:flex; align-items:center; gap:8px; padding:12px 14px 12px 18px; border-bottom:1px solid var(--border); font-weight:600}
+  .modal-h .spacer{flex:1}
+  .modal-b{padding:16px 18px 18px}
+  .modal-i{font-size:12.5px; color:var(--muted); line-height:1.55; margin:0 0 14px}
+  .rythme-grid{display:grid; grid-template-columns:1fr auto; gap:10px 14px; align-items:center; font-size:13.5px}
+  .rythme-grid label{color:var(--text)}
+  .rythme-note{display:block; font-size:11.5px; color:var(--faint)}
+  .rythme-in{display:flex; align-items:center; gap:6px}
+  .rythme-in input{width:64px; text-align:center; border:1px solid var(--border); border-radius:5px; padding:5px 6px; background:var(--canvas)}
+  .rythme-in input:focus{outline:none; box-shadow:var(--ring)}
+  .rythme-in span{color:var(--faint); font-size:12.5px}
+  #rythmeTotal{margin:16px 0 0; padding-top:12px; border-top:1px solid var(--border)}
+
   .peek-foot{display:flex; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid var(--border)}
   .ghostbtn{border:none; background:transparent; border-radius:5px; padding:6px 10px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; gap:6px}
   .ghostbtn:hover{background:var(--hover); color:var(--text)}
@@ -510,10 +582,6 @@
       <input type="search" id="search" placeholder="Rechercher (rubrique, sujet, thématique, journaliste)…" aria-label="Rechercher">
       <select class="tsel" id="filterStatut" aria-label="Filtrer par statut">
         <option value="">Tous les statuts</option>
-        <option value="a_caler">À caler</option>
-        <option value="en_cours">En cours</option>
-        <option value="relu">Relu</option>
-        <option value="boucle">Bouclé</option>
       </select>
       <div style="border-left:1px solid var(--border);margin:0 8px;height:20px;"></div>
       <button class="tbtn" id="btnViewGrid" title="Vue Grille">⊞ Grille</button>
@@ -526,6 +594,7 @@
         <button class="tbtn" id="btnMoreActions" title="Plus d'actions" aria-haspopup="true" aria-expanded="false">⋯</button>
         <div class="more-menu" id="moreMenu">
           <button class="more-menu-item" id="btnActivity">🕑 Journal d'activité</button>
+          <button class="more-menu-item" id="btnRythme">⏱ Rythme du numéro</button>
           <button class="more-menu-item" id="btnCsv">Exporter CSV</button>
           <button class="more-menu-item" id="btnJson">Sauvegarde</button>
           <button class="more-menu-item" id="btnImport">Importer</button>
@@ -575,14 +644,6 @@
         </div>
       </div>
       <div class="prow">
-        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Date de rendu</div>
-        <div class="pval"><input id="fRendu" type="date"></div>
-      </div>
-      <div class="prow">
-        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>Statut</div>
-        <div class="pval"><div class="selectrow" id="chips"></div></div>
-      </div>
-      <div class="prow">
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>Lot</div>
         <div class="pval"><div class="selectrow" id="lotChips"></div></div>
       </div>
@@ -595,6 +656,8 @@
         <div class="pval"><textarea id="fNotes" placeholder="Vide"></textarea></div>
       </div>
     </div>
+
+    <div class="circuit" id="circuit"></div>
 
     <div class="comments" id="commentsSection">
       <div class="comments-title">Commentaires</div>
@@ -623,18 +686,63 @@
   <div class="activity-body" id="activityBody"></div>
 </aside>
 
+<div class="scrim" id="rythmeScrim"></div>
+<div class="modal" id="rythmeModal" role="dialog" aria-modal="true" aria-labelledby="rythmeTitle">
+  <div class="modal-h"><span id="rythmeTitle">Rythme du numéro</span><span class="spacer"></span><button class="ghostbtn" id="closeRythme" title="Fermer">✕</button></div>
+  <div class="modal-b">
+    <p class="modal-i">Les durées habituelles de votre chaîne, réglées une seule fois. Chaque dossier n'a plus qu'<b>une date à saisir</b> : les quatre autres s'en déduisent.</p>
+    <div class="rythme-grid">
+      <label for="rRetours">Retours après la V1</label>
+      <div class="rythme-in"><input id="rRetours" type="number" min="0" max="60" step="1"><span>j</span></div>
+      <label for="rV2">Reprise V2 après les retours</label>
+      <div class="rythme-in"><input id="rV2" type="number" min="0" max="60" step="1"><span>j</span></div>
+      <label>Durée du SR <span class="rythme-note">défaut, ajustable par dossier</span></label>
+      <div class="jsr" role="group" aria-label="Durée du SR par défaut">
+        <button type="button" data-rsr="1">1 j</button><button type="button" data-rsr="2">2 j</button>
+      </div>
+      <label for="rAgence">Intégration par l'agence</label>
+      <div class="rythme-in"><input id="rAgence" type="number" min="0" max="60" step="1"><span>j</span></div>
+    </div>
+    <p class="modal-i" id="rythmeTotal"></p>
+  </div>
+</div>
+
 <div class="save-toast" id="saveToast" aria-live="polite">✓ Enregistré</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
 const TOTAL = 56;
+// Les sept statuts suivent le circuit de production : chacun désigne l'étape en
+// cours, c'est-à-dire qui tient la main à cet instant. Ils sont déduits du
+// dernier jalon franchi dans le panneau d'édition (cf. MILESTONES).
 const STATUTS = {
-  a_caler:{label:"À caler", bg:"#EBECED", fg:"#5B5B58", dot:"#9B9A97"},
-  en_cours:{label:"En cours", bg:"#D3E5EF", fg:"#24547A", dot:"#337EA9"},
-  relu:{label:"Relu", bg:"#FDECC8", fg:"#7C5E00", dot:"#C99A2E"},
-  boucle:{label:"Bouclé", bg:"#DBEDDB", fg:"#2C5E3E", dot:"#4B8B5B"},
+  a_caler: {label:"À caler",     bg:"#EBECED", fg:"#5B5B58", dot:"#9B9A97"},
+  ecriture:{label:"Écriture",    bg:"#D3E5EF", fg:"#24547A", dot:"#337EA9"},
+  retours: {label:"Retours",     bg:"#FADEC9", fg:"#8A4B00", dot:"#C1741A"},
+  reprise: {label:"Reprise V2",  bg:"#FDECC8", fg:"#7C5E00", dot:"#C99A2E"},
+  sr:      {label:"En SR",       bg:"#E8DEEE", fg:"#5B3E7A", dot:"#8256A8"},
+  agence:  {label:"Chez l'agence",bg:"#D6E8F5", fg:"#1F5A8C", dot:"#3D82B8"},
+  boucle:  {label:"Bouclé",      bg:"#DBEDDB", fg:"#2C5E3E", dot:"#4B8B5B"},
 };
+// Anciennes valeurs, au cas où une page n'aurait pas encore été migrée en base.
+const STATUT_ALIAS = { en_cours:"ecriture", relu:"sr" };
+
+/* ---- Circuit de production ------------------------------------------
+   Cinq jalons, dans l'ordre. `field` est la colonne qui porte la date saisie
+   à la main ; `statut` est l'état dans lequel bascule la page une fois le
+   jalon franchi ; `gap` est le réglage du rythme qui sépare ce jalon du
+   précédent. Le premier jalon n'a pas de gap : c'est l'ancre de la chaîne. */
+const MILESTONES = [
+  {key:"v1",      field:"rendu",    label:"Livraison V1",     short:"V1",  who:"Journaliste",              from:"ecriture", statut:"retours", gap:null},
+  {key:"retours", field:"d_retours",label:"Retours rédaction",short:"RET", who:"Rédac chef + interne",     from:"retours",  statut:"reprise", gap:"r_retours"},
+  {key:"v2",      field:"d_v2",     label:"Livraison V2",     short:"V2",  who:"Journaliste",              from:"reprise",  statut:"sr",      gap:"r_v2"},
+  {key:"sr",      field:"d_sr",     label:"Sortie de SR",     short:"SR",  who:"Secrétariat de rédaction", from:"sr",       statut:"agence",  gap:"r_sr_duree"},
+  {key:"agence",  field:"d_agence", label:"Mise en page",     short:"MEP", who:"Agence",                   from:"agence",   statut:"boucle",  gap:"r_agence"},
+];
+const RYTHME_DEFAUT = { r_retours:3, r_v2:5, r_sr_duree:1, r_agence:4 };
+// Nombre de jalons franchis correspondant à chaque statut (a_caler = rien de planifié).
+const STATUT_STEP = { a_caler:0, ecriture:0, retours:1, reprise:2, sr:3, agence:4, boucle:5 };
 const LOTS = {
   "1":{label:"Lot 1", bg:"#E3F0FF", fg:"#1F4B7A"},
   "2":{label:"Lot 2", bg:"#E7F6EA", fg:"#2C5E3E"},
@@ -693,8 +801,8 @@ const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", statut:"a_caler", journaliste:"", lot:"", notes:""}; }
-function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", statut:r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||""}; }
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", d_retours:"", d_v2:"", d_sr:"", d_agence:"", sr_duree:null, statut:"a_caler", journaliste:"", lot:"", notes:""}; }
+function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", d_retours:r.d_retours||"", d_v2:r.d_v2||"", d_sr:r.d_sr||"", d_agence:r.d_agence||"", sr_duree:(r.sr_duree==null?null:Number(r.sr_duree)), statut:STATUT_ALIAS[r.statut]||r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||""}; }
 
 let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
 let issuesCache = [];
@@ -707,6 +815,7 @@ let draggedPages = null;
 let dropTarget = null;
 let currentView = "grid"; // grid, calendar, gantt
 let currentCalendarMonth = new Date();
+let calendarJalon = "all"; // "all" ou la clé d'un jalon du circuit
 let ganttScope = "month"; // month | week
 let ganttAnchor = new Date();
 let colorCustomizations = {}; // { "rubrique:name": {bg, fg}, "statut:name": {bg, fg}, "lot:name": {bg, fg} }
@@ -764,7 +873,9 @@ function pageToRow(p){
     id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique,
     rubrique:p.rubrique, calib:(p.calib===""||p.calib==null?null:Number(p.calib)),
     unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste,
-    lot:p.lot, notes:p.notes
+    lot:p.lot, notes:p.notes,
+    d_retours:p.d_retours||null, d_v2:p.d_v2||null, d_sr:p.d_sr||null, d_agence:p.d_agence||null,
+    sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null
   };
 }
 async function undoLast(){
@@ -1042,7 +1153,7 @@ function openTagColorPicker(anchorEl, fieldType, tagName, labelText){
 
 function refreshAfterColorChange(){
   render();
-  if (current) { renderChips(state.pages[current-1].statut); renderLotChips(state.pages[current-1].lot); }
+  if (current) { renderCircuit(); renderLotChips(state.pages[current-1].lot); }
 }
 
 // Délégation d'évènement (phase de capture) : les pills sont recréées à chaque
@@ -1067,8 +1178,53 @@ function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") 
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}`; }
-function isLate(p){ return p.rendu && p.statut!=="boucle" && p.rendu < todayISO(); }
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ---- Chaîne de dates ------------------------------------------------
+   Seules les dates saisies à la main sont stockées ; les autres découlent du
+   rythme du numéro. La chaîne se propage en avant depuis la première date
+   connue, et en arrière si cette date n'est pas la livraison V1 — ce qui donne
+   le rétro-planning quand on part de la mise en page. */
+function rythme(){
+  const i = currentIssue || {};
+  const r = {};
+  for(const k in RYTHME_DEFAUT){ const v = Number(i[k]); r[k] = Number.isFinite(v) && v>=0 ? v : RYTHME_DEFAUT[k]; }
+  return r;
+}
+// Durée du SR retenue pour une page : son réglage propre, sinon celui du numéro.
+function srDuree(p){ return p.sr_duree===1||p.sr_duree===2 ? p.sr_duree : rythme().r_sr_duree; }
+function addISO(iso, days){
+  const d = gParse(iso); d.setUTCDate(d.getUTCDate()+days);
+  return d.toISOString().slice(0,10);
+}
+// Renvoie les cinq dates du circuit, chacune avec son origine (saisie ou calculée).
+function chainDates(p){
+  const r = rythme();
+  const gaps = MILESTONES.map(m => m.gap==null ? 0 : (m.gap==="r_sr_duree" ? srDuree(p) : r[m.gap]));
+  const raw = MILESTONES.map(m => p[m.field] || "");
+  const out = raw.slice();
+  const first = raw.findIndex(Boolean);
+  if(first < 0) return MILESTONES.map(m => ({...m, date:"", auto:true}));
+  for(let i=first-1; i>=0; i--) out[i] = addISO(out[i+1], -gaps[i+1]);
+  for(let i=first+1; i<MILESTONES.length; i++) if(!out[i]) out[i] = addISO(out[i-1], gaps[i]);
+  return MILESTONES.map((m,i) => ({...m, date:out[i], auto:!raw[i]}));
+}
+// Nombre de jalons franchis, d'après le statut de la page.
+function stepOf(p){ return STATUT_STEP[p.statut] || 0; }
+// Date d'échéance d'une page : le dernier jalon du circuit (la mise en page).
+function echeance(p){ const c = chainDates(p); return c[c.length-1].date; }
+// Prochain jalon attendu, ou null si la page est bouclée / sans aucune date.
+function nextMilestone(p){
+  const c = chainDates(p), k = stepOf(p);
+  if(k >= c.length || !c[k].date) return null;
+  return c[k];
+}
+// En retard : le prochain jalon attendu est daté dans le passé.
+function isLate(p){
+  if(p.statut==="boucle") return false;
+  const c = chainDates(p), k = stepOf(p);
+  return k < c.length && !!c[k].date && c[k].date < todayISO();
+}
 
 function setDocTitle(name){
   const n=(name||"").trim();
@@ -1199,7 +1355,9 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
     let t = `${fmt(p.calib)} ${p.unite==="signes"?"sg":p.unite==="feuillets"?"f.":"mots"}`;
     bits.push(`<span>${t}</span>`);
   }
-  if(p.rendu) bits.push(`<span class="due${isLate(p)?" late":""}">◷ ${frDate(p.rendu)}</span>`);
+  // La carte annonce le prochain jalon attendu, pas la date de départ du circuit.
+  const nx=nextMilestone(p);
+  if(nx) bits.push(`<span class="due${isLate(p)?" late":""}" title="${esc(nx.label)}${nx.auto?" (calculé)":""}">◷ ${nx.short} ${frDate(nx.date)}</span>`);
   const st=getTagColor(p.statut, "statut");
   const statLabel=STATUTS[p.statut]?STATUTS[p.statut].label:p.statut;
   const status=`<span class="statuswrap">${pillHTML(statLabel,st,"statut",p.statut)}</span>`;
@@ -1335,7 +1493,9 @@ function renderGroupHeader(pages){
    première page) ou si elle reprend un sujet déjà présent dans le dossier.
    Le regroupement se fait sur toutes les pages, avant tout filtrage, pour que
    masquer une page ne casse pas la contiguïté d'un dossier. */
-const STATUT_ORDER=["a_caler","en_cours","relu","boucle"];
+// Du plus en amont au plus avancé : le statut d'un dossier est celui de sa page
+// la moins avancée, pour qu'un dossier ne paraisse jamais plus fini qu'il n'est.
+const STATUT_ORDER=["a_caler","ecriture","retours","reprise","sr","agence","boucle"];
 function worstStatut(items){
   for(const s of STATUT_ORDER) if(items.some(p=>p.statut===s)) return s;
   return "a_caler";
@@ -1350,19 +1510,35 @@ function buildDossiers(){
     if(contiguous && sameRub && (!p.sujet || knownSujet)){
       cur.pages.push(p.n); cur.items.push(p);
       if(p.sujet && !cur.sujets.includes(p.sujet)) cur.sujets.push(p.sujet);
-      if(p.rendu && (!cur.rendu || p.rendu>cur.rendu)) cur.rendu=p.rendu; // échéance = date la plus tardive
       cur.sig+=toSignes(p);
       continue;
     }
     cur={rubrique:rub, thematique:p.thematique||"", sujets:p.sujet?[p.sujet]:[],
-         pages:[p.n], items:[p], rendu:p.rendu||"", sig:toSignes(p)};
+         pages:[p.n], items:[p], sig:toSignes(p)};
     out.push(cur);
   }
-  return out.map(g=>({...g, title:g.sujets[0]||g.rubrique||"—", statut:worstStatut(g.items)}));
+  return out.map(g=>{
+    const statut=worstStatut(g.items);
+    return {...g, title:g.sujets[0]||g.rubrique||"—", statut, chain:dossierChain(g.items), step:STATUT_STEP[statut]||0};
+  });
+}
+/* Circuit d'un dossier : pour chaque jalon, la date la plus tardive de ses
+   pages — un dossier n'est à l'étape suivante que quand sa page la plus en
+   retard y est arrivée. */
+function dossierChain(items){
+  const chains=items.map(chainDates);
+  return MILESTONES.map((m,i)=>{
+    let date="", auto=true;
+    for(const c of chains){
+      if(!c[i].date) continue;
+      if(!date || c[i].date>date){ date=c[i].date; auto=c[i].auto; }
+    }
+    return {...m, date, auto};
+  });
 }
 // Dossiers datés et retenus par le filtre courant (au moins une page correspondante).
 function visibleDossiers(){
-  return buildDossiers().filter(g=>g.rendu && g.items.some(matches));
+  return buildDossiers().filter(g=>g.chain[0].date && g.items.some(matches));
 }
 // Pastille de statut, ou mini-jauge quand le dossier mélange plusieurs statuts.
 function dossierStatusHTML(g){
@@ -1379,13 +1555,18 @@ function renderCalendarView(){
   const cal=document.getElementById("viewCalendar");
   cal.innerHTML="";
 
+  // Une entrée par jalon daté, filtrable par étape : le SR ne veut voir que ses
+  // sorties de SR, l'agence que ses mises en page.
   const grouped={};
   let firstRenduDate=null;
   for(const g of visibleDossiers()){
-    const d=g.rendu;
-    if(!grouped[d]) grouped[d]=[];
-    grouped[d].push(g);
-    if(!firstRenduDate||d<firstRenduDate) firstRenduDate=d;
+    g.chain.forEach((m,i)=>{
+      if(!m.date) return;
+      if(calendarJalon!=="all" && calendarJalon!==m.key) return;
+      if(!grouped[m.date]) grouped[m.date]=[];
+      grouped[m.date].push({g, m, i});
+      if(!firstRenduDate||m.date<firstRenduDate) firstRenduDate=m.date;
+    });
   }
 
   const container=document.createElement("div");
@@ -1425,8 +1606,17 @@ function renderCalendarView(){
   const actions=document.createElement("div");
   actions.style.cssText="display:flex;gap:8px;";
 
+  const jalonSel=document.createElement("select");
+  jalonSel.style.cssText="border:1px solid var(--border);background:var(--canvas);border-radius:5px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;";
+  jalonSel.title="N'afficher qu'une étape du circuit";
+  jalonSel.innerHTML=`<option value="all">Tous les jalons</option>`+
+    MILESTONES.map(m=>`<option value="${m.key}">${esc(m.label)}</option>`).join("");
+  jalonSel.value=calendarJalon;
+  jalonSel.addEventListener("change",e=>{ calendarJalon=e.target.value; renderCalendarView(); });
+  actions.appendChild(jalonSel);
+
   const jumpBtn=document.createElement("button");
-  jumpBtn.textContent="⏭ Premier rendu";
+  jumpBtn.textContent="⏭ Premier jalon";
   jumpBtn.style.cssText="border:1px solid var(--border);background:var(--canvas);border-radius:5px;padding:6px 12px;cursor:pointer;font-size:13px;color:var(--muted);";
   jumpBtn.addEventListener("click",()=>{
     if(firstRenduDate){
@@ -1453,7 +1643,9 @@ function renderCalendarView(){
 
   // Grille du calendrier
   const calGrid=document.createElement("div");
-  calGrid.style.cssText="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;";
+  // minmax(0,1fr) et non 1fr : sinon les entrées en white-space:nowrap imposent
+  // leur largeur minimale et poussent les derniers jours hors de l'écran.
+  calGrid.style.cssText="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;";
 
   const dayNames=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
   for(const day of dayNames){
@@ -1475,7 +1667,7 @@ function renderCalendarView(){
     const dayEl=document.createElement("div");
     const isToday=dateStr===today;
     const isOtherMonth=currentDate.getMonth()!==currentCalendarMonth.getMonth();
-    dayEl.style.cssText=`background:${isToday?'rgba(35,131,226,0.04)':'var(--canvas)'};min-height:140px;padding:8px;position:relative;display:flex;flex-direction:column;${isOtherMonth?'opacity:0.3;background:var(--body);':''}${isToday?'border:2px solid var(--accent);':'border:1px solid var(--border);'}`;
+    dayEl.style.cssText=`background:${isToday?'rgba(35,131,226,0.04)':'var(--canvas)'};min-height:140px;padding:8px;position:relative;display:flex;flex-direction:column;min-width:0;${isOtherMonth?'opacity:0.3;background:var(--body);':''}${isToday?'border:2px solid var(--accent);':'border:1px solid var(--border);'}`;
 
     const dateNum=document.createElement("div");
     dateNum.style.cssText=`font-weight:600;font-size:${isToday?'13':'12'}px;color:${isToday?'var(--accent)':'var(--text)'};margin-bottom:8px;padding-right:40px;`;
@@ -1493,29 +1685,31 @@ function renderCalendarView(){
     entries.style.cssText="display:flex;flex-direction:column;gap:6px;";
 
     if(grouped[dateStr]){
-      for(const g of grouped[dateStr]){
+      for(const {g,m,i} of grouped[dateStr]){
         const entry=document.createElement("div");
-        const col=getTagColor(g.rubrique||g.thematique||"", g.rubrique?"rubrique":"thematique");
+        // Couleur de l'étape que le jalon vient clore : on lit d'un coup d'œil
+        // qui tenait la main jusque-là.
+        const col=getTagColor(m.from,"statut");
         const first=Math.min(...g.pages);
-        entry.style.cssText=`background:${col.bg};color:${col.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;`;
-        entry.title=`${g.title} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)}`;
+        const done=i<g.step, late=i===g.step && m.date<today;
+        entry.style.cssText=`background:${col.bg};color:${col.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;${done?"opacity:.55;":""}${late?"box-shadow:inset 0 0 0 1.5px #D9534F;":""}`;
+        entry.title=`${m.label} — ${g.title} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · ${frDate(m.date)}${m.auto?" (calculé)":""}${done?" · franchi":late?" · en retard":""}`;
         entry.addEventListener("click",()=>openPeek(first));
         entry.addEventListener("mouseenter",()=>{ entry.style.boxShadow="0 2px 6px rgba(0,0,0,0.1)"; entry.style.transform="translateX(2px)"; });
-        entry.addEventListener("mouseleave",()=>{ entry.style.boxShadow=""; entry.style.transform=""; });
+        entry.addEventListener("mouseleave",()=>{ entry.style.boxShadow=late?"inset 0 0 0 1.5px #D9534F":""; entry.style.transform=""; });
+
+        const key=document.createElement("span");
+        key.style.cssText="font-size:9.5px;font-weight:800;letter-spacing:.04em;opacity:.75;flex:none";
+        key.textContent=m.short;
+        entry.appendChild(key);
 
         const text=document.createElement("div");
         text.style.cssText="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;";
         text.textContent=g.title;
         entry.appendChild(text);
 
-        if(g.pages.length>1){
-          const rng=document.createElement("span");
-          rng.style.cssText="font-size:10px;font-weight:700;opacity:.72;flex:none";
-          rng.textContent="p."+formatPages(g.pages);
-          entry.appendChild(rng);
-        }
-        entry.insertAdjacentHTML("beforeend", dossierStatusHTML(g));
-
+        // La pagination reste dans l'infobulle : sur sept colonnes, chaque
+        // pixel gagné va au titre du dossier.
         entries.appendChild(entry);
       }
     } else {
@@ -1600,10 +1794,15 @@ function renderGanttView(){
 
   // ---- Regrouper les pages en dossiers (cf. buildDossiers) ----
   // ---- Dossiers dont la fenêtre [prépa → rendu] croise la période ----
+  // La barre couvre le circuit réel, de la livraison V1 à la mise en page —
+  // plus aucune durée n'est inventée à partir du calibrage.
   const items=visibleDossiers()
-    .map(g=>{ const end=gParse(g.rendu); const lead=g.sig?Math.max(3,Math.min(28,Math.round(g.sig/1500*2))):7; return {g, end, start:gAdd(end,-lead), pmin:Math.min(...g.pages)}; })
+    .map(g=>{
+      const dated=g.chain.filter(m=>m.date);
+      return {g, start:gParse(dated[0].date), end:gParse(dated[dated.length-1].date), pmin:Math.min(...g.pages)};
+    })
     .filter(it=>it.end>=rangeStart && it.start<=rangeEnd)
-    .sort((x,y)=>x.g.rendu<y.g.rendu?-1:x.g.rendu>y.g.rendu?1:x.pmin-y.pmin);
+    .sort((x,y)=>x.start-y.start || x.pmin-y.pmin);
 
   const g2=document.createElement("div"); g2.className="g2";
 
@@ -1647,7 +1846,7 @@ function renderGanttView(){
 
   if(items.length===0){
     const empty=document.createElement("div"); empty.className="g2-empty";
-    empty.textContent="Aucun rendu sur cette période.";
+    empty.textContent="Aucun jalon sur cette période.";
     rows.appendChild(empty);
   }
   for(const {g,start,end,pmin} of items){
@@ -1661,24 +1860,52 @@ function renderGanttView(){
     row.appendChild(label);
 
     const track=document.createElement("div"); track.className="g2-track";
-    const col=getTagColor(g.rubrique||g.thematique||"", g.rubrique?"rubrique":"thematique");
-    const s=getTagColor(g.statut, "statut");
-    const sLabel=STATUTS[g.statut]?STATUTS[g.statut].label:g.statut;
-    const late=g.rendu && g.statut!=="boucle" && g.rendu<todayISO();
-    let left=pct(start), right=pct(gAdd(end,1));
-    left=Math.max(0,left); right=Math.min(100,right);
-    const width=Math.max(right-left,0);
-    const bar=document.createElement("div");
-    bar.className="g2-bar"+(late?" late":"");
-    bar.style.cssText=`left:${left}%;width:${width}%;background:${col.bg};color:${col.fg}`;
-    const uniqSt=[...new Set(g.items.map(p=>p.statut))];
-    const tail = uniqSt.length>1
-      ? `<span class="g2-prog" title="${g.items.filter(p=>p.statut==='boucle').length}/${g.items.length} bouclées">${g.items.map(p=>`<i style="background:${(STATUTS[p.statut]||{}).dot||'#9B9A97'}"></i>`).join("")}</span>`
-      : `<span class="endpt" style="background:${s.bg}"></span>`;
-    bar.innerHTML=`<span class="cap">${esc(g.title)}</span>${tail}`;
-    bar.title=`${g.title} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)} · ${sLabel}${uniqSt.length>1?" (statuts mixtes)":""}`;
-    bar.addEventListener("click",()=>openPeek(pmin));
-    track.appendChild(bar);
+    const dated=g.chain.filter(m=>m.date);
+    const todayIso=todayISO();
+
+    // Une tranche par étape : de l'ouverture du dossier au premier jalon, puis
+    // d'un jalon au suivant. Chaque tranche porte la couleur de l'étape et
+    // s'estompe une fois franchie.
+    for(let i=0;i<dated.length;i++){
+      // L'étape i court du lendemain du jalon précédent jusqu'au jalon i inclus.
+      // La première n'a pas de début connu : elle se réduit à la journée du jalon.
+      const segStart = i===0 ? gParse(dated[0].date) : gAdd(gParse(dated[i-1].date), 1);
+      let l=Math.max(0,pct(segStart)), r=Math.min(100,pct(gAdd(gParse(dated[i].date),1)));
+      if(r<=l) continue;
+      const st=getTagColor(dated[i].from,"statut");
+      const done=i<g.step;
+      // Seule l'étape en cours peut être « en retard » : signaler aussi les
+      // suivantes noierait la vue de rouge sans rien apprendre.
+      const late=i===g.step && dated[i].date<todayIso;
+      const seg=document.createElement("div");
+      seg.className="g2-seg"+(i===dated.length-1?" tail":"")+(dated.length===1?" only":"")+(done?" done":"")+(late?" late":"");
+      seg.style.cssText=`left:${l}%;width:${r-l}%;background:${st.bg};color:${st.fg}`;
+      // Sous ~7 % de la période, le libellé ne tient pas : mieux vaut une
+      // tranche muette qu'un mot tronqué à deux lettres.
+      seg.innerHTML = (r-l)>=7 ? `<span>${esc((STATUTS[dated[i].from]||{}).label||"")}</span>` : "";
+      seg.title=`${g.title} — ${(STATUTS[dated[i].from]||{}).label} jusqu'au ${frDate(dated[i].date)} (${dated[i].label})${dated[i].auto?" · date calculée":""}`;
+      seg.addEventListener("click",()=>openPeek(pmin));
+      track.appendChild(seg);
+    }
+
+    // Losanges : un par jalon, plein quand il est franchi.
+    for(let i=0;i<dated.length;i++){
+      const x=pct(gAdd(gParse(dated[i].date),1));
+      if(x<0||x>100) continue;
+      const mk=document.createElement("div");
+      mk.className="g2-mk"+(i<g.step?" done":"");
+      mk.style.left=x+"%";
+      mk.title=`${dated[i].label} · ${frDate(dated[i].date)}`;
+      track.appendChild(mk);
+    }
+
+    // Le titre du dossier, posé après la barre pour rester lisible quel que
+    // soit le nombre de tranches.
+    const cap=document.createElement("div"); cap.className="g2-caption";
+    cap.style.left=Math.min(100,Math.max(0,pct(gAdd(end,1))))+"%";
+    cap.textContent=g.title;
+    track.appendChild(cap);
+
     row.appendChild(track);
     rows.appendChild(row);
   }
@@ -1695,6 +1922,14 @@ function renderGanttView(){
   body.appendChild(rows);
   g2.appendChild(body);
   gantt.appendChild(g2);
+
+  // ---- Légende des étapes ----
+  const legend=document.createElement("div"); legend.className="g2-legend";
+  legend.innerHTML=MILESTONES.map(m=>{ const c=getTagColor(m.from,"statut");
+    return `<span><i style="background:${c.bg}"></i>${esc((STATUTS[m.from]||{}).label||"")}</span>`; }).join("")
+    +`<span><span class="g2-mk done" style="position:static;display:inline-block;margin:0 8px 0 2px"></span>jalon franchi</span>`
+    +`<span><span class="g2-mk" style="position:static;display:inline-block;margin:0 8px 0 2px"></span>à venir</span>`;
+  gantt.appendChild(legend);
 
   // ---- Occuper toute la hauteur disponible de la page ----
   const top=gantt.getBoundingClientRect().top;
@@ -1785,13 +2020,15 @@ function row(label,a,b){
 }
 
 function renderStats(){
-  let counts={a_caler:0,en_cours:0,relu:0,boucle:0}, defined=0, next=null;
-  for(const p of state.pages){ counts[p.statut]++; if(p.sujet) defined++;
-    if(p.rendu&&p.statut!=="boucle"){ if(!next||p.rendu<next) next=p.rendu; } }
+  let counts={}, defined=0, next=null;
+  for(const k in STATUTS) counts[k]=0;
+  for(const p of state.pages){ if(counts[p.statut]!=null) counts[p.statut]++; if(p.sujet) defined++;
+    const nx=nextMilestone(p);
+    if(nx && (!next || nx.date<next.date)) next=nx; }
   document.getElementById("pDefined").innerHTML = `Pages calées <b>${defined}/${TOTAL}</b>`;
   const pct=Math.round(counts.boucle/TOTAL*100);
   document.getElementById("pBoucle").innerHTML = `<span class="boucle-wrap">Bouclé <b>${pct}%</b><span class="boucle-bar" title="${counts.boucle}/${TOTAL} pages bouclées"><span style="width:${pct}%"></span></span></span>`;
-  document.getElementById("pNext").innerHTML = `Prochain rendu <b>${next?frDate(next):"—"}</b>`;
+  document.getElementById("pNext").innerHTML = `Prochain jalon <b>${next?`${next.short} ${frDate(next.date)}`:"—"}</b>`;
   const lg=document.getElementById("legend"); lg.innerHTML="";
   for(const k in STATUTS){ const s=STATUTS[k];
     lg.insertAdjacentHTML("beforeend",`<span class="lg"><span class="dot" style="background:${s.dot}"></span>${s.label} ${counts[k]}</span>`); }
@@ -1840,7 +2077,7 @@ async function applyBulkEdit(){
     if(journaliste) p.journaliste=journaliste;
     if(statut) p.statut=statut;
     if(lot) p.lot = (lot==="__clear__" ? "" : lot);
-    updates.push({id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique, rubrique:p.rubrique, calib:p.calib===""||p.calib==null?null:Number(p.calib), unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste, lot:p.lot, notes:p.notes});
+    updates.push(pageToRow(p));
   }
   const {error}=await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
@@ -1856,7 +2093,7 @@ async function applyBulkEdit(){
 const peek=document.getElementById("peek"), scrim=document.getElementById("scrim");
 let current=null;
 const F={rub:document.getElementById("fRubrique"),thematique:document.getElementById("fThematique"),calib:document.getElementById("fCalib"),
-  unite:document.getElementById("fUnite"),rendu:document.getElementById("fRendu"),
+  unite:document.getElementById("fUnite"),
   journaliste:document.getElementById("fJournaliste"),notes:document.getElementById("fNotes")};
 const dtitle=document.getElementById("dtitle");
 
@@ -1864,8 +2101,8 @@ function autoGrow(t){ t.style.height="auto"; t.style.height=t.scrollHeight+"px";
 function openPeek(n){
   current=n; const p=state.pages[n-1];
   document.getElementById("dnum").textContent = "Page "+n+(COVER[n]?"  ·  "+COVER[n]:"");
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
-  renderChips(p.statut); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
+  renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
   document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
@@ -1874,15 +2111,108 @@ function openPeek(n){
   setTimeout(()=>dtitle.focus(),120);
 }
 function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; unsubscribeComments(); }
-function renderChips(active){
-  const c=document.getElementById("chips"); c.innerHTML="";
-  for(const k in STATUTS){ const defaultS=STATUTS[k]; const s=getTagColor(k, "statut");
-    const b=document.createElement("div"); b.setAttribute("role","button"); b.tabIndex=0; b.className="opt"+(k===active?" active":"");
-    b.innerHTML=pillHTML(defaultS.label,s,"statut",k);
-    b.addEventListener("click",()=>{ if(current!=null&&state.pages[current-1].statut!==k){ pushUndo("Statut page "+current, [{...state.pages[current-1]}]); logActivity(`a passé la page ${current} en « ${STATUTS[k].label} »`, current); } commit("statut",k); renderChips(k); });
-    b.addEventListener("keydown", e=>{ if(e.target!==b) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } });
-    c.appendChild(b);
+/* ---- Le fil vertical des cinq jalons -------------------------------
+   Une pastille par jalon : cliquer dessus marque le jalon comme franchi (et
+   les précédents avec lui), ce dont découle le statut de la page. La date à
+   droite est saisissable ; tant qu'elle ne l'est pas, elle reste calculée
+   d'après le rythme du numéro et s'affiche en pointillés. */
+function renderCircuit(){
+  const host=document.getElementById("circuit");
+  if(current==null){ host.innerHTML=""; return; }
+  const p=state.pages[current-1];
+  const chain=chainDates(p), step=stepOf(p), today=todayISO();
+  const st=getTagColor(p.statut,"statut"), stLabel=(STATUTS[p.statut]||{}).label||p.statut;
+
+  host.innerHTML=`
+    <div class="circuit-h">
+      <span class="t">Circuit de production</span>
+      <span class="spacer"></span>
+      ${pillHTML(stLabel,st,"statut",p.statut)}
+    </div>
+    <div class="jalons" id="jalons"></div>
+    <div class="circuit-foot" id="circuitFoot"></div>`;
+
+  const list=host.querySelector("#jalons");
+  chain.forEach((m,i)=>{
+    const done=i<step, next=i===step;
+    const late=next && m.date && m.date<today;
+    const row=document.createElement("div");
+    row.className="jalon"+(done?" done":"")+(next?" next":"")+(late?" late":"");
+
+    const bul=document.createElement("button");
+    bul.type="button"; bul.className="jbul"; bul.textContent=done?"✓":"";
+    bul.title=done ? `Annuler « ${m.label} »` : `Marquer « ${m.label} » comme franchi`;
+    bul.setAttribute("aria-label",bul.title);
+    bul.addEventListener("click",()=>setStep(done?i:i+1));
+
+    const name=document.createElement("div"); name.className="jname";
+    // La durée du SR se règle sur le jalon qu'elle commande.
+    const srToggle = m.gap==="r_sr_duree"
+      ? `<span class="jsr" role="group" aria-label="Durée du SR">
+           <button type="button" data-sr="1" class="${srDuree(p)===1?"on":""}">1 j</button>
+           <button type="button" data-sr="2" class="${srDuree(p)===2?"on":""}">2 j</button>
+         </span>` : "";
+    name.innerHTML=`${esc(m.label)}${srToggle}<span class="who">${esc(m.who)}</span>`;
+    name.querySelectorAll("[data-sr]").forEach(b=>b.addEventListener("click",()=>{
+      const v=Number(b.dataset.sr);
+      pushUndo("Durée du SR page "+current, [{...p}]);
+      commit("sr_duree", v===rythme().r_sr_duree ? null : v);
+      logActivity(`a fixé le SR de la page ${current} à ${v} jour${v>1?"s":""}`, current);
+      renderCircuit();
+    }));
+
+    const d=document.createElement("input");
+    d.type="date"; d.className="jdate"+(m.auto?" auto":""); d.value=m.date;
+    d.title=m.auto ? "Date calculée d'après le rythme du numéro — la modifier la fige" : "Date saisie à la main";
+    d.addEventListener("change",()=>{
+      pushUndo(m.label+" page "+current, [{...p}]);
+      commit(m.field, d.value);
+      logActivity(d.value ? `a fixé « ${m.label} » de la page ${current} au ${frDate(d.value)}` : `a libéré « ${m.label} » de la page ${current}`, current);
+      renderCircuit();
+    });
+
+    row.appendChild(bul); row.appendChild(name); row.appendChild(d);
+    list.appendChild(row);
+  });
+
+  const foot=host.querySelector("#circuitFoot");
+  const manual=chain.filter(m=>!m.auto).length;
+  foot.innerHTML = manual===0
+    ? `Aucune date saisie. Renseignez la <b>livraison V1</b> pour dérouler le circuit, ou la <b>mise en page</b> pour le calculer à rebours.`
+    : `${manual} date${manual>1?"s":""} figée${manual>1?"s":""} ; les autres découlent du <button type="button" class="linkbtn" id="openRythme">rythme du numéro</button>. `;
+  if(manual>0){
+    const reset=document.createElement("button");
+    reset.type="button"; reset.className="linkbtn"; reset.textContent="Tout recalculer";
+    reset.title="Libère toutes les dates sauf la livraison V1";
+    reset.addEventListener("click",()=>{
+      pushUndo("Recalcul du circuit page "+current, [{...p}]);
+      for(const m of MILESTONES.slice(1)) commit(m.field,"");
+      logActivity(`a recalculé le circuit de la page ${current}`, current);
+      renderCircuit();
+    });
+    foot.appendChild(reset);
   }
+  const openR=foot.querySelector("#openRythme");
+  if(openR) openR.addEventListener("click", openRythmeDialog);
+
+  // Le circuit est reconstruit à chaque rendu : le verrou visiteur, posé une
+  // fois à la connexion, doit être réappliqué aux éléments qui viennent de naître.
+  if(isVisitorMode) host.querySelectorAll("button, input").forEach(el=>{
+    el.disabled=true; el.style.opacity="0.5"; el.style.cursor="not-allowed";
+  });
+}
+// Marque les `k` premiers jalons comme franchis et en déduit le statut.
+function setStep(k){
+  if(current==null) return;
+  const p=state.pages[current-1];
+  const statut = k<=0 ? (chainDates(p)[0].date ? "ecriture" : "a_caler")
+                      : MILESTONES[k-1].statut;
+  if(p.statut!==statut){
+    pushUndo("Statut page "+current, [{...p}]);
+    logActivity(`a passé la page ${current} en « ${STATUTS[statut].label} »`, current);
+    commit("statut",statut);
+  }
+  renderCircuit();
 }
 function renderLotChips(active){
   const c=document.getElementById("lotChips"); c.innerHTML="";
@@ -1910,17 +2240,20 @@ function commit(field,val){
   const p = state.pages[current-1];
   p[field]=val;
   if(["calib","unite"].includes(field)) updateHint();
-  if(field==="statut"||field==="lot"){ render(); persistField(p, field); return; }
+  // Champs à valeur discrète (un clic = une valeur) : pas de débounce.
+  if(field==="statut"||field==="lot"||field==="sr_duree"||DATE_FIELDS.has(field)){ render(); persistField(p, field); return; }
   scheduleRender(150); // frappe au clavier : rendu coalescé
   const key = p.id+":"+field;
   clearTimeout(writeTimers[key]);
   writeTimers[key]=setTimeout(()=>persistField(p, field), 350);
 }
+const DATE_FIELDS = new Set(MILESTONES.map(m=>m.field));
 async function persistField(p, field){
   if(!p.id) return;
   let val = p[field];
   if(field==="calib") val = (val===""||val==null) ? null : Number(val);
-  if(field==="rendu" && val==="") val=null;
+  if(field==="sr_duree") val = (val===1||val===2) ? val : null;
+  if(DATE_FIELDS.has(field) && val==="") val=null;
   const { error } = await sb.from("pages").update({ [field]: val }).eq("id", p.id);
   if(error) console.error("Erreur de sauvegarde de la page :", error.message);
   else flashSaved();
@@ -1930,14 +2263,13 @@ F.rub.addEventListener("input",e=>commit("rubrique",e.target.value));
 F.thematique.addEventListener("input",e=>commit("thematique",e.target.value));
 F.calib.addEventListener("input",e=>commit("calib",e.target.value));
 F.unite.addEventListener("change",e=>commit("unite",e.target.value));
-F.rendu.addEventListener("input",e=>commit("rendu",e.target.value));
 F.journaliste.addEventListener("input",e=>commit("journaliste",e.target.value));
 F.notes.addEventListener("input",e=>{ autoGrow(e.target); commit("notes",e.target.value); });
 
 // Annulation des champs texte : instantané avant édition (focus) → poussé si modifié (blur)
-const FIELD_LABELS={sujet:"le sujet",rubrique:"la rubrique",thematique:"la thématique",calib:"le calibrage",unite:"l'unité",rendu:"la date de rendu",journaliste:"le journaliste",notes:"les notes"};
+const FIELD_LABELS={sujet:"le sujet",rubrique:"la rubrique",thematique:"la thématique",calib:"le calibrage",unite:"l'unité",journaliste:"le journaliste",notes:"les notes"};
 let _fieldEditSnap=null, _fieldEditPageN=null;
-[dtitle,F.rub,F.thematique,F.calib,F.rendu,F.journaliste,F.notes].forEach(el=>{
+[dtitle,F.rub,F.thematique,F.calib,F.journaliste,F.notes].forEach(el=>{
   el.addEventListener("focus",()=>{ if(current!=null){ _fieldEditSnap={...state.pages[current-1]}; _fieldEditPageN=current; } });
   el.addEventListener("blur",()=>{
     if(_fieldEditSnap==null||_fieldEditPageN==null){ _fieldEditSnap=null; return; }
@@ -1966,8 +2298,8 @@ function refreshPeekIfIdle(n){
   if(current!==n || !peek.classList.contains("open")) return;
   if(peek.contains(document.activeElement)) return; // ne pas couper la frappe en cours
   const p=state.pages[n-1];
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.rendu.value=p.rendu; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
-  renderChips(p.statut); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
+  renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
 }
 
 /* ---- header fields (numero / bouclage of the current issue) ---- */
@@ -1987,6 +2319,53 @@ function debounceIssueWrite(field, val){
 numero.addEventListener("input",e=>{ if(currentIssue){ currentIssue.numero=e.target.value; setDocTitle(e.target.value); debounceIssueWrite("numero", e.target.value); } });
 bouclage.addEventListener("input",e=>{ if(currentIssue){ currentIssue.bouclage=e.target.value||null; debounceIssueWrite("bouclage", e.target.value||null); } });
 
+/* ---- Rythme du numéro ---- */
+const rythmeModal=document.getElementById("rythmeModal"), rythmeScrim=document.getElementById("rythmeScrim");
+const R_INPUTS={ r_retours:document.getElementById("rRetours"), r_v2:document.getElementById("rV2"), r_agence:document.getElementById("rAgence") };
+function openRythmeDialog(){
+  if(!currentIssue) return;
+  const r=rythme();
+  for(const k in R_INPUTS) R_INPUTS[k].value=r[k];
+  refreshRythmeUI();
+  rythmeModal.classList.add("open"); rythmeScrim.classList.add("open");
+  setTimeout(()=>R_INPUTS.r_retours.focus(),120);
+}
+function closeRythmeDialog(){ rythmeModal.classList.remove("open"); rythmeScrim.classList.remove("open"); }
+function refreshRythmeUI(){
+  const r=rythme();
+  rythmeModal.querySelectorAll("[data-rsr]").forEach(b=>b.classList.toggle("on", Number(b.dataset.rsr)===r.r_sr_duree));
+  const total=r.r_retours+r.r_v2+r.r_sr_duree+r.r_agence;
+  document.getElementById("rythmeTotal").innerHTML =
+    `Soit <b>${total} jours</b> entre la livraison V1 et la mise en page. Une V1 attendue le 1er sort de l'agence le ${total+1}.`;
+}
+function setRythme(field, val){
+  if(!currentIssue || isVisitorMode) return;
+  currentIssue[field]=val;
+  const idx=issuesCache.findIndex(i=>i.id===currentIssue.id);
+  if(idx>=0) issuesCache[idx][field]=val;
+  refreshRythmeUI(); render(); renderCircuit();
+  sb.from("issues").update({[field]:val}).eq("id", currentIssue.id).then(({error})=>{
+    if(error) alert("Le rythme n'a pas pu être enregistré : "+error.message);
+    else flashSaved("✓ Rythme enregistré");
+  });
+}
+for(const k in R_INPUTS){
+  R_INPUTS[k].addEventListener("change", e=>{
+    const v=Math.max(0, Math.min(60, Math.round(Number(e.target.value)||0)));
+    e.target.value=v; setRythme(k, v);
+    logActivity(`a réglé le rythme du numéro (${k.replace("r_","")} : ${v} j)`);
+  });
+}
+rythmeModal.querySelectorAll("[data-rsr]").forEach(b=>b.addEventListener("click",()=>{
+  const v=Number(b.dataset.rsr);
+  setRythme("r_sr_duree", v);
+  logActivity(`a fixé la durée du SR du numéro à ${v} jour${v>1?"s":""}`);
+}));
+document.getElementById("btnRythme").addEventListener("click",()=>{ closeMoreMenu(); openRythmeDialog(); });
+document.getElementById("closeRythme").addEventListener("click", closeRythmeDialog);
+rythmeScrim.addEventListener("click", closeRythmeDialog);
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && rythmeModal.classList.contains("open")) closeRythmeDialog(); });
+
 /* ---- selection ---- */
 function clearSelection(){
   selectedPages.clear();
@@ -1998,6 +2377,12 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape" && selectedPages.s
 
 /* ---- filters ---- */
 document.getElementById("search").addEventListener("input",e=>{ filter.q=e.target.value; scheduleRender(150); });
+// Le filtre suit la liste des statuts, pour qu'ajouter une étape au circuit
+// n'oblige pas à retoucher le HTML.
+{
+  const fs=document.getElementById("filterStatut");
+  for(const k in STATUTS){ const o=document.createElement("option"); o.value=k; o.textContent=STATUTS[k].label; fs.appendChild(o); }
+}
 document.getElementById("filterStatut").addEventListener("change",e=>{ filter.statut=e.target.value; render(); });
 
 /* ---- issues (numéros) ---- */
@@ -2056,7 +2441,7 @@ async function selectIssue(id, pushUrl){
 
   // Si le mois courant n'a aucun rendu, ouvrir directement Calendrier/Gantt
   // sur le premier rendu connu plutôt que sur un tableau vide autour d'aujourd'hui.
-  const renduDates = state.pages.map(p=>p.rendu).filter(Boolean).sort();
+  const renduDates = state.pages.flatMap(p=>chainDates(p).map(m=>m.date)).filter(Boolean).sort();
   if (renduDates.length) {
     const currentMonthKey = todayISO().slice(0,7);
     const hasDataThisMonth = renduDates.some(d => d.slice(0,7) === currentMonthKey);
@@ -2073,7 +2458,9 @@ async function selectIssue(id, pushUrl){
 async function createIssue(){
   const name = prompt("Nom du nouveau chemin de fer :", "");
   if(name==null) return;
-  const { data, error } = await sb.from("issues").insert({ numero: name || "Nouveau numéro" }).select().single();
+  // Le rythme du numéro précédent est repris : si vos durées sont stables,
+  // vous ne les ressaisissez jamais.
+  const { data, error } = await sb.from("issues").insert({ numero: name || "Nouveau numéro", ...rythme() }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
   const pages = Array.from({length:TOTAL},(_,i)=>({ issue_id:data.id, n:i+1, rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", lot:"", notes:"" }));
   const { error:e2 } = await sb.from("pages").insert(pages);
@@ -2090,12 +2477,15 @@ async function duplicateIssue(id){
   if(e0){ alert("Erreur de lecture des pages : "+e0.message); return; }
   const { data: srcColors, error:e1 } = await sb.from("color_customizations").select("*").eq("issue_id", id);
   if(e1){ alert("Erreur de lecture des couleurs : "+e1.message); return; }
-  const { data: newIss, error } = await sb.from("issues").insert({ numero:(src.numero||"Sans nom")+" (copie)", bouclage: src.bouclage||null }).select().single();
+  const rSrc={}; for(const k in RYTHME_DEFAUT){ const v=Number(src[k]); rSrc[k]=Number.isFinite(v)?v:RYTHME_DEFAUT[k]; }
+  const { data: newIss, error } = await sb.from("issues").insert({ numero:(src.numero||"Sans nom")+" (copie)", bouclage: src.bouclage||null, ...rSrc }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
   const bySrcN={}; (srcPages||[]).forEach(p=>{ bySrcN[p.n]=p; });
   const pages = Array.from({length:TOTAL},(_,i)=>{ const n=i+1; const s=bySrcN[n]||{};
     return { issue_id:newIss.id, n, rubrique:s.rubrique||"", sujet:s.sujet||"", thematique:s.thematique||"",
-      calib:(s.calib==null?null:s.calib), unite:s.unite||"signes", rendu:s.rendu||null, statut:s.statut||"a_caler",
+      calib:(s.calib==null?null:s.calib), unite:s.unite||"signes", rendu:s.rendu||null,
+      d_retours:s.d_retours||null, d_v2:s.d_v2||null, d_sr:s.d_sr||null, d_agence:s.d_agence||null,
+      sr_duree:(s.sr_duree==null?null:Number(s.sr_duree)), statut:s.statut||"a_caler",
       journaliste:s.journaliste||"", lot:s.lot||"", notes:s.notes||"" }; });
   const { error:e2 } = await sb.from("pages").insert(pages);
   if(e2){ alert("Erreur de copie des pages : "+e2.message); return; }
@@ -2204,15 +2594,18 @@ document.addEventListener("click", e=>{ if(!document.getElementById("moreMenuWra
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeMoreMenu(); });
 
 document.getElementById("btnCsv").addEventListener("click",()=>{
-  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)","Date de rendu","Statut","Journaliste","Notes"];
-  const rows=state.pages.map(p=>{ const sig=toSignes(p);
-    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),p.rendu,STATUTS[p.statut].label,p.journaliste,(p.notes||"").replace(/\n/g," ")]; });
+  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)",
+    ...MILESTONES.map(m=>m.label),"Durée SR (j)","Statut","Journaliste","Notes"];
+  const rows=state.pages.map(p=>{ const sig=toSignes(p); const c=chainDates(p);
+    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),
+      ...c.map(m=>m.date), srDuree(p), STATUTS[p.statut].label,p.journaliste,(p.notes||"").replace(/\n/g," ")]; });
   const q=v=>{ v=(v==null?"":String(v)); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
   const csv=[head,...rows].map(r=>r.map(q).join(";")).join("\r\n");
   download("﻿"+csv, slug(currentIssue&&currentIssue.numero)+".csv","text/csv;charset=utf-8");
 });
 document.getElementById("btnJson").addEventListener("click",()=>{
-  const out = { numero: currentIssue&&currentIssue.numero, bouclage: currentIssue&&currentIssue.bouclage, pages: state.pages };
+  const out = { numero: currentIssue&&currentIssue.numero, bouclage: currentIssue&&currentIssue.bouclage,
+                rythme: rythme(), pages: state.pages };
   download(JSON.stringify(out,null,2), slug(currentIssue&&currentIssue.numero)+".json","application/json");
 });
 document.getElementById("btnImport").addEventListener("click",()=>document.getElementById("fileInput").click());
@@ -2226,8 +2619,10 @@ document.getElementById("fileInput").addEventListener("change",e=>{
         id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
         rubrique:p.rubrique||"", sujet:p.sujet||"",
         calib:(p.calib===""||p.calib==null)?null:Number(p.calib),
-        unite:p.unite||"signes", rendu:p.rendu||null, statut:p.statut||"a_caler",
-        journaliste:p.journaliste||"", lot:p.lot||"", notes:p.notes||""
+        unite:p.unite||"signes", rendu:p.rendu||null, statut:STATUT_ALIAS[p.statut]||p.statut||"a_caler",
+        journaliste:p.journaliste||"", lot:p.lot||"", notes:p.notes||"",
+        d_retours:p.d_retours||null, d_v2:p.d_v2||null, d_sr:p.d_sr||null, d_agence:p.d_agence||null,
+        sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null
       }));
       const { error } = await sb.from("pages").upsert(updates);
       if(error) throw error;
@@ -2571,8 +2966,10 @@ function exitVisitorMode() {
 const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
   "#btnImport", "#btnPrint", "#btnReset", "#dtitle", "#numero",
-  "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fRendu", "#fJournaliste", "#fNotes",
-  "#commentInput", "#btnAddComment"
+  "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes",
+  "#commentInput", "#btnAddComment",
+  // Circuit de production : dates, pastilles de jalon et réglage du SR
+  ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence"
 ];
 
 function disableEditingUI() {
