@@ -717,31 +717,30 @@ const MILESTONES = [
 const RYTHME_DEFAUT = { r_retours:3, r_v2:5, r_sr_duree:1, r_agence:4 };
 // Nombre de jalons franchis correspondant à chaque statut (a_caler = rien de planifié).
 const STATUT_STEP = { a_caler:0, ecriture:0, retours:1, reprise:2, sr:3, agence:4, boucle:5 };
+// Palette « Encre & lumière » : fond pastel + texte encre profonde de la même
+// famille (jamais de gris neutre plaqué), chaque paire vérifiée à ≥ 7:1 (AAA).
+// Utilisée à la fois pour les 4 lots et, par hachage, pour rubriques/thématiques.
+const TAG_PALETTE = [
+  {bg:"#EFE1DC", fg:"#6B3A2E"}, // terracotta
+  {bg:"#F3E0C9", fg:"#6A3F0A"}, // ambre
+  {bg:"#EFE7C4", fg:"#504B0B"}, // olive doré
+  {bg:"#DCEAD3", fg:"#285424"}, // sauge
+  {bg:"#D3E5DE", fg:"#1A5043"}, // émeraude sourdine
+  {bg:"#D4E3EC", fg:"#1E4B6C"}, // bleu ardoise
+  {bg:"#DCDCF0", fg:"#39358C"}, // indigo
+  {bg:"#E9DCF0", fg:"#5C2E82"}, // violet améthyste
+  {bg:"#F3DCE9", fg:"#7A2258"}, // magenta sourdine
+  {bg:"#F3DBDB", fg:"#872121"}, // rouge brique
+  {bg:"#E4E4E1", fg:"#4A4A44"}, // gris chaud
+  {bg:"#DDE7E9", fg:"#224E56"}, // pétrole
+];
 const LOTS = {
-  "1":{label:"Lot 1", bg:"#E3F0FF", fg:"#1F4B7A"},
-  "2":{label:"Lot 2", bg:"#E7F6EA", fg:"#2C5E3E"},
-  "3":{label:"Lot 3", bg:"#FBEBD0", fg:"#7C5E00"},
-  "4":{label:"Lot 4", bg:"#F1E5F7", fg:"#5B3E7A"},
+  "1":{label:"Lot 1", ...TAG_PALETTE[0]}, // terracotta
+  "2":{label:"Lot 2", ...TAG_PALETTE[3]}, // sauge
+  "3":{label:"Lot 3", ...TAG_PALETTE[5]}, // bleu ardoise
+  "4":{label:"Lot 4", ...TAG_PALETTE[7]}, // violet
 };
-// Palette pastel Notion pour les rubriques (l'index 0 gris est réservé au "vide")
-const RUB_TAGS = [
-  {bg:"#EEE0DA",fg:"#64473A"},{bg:"#FADEC9",fg:"#8A4B00"},{bg:"#FDECC8",fg:"#7C5E00"},
-  {bg:"#DBEDDB",fg:"#2C5E3E"},{bg:"#D3E5EF",fg:"#24547A"},{bg:"#E8DEEE",fg:"#5B3E7A"},
-  {bg:"#F5E0E9",fg:"#7A2E58"},{bg:"#FFE2DD",fg:"#9B2C1E"},
-];
 const COVER = {1:"C1",2:"C2",55:"C3",56:"C4"};
-
-// Palette de 32 couleurs pastels pour rubriques et thématiques
-const PASTEL_PALETTE = [
-  {bg:"#FFE5E5", fg:"#000000"}, {bg:"#FFD5E5", fg:"#000000"}, {bg:"#FFC5E5", fg:"#000000"}, {bg:"#FFB5E5", fg:"#000000"},
-  {bg:"#F5E5FF", fg:"#000000"}, {bg:"#E5D5FF", fg:"#000000"}, {bg:"#E5C5FF", fg:"#000000"}, {bg:"#E5B5FF", fg:"#000000"},
-  {bg:"#E5F5FF", fg:"#000000"}, {bg:"#D5EDFF", fg:"#000000"}, {bg:"#C5E5FF", fg:"#000000"}, {bg:"#B5DDFF", fg:"#000000"},
-  {bg:"#E5F5E5", fg:"#000000"}, {bg:"#D5EDCE", fg:"#000000"}, {bg:"#C5E5B5", fg:"#000000"}, {bg:"#B5DDAA", fg:"#000000"},
-  {bg:"#FFFBE5", fg:"#000000"}, {bg:"#FFF5D5", fg:"#000000"}, {bg:"#FFEDD5", fg:"#000000"}, {bg:"#FFE5C5", fg:"#000000"},
-  {bg:"#FFF0E5", fg:"#000000"}, {bg:"#FFE8D5", fg:"#000000"}, {bg:"#FFE0C5", fg:"#000000"}, {bg:"#FFD8B5", fg:"#000000"},
-  {bg:"#F0E5FF", fg:"#000000"}, {bg:"#E8D5FF", fg:"#000000"}, {bg:"#E0C5FF", fg:"#000000"}, {bg:"#D8B5FF", fg:"#000000"},
-  {bg:"#E5F0FF", fg:"#000000"}, {bg:"#D5E8FF", fg:"#000000"}, {bg:"#C5E0FF", fg:"#000000"}, {bg:"#B5D8FF", fg:"#000000"}
-];
 
 // Palette de 24 couleurs pastels proposées dans le sélecteur de couleur des tags
 const COLOR_PICKER_PALETTE = [
@@ -754,7 +753,7 @@ const COLOR_PICKER_PALETTE = [
 ];
 
 function getTagColor(text, fieldType) {
-  if (!text) return PASTEL_PALETTE[0];
+  if (!text) return TAG_PALETTE[0];
   // Check for custom color
   const key = fieldType ? `${fieldType}:${text}` : `rubrique:${text}`;
   if (colorCustomizations[key]) return colorCustomizations[key];
@@ -767,7 +766,7 @@ function getTagColor(text, fieldType) {
     hash = ((hash << 5) - hash) + text.charCodeAt(i);
     hash = hash & hash;
   }
-  return PASTEL_PALETTE[Math.abs(hash) % PASTEL_PALETTE.length];
+  return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
 }
 
 /* ---- Supabase ---- */
