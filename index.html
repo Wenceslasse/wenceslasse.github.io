@@ -976,13 +976,18 @@ function relTime(iso){
 }
 async function saveColorCustomization(fieldType, tagName, bgColor, fgColor) {
   if (!currentIssue) return;
+  // Sans onConflict, upsert() cible la clé primaire (id) — toujours nouvelle
+  // ici puisqu'on ne la fournit pas — et tente donc un insert, qui percute la
+  // vraie contrainte d'unicité (issue_id, field_type, tag_name) : la deuxième
+  // personnalisation d'un même tag échouait avec « duplicate key value ».
   const { error } = await sb.from("color_customizations").upsert({
     issue_id: currentIssue.id,
     field_type: fieldType,
     tag_name: tagName,
     bg_color: bgColor,
-    fg_color: fgColor
-  });
+    fg_color: fgColor,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "issue_id,field_type,tag_name" });
   if (error) { console.error("Erreur sauvegarde couleur :", error.message); return; }
   const key = `${fieldType}:${tagName}`;
   colorCustomizations[key] = { bg: bgColor, fg: fgColor };
