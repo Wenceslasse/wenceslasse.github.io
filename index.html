@@ -199,6 +199,9 @@
   .g2-bar.late{outline:2px solid var(--danger); outline-offset:-2px}
   .g2-bar .cap{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .g2-bar .endpt{width:9px; height:9px; border-radius:50%; border:2px solid #fff; flex:none; margin-left:auto; box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+  /* Mini-jauge d'avancement d'un dossier aux statuts mixtes */
+  .g2-bar .g2-prog{display:flex; gap:1.5px; align-items:center; flex:none; margin-left:auto}
+  .g2-bar .g2-prog i{display:block; width:4px; height:10px; border-radius:1px}
   .g2-today{position:absolute; top:0; bottom:0; width:2px; background:var(--danger); z-index:4; pointer-events:none}
   .g2-today::before{content:"Auj."; position:absolute; top:2px; left:3px; font-size:9px; color:var(--danger); font-weight:700; background:var(--canvas); padding:0 2px; border-radius:3px}
   .g2-empty{padding:40px 24px; color:var(--faint); font-size:14px; text-align:center}
@@ -1326,17 +1329,62 @@ function renderGroupHeader(pages){
   return container;
 }
 
+/* ---- Regroupement des pages en « dossiers » (Calendrier + Gantt) ----
+   Une page contiguë de même rubrique rejoint le dossier précédent si elle n'a
+   pas de sujet propre (suite d'un dossier dont le sujet n'est saisi que sur la
+   première page) ou si elle reprend un sujet déjà présent dans le dossier.
+   Le regroupement se fait sur toutes les pages, avant tout filtrage, pour que
+   masquer une page ne casse pas la contiguïté d'un dossier. */
+const STATUT_ORDER=["a_caler","en_cours","relu","boucle"];
+function worstStatut(items){
+  for(const s of STATUT_ORDER) if(items.some(p=>p.statut===s)) return s;
+  return "a_caler";
+}
+function buildDossiers(){
+  const out=[]; let cur=null;
+  for(const p of state.pages){
+    const rub=p.rubrique||"";
+    const contiguous = cur && p.n === cur.pages[cur.pages.length-1]+1;
+    const sameRub = cur && rub === cur.rubrique;
+    const knownSujet = cur && p.sujet && cur.sujets.includes(p.sujet);
+    if(contiguous && sameRub && (!p.sujet || knownSujet)){
+      cur.pages.push(p.n); cur.items.push(p);
+      if(p.sujet && !cur.sujets.includes(p.sujet)) cur.sujets.push(p.sujet);
+      if(p.rendu && (!cur.rendu || p.rendu>cur.rendu)) cur.rendu=p.rendu; // échéance = date la plus tardive
+      cur.sig+=toSignes(p);
+      continue;
+    }
+    cur={rubrique:rub, thematique:p.thematique||"", sujets:p.sujet?[p.sujet]:[],
+         pages:[p.n], items:[p], rendu:p.rendu||"", sig:toSignes(p)};
+    out.push(cur);
+  }
+  return out.map(g=>({...g, title:g.sujets[0]||g.rubrique||"—", statut:worstStatut(g.items)}));
+}
+// Dossiers datés et retenus par le filtre courant (au moins une page correspondante).
+function visibleDossiers(){
+  return buildDossiers().filter(g=>g.rendu && g.items.some(matches));
+}
+// Pastille de statut, ou mini-jauge quand le dossier mélange plusieurs statuts.
+function dossierStatusHTML(g){
+  const uniq=[...new Set(g.items.map(p=>p.statut))];
+  if(uniq.length<=1){
+    const s=getTagColor(g.statut,"statut");
+    return `<span style="width:9px;height:9px;border-radius:50%;background:${s.bg};flex:none;margin-left:auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)"></span>`;
+  }
+  const bars=g.items.map(p=>`<i style="display:block;width:4px;height:9px;border-radius:1px;background:${(STATUTS[p.statut]||{}).dot||'#9B9A97'}"></i>`).join("");
+  return `<span title="${g.items.filter(p=>p.statut==='boucle').length}/${g.items.length} bouclées" style="display:flex;gap:1.5px;align-items:center;flex:none;margin-left:auto">${bars}</span>`;
+}
+
 function renderCalendarView(){
   const cal=document.getElementById("viewCalendar");
   cal.innerHTML="";
 
   const grouped={};
   let firstRenduDate=null;
-  for(const p of state.pages){
-    if(!matches(p)||!p.rendu) continue;
-    const d=p.rendu;
+  for(const g of visibleDossiers()){
+    const d=g.rendu;
     if(!grouped[d]) grouped[d]=[];
-    grouped[d].push(p);
+    grouped[d].push(g);
     if(!firstRenduDate||d<firstRenduDate) firstRenduDate=d;
   }
 
@@ -1445,23 +1493,28 @@ function renderCalendarView(){
     entries.style.cssText="display:flex;flex-direction:column;gap:6px;";
 
     if(grouped[dateStr]){
-      for(const p of grouped[dateStr]){
+      for(const g of grouped[dateStr]){
         const entry=document.createElement("div");
-        const col=getTagColor(p.rubrique||p.thematique||"", p.rubrique?"rubrique":"thematique");
-        const st=getTagColor(p.statut, "statut");
-        entry.style.cssText=`background:${col.bg};color:${col.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;`;
-        entry.addEventListener("click",()=>openPeek(p.n));
+        const col=getTagColor(g.rubrique||g.thematique||"", g.rubrique?"rubrique":"thematique");
+        const first=Math.min(...g.pages);
+        entry.style.cssText=`background:${col.bg};color:${col.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;`;
+        entry.title=`${g.title} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)}`;
+        entry.addEventListener("click",()=>openPeek(first));
         entry.addEventListener("mouseenter",()=>{ entry.style.boxShadow="0 2px 6px rgba(0,0,0,0.1)"; entry.style.transform="translateX(2px)"; });
         entry.addEventListener("mouseleave",()=>{ entry.style.boxShadow=""; entry.style.transform=""; });
 
         const text=document.createElement("div");
         text.style.cssText="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;";
-        text.textContent=p.sujet||p.rubrique||"—";
+        text.textContent=g.title;
         entry.appendChild(text);
 
-        const dot=document.createElement("div");
-        dot.style.cssText=`width:9px;height:9px;border-radius:50%;background:${st.bg};flex:none;margin-left:auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12);`;
-        entry.appendChild(dot);
+        if(g.pages.length>1){
+          const rng=document.createElement("span");
+          rng.style.cssText="font-size:10px;font-weight:700;opacity:.72;flex:none";
+          rng.textContent="p."+formatPages(g.pages);
+          entry.appendChild(rng);
+        }
+        entry.insertAdjacentHTML("beforeend", dossierStatusHTML(g));
 
         entries.appendChild(entry);
       }
@@ -1545,18 +1598,9 @@ function renderGanttView(){
   ctl.appendChild(prev); ctl.appendChild(next); ctl.appendChild(period); ctl.appendChild(todayBtn); ctl.appendChild(scope);
   gantt.appendChild(ctl);
 
-  // ---- Regrouper les pages d'un même sujet (dossier multi-pages) ----
-  const groupsMap=new Map();
-  for(const p of state.pages){
-    if(!matches(p)||!p.rendu) continue;
-    // On ne fusionne que si le sujet est renseigné ; sinon chaque page reste seule.
-    const key=p.sujet ? (p.rubrique||"")+" "+p.sujet+" "+p.rendu : "solo "+p.n;
-    let g=groupsMap.get(key);
-    if(!g){ g={rubrique:p.rubrique,thematique:p.thematique,sujet:p.sujet,rendu:p.rendu,statut:p.statut,pages:[],sig:0}; groupsMap.set(key,g); }
-    g.pages.push(p.n); g.sig+=toSignes(p);
-  }
-  // ---- Groupes dont la fenêtre [prépa → rendu] croise la période ----
-  const items=[...groupsMap.values()]
+  // ---- Regrouper les pages en dossiers (cf. buildDossiers) ----
+  // ---- Dossiers dont la fenêtre [prépa → rendu] croise la période ----
+  const items=visibleDossiers()
     .map(g=>{ const end=gParse(g.rendu); const lead=g.sig?Math.max(3,Math.min(28,Math.round(g.sig/1500*2))):7; return {g, end, start:gAdd(end,-lead), pmin:Math.min(...g.pages)}; })
     .filter(it=>it.end>=rangeStart && it.start<=rangeEnd)
     .sort((x,y)=>x.g.rendu<y.g.rendu?-1:x.g.rendu>y.g.rendu?1:x.pmin-y.pmin);
@@ -1610,9 +1654,9 @@ function renderGanttView(){
     const row=document.createElement("div"); row.className="g2-row";
 
     const label=document.createElement("div"); label.className="g2-label";
-    const rub=g.rubrique||g.sujet||"";
+    const rub=g.rubrique||g.title||"";
     label.innerHTML=`<span class="lr${rub?"":" none"}">${esc(rub||"Sans rubrique")}</span><span class="lp">[${formatPages(g.pages)}]</span>`;
-    label.title=`${g.rubrique||"Sans rubrique"} — ${g.sujet||"[Sujet]"} · p.${formatPages(g.pages)}`;
+    label.title=`${g.rubrique||"Sans rubrique"} — ${g.title} · p.${formatPages(g.pages)}`;
     label.addEventListener("click",()=>openPeek(pmin));
     row.appendChild(label);
 
@@ -1627,8 +1671,12 @@ function renderGanttView(){
     const bar=document.createElement("div");
     bar.className="g2-bar"+(late?" late":"");
     bar.style.cssText=`left:${left}%;width:${width}%;background:${col.bg};color:${col.fg}`;
-    bar.innerHTML=`<span class="cap">${esc(g.sujet||g.rubrique||"—")}</span><span class="endpt" style="background:${s.bg}"></span>`;
-    bar.title=`${g.sujet||"[Sujet]"} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)} · ${sLabel}`;
+    const uniqSt=[...new Set(g.items.map(p=>p.statut))];
+    const tail = uniqSt.length>1
+      ? `<span class="g2-prog" title="${g.items.filter(p=>p.statut==='boucle').length}/${g.items.length} bouclées">${g.items.map(p=>`<i style="background:${(STATUTS[p.statut]||{}).dot||'#9B9A97'}"></i>`).join("")}</span>`
+      : `<span class="endpt" style="background:${s.bg}"></span>`;
+    bar.innerHTML=`<span class="cap">${esc(g.title)}</span>${tail}`;
+    bar.title=`${g.title} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · rendu ${frDate(g.rendu)} · ${sLabel}${uniqSt.length>1?" (statuts mixtes)":""}`;
     bar.addEventListener("click",()=>openPeek(pmin));
     track.appendChild(bar);
     row.appendChild(track);
