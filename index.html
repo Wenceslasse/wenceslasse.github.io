@@ -169,7 +169,107 @@
   .page.solo.p56 .cvr{right:15px; left:auto}
 
   /* ---- Calendar & Gantt views ---- */
-  #viewCalendar, #viewGantt{width:100%}
+  #viewMatrix, #viewGantt{width:100%}
+
+  /* ---- Vue Matrice ---- */
+  .mx-wrap{background:var(--canvas); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-top:4px}
+  .mx-bar{display:flex; align-items:center; gap:12px; padding:9px 14px; border-bottom:1px solid var(--border); background:var(--body); flex-wrap:wrap}
+  .mx-count{font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .mx-spacer{flex:1}
+  .mx-total{display:inline-flex; align-items:center; gap:9px; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .mx-tbar{display:block; width:70px; height:5px; border-radius:3px; background:var(--border); overflow:hidden; flex:none}
+  .mx-tbar i{display:block; width:100%; height:100%; background:#4B8B5B; transform-origin:left center; transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+  .mx-empty{padding:46px 20px; text-align:center; color:var(--muted); font-size:13.5px; line-height:1.7}
+  .mx-scroller{overflow-x:auto}
+  .mx-scroller::-webkit-scrollbar{height:11px}
+  .mx-scroller::-webkit-scrollbar-thumb{background:var(--border-strong); border-radius:6px; border:3px solid var(--canvas)}
+
+  table.mxt{border-collapse:separate; border-spacing:0; width:100%; min-width:1180px}
+  table.mxt th, table.mxt td{border-bottom:1px solid var(--border); padding:0; vertical-align:middle}
+  table.mxt thead th{position:sticky; top:0; z-index:5; background:var(--canvas); border-bottom:1px solid var(--border-strong);
+    font-size:10.5px; font-weight:650; color:var(--muted); text-align:center; padding:8px 3px 7px; line-height:1.25;
+    vertical-align:bottom; white-space:nowrap}
+  table.mxt thead th .th2{display:block; color:var(--faint); font-weight:600}
+  table.mxt thead th.tl{text-align:left; padding-left:12px}
+  /* L'en-tête de groupe porte la couleur du jalon : c'est le lien visuel avec le Gantt. */
+  .mx-jal{font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; font-weight:800; padding:6px 4px 4px !important;
+          border-bottom:none !important; text-align:center; position:sticky; top:0}
+  .mx-jal span{display:inline-block; padding:2px 8px; border-radius:4px}
+  .par-badge{background:var(--hover); color:var(--muted); border:1px dashed var(--border-strong)}
+  table.mxt tbody tr:hover td{background:var(--hover)}
+  table.mxt tbody tr:last-child td{border-bottom:none}
+  .grp-edge{border-left:1px solid var(--border-strong)}
+  /* La piste parallèle est séparée par un trait discontinu : elle n'appartient
+     pas à la chaîne, et la bordure doit le dire avant qu'on lise l'en-tête. */
+  .par-edge{border-left:1px dashed var(--border-strong)}
+
+  table.mxt .fz{position:sticky; background:var(--canvas); z-index:3}
+  table.mxt thead .fz{z-index:6}
+  table.mxt .fz-n{left:0; width:60px; min-width:60px}
+  table.mxt .fz-t{left:60px; width:290px; min-width:290px}
+  table.mxt .fz-edge{box-shadow:9px 0 12px -11px rgba(15,15,15,.4)}
+  table.mxt tbody tr:hover .fz{background:var(--hover)}
+  .mx-n{display:block; padding:0 10px; font-size:11.5px; color:var(--faint); font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+  .mx-t{padding:7px 12px; cursor:pointer}
+  .mx-sj{display:block; font-size:13.5px; font-weight:600; letter-spacing:-.008em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .mx-sj.none{font-weight:400; color:var(--faint)}
+  .mx-rb{display:flex; align-items:center; gap:6px; margin-top:3px}
+  .mx-cell{text-align:center; padding:4px 2px}
+  .mx-cstat{width:158px; min-width:158px; max-width:158px}
+  .mx-cred{width:150px; min-width:150px; max-width:150px}
+  .mx-cpag{width:58px; min-width:58px}
+  .mx-ccal{width:120px; min-width:120px; max-width:120px}
+  .mx-stat{padding:5px 12px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .mx-txt{padding:0 12px; font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .mx-txt.none{color:var(--faint)}
+  .mx-num{padding:0 10px; text-align:right; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .mx-warn{font-size:10.5px; font-weight:700; color:#8A4B00; background:#FADEC9; padding:1px 6px; border-radius:4px; white-space:nowrap}
+
+  /* Pastille d'étape — même vocabulaire dans la table, la légende et le menu. */
+  .et{width:19px; height:19px; border-radius:5px; display:inline-grid; place-items:center; flex:none;
+      border:1px solid transparent; padding:0; background:transparent; cursor:pointer;
+      transition:transform .12s ease, box-shadow .12s ease}
+  button.et:hover{transform:scale(1.18)}
+  button.et:focus-visible{outline:none; box-shadow:var(--ring); transform:scale(1.12)}
+  .et::after{content:""; display:block}
+  .et.ok{background:#DBEDDB; color:#2C5E3E}
+  .et.ok::after{content:"✓"; font-size:11px; font-weight:800; line-height:1}
+  .et.encours{background:#FDECC8; color:#7C5E00}
+  .et.encours::after{width:8px; height:8px; border-radius:50%; background:currentColor}
+  .et.afaire{background:#D3E5EF; color:#24547A}
+  .et.afaire::after{width:8px; height:8px; border-radius:50%; border:1.75px solid currentColor}
+  .et.attente{background:#EDEDEB; color:#6A6A65}
+  .et.attente::after{width:8px; height:2px; border-radius:1px; background:currentColor}
+  .et.na{background:transparent; color:var(--border-strong)}
+  .et.na::after{width:3px; height:3px; border-radius:50%; background:currentColor}
+  button.et.na:hover{background:var(--hover)}
+  /* Les pages du dossier ne sont pas toutes au même point : le coin le signale. */
+  .et.mixed{box-shadow:inset -3px 3px 0 -1px rgba(120,119,116,.55)}
+
+  .mx-legend{display:flex; gap:16px; flex-wrap:wrap; align-items:center; padding:11px 14px;
+             border-top:1px solid var(--border); background:var(--body); font-size:12px; color:var(--muted)}
+  .mx-lg{display:inline-flex; align-items:center; gap:7px}
+  .mx-note{margin-left:auto; color:var(--faint); font-size:11.5px}
+
+  .et-pop{position:fixed; z-index:300; background:var(--canvas); border:1px solid var(--border); border-radius:9px;
+    box-shadow:0 4px 8px -4px rgba(15,15,15,.12), 0 14px 34px -10px rgba(15,15,15,.22);
+    padding:5px; min-width:246px; display:none; flex-direction:column; gap:1px}
+  .et-pop.open{display:flex}
+  .et-pop-h{font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:6px 9px 5px}
+  .et-pop button{display:flex; align-items:center; gap:9px; border:none; background:transparent; cursor:pointer;
+    padding:6px 9px; border-radius:6px; font-size:13px; text-align:left; width:100%}
+  .et-pop button:hover{background:var(--hover)}
+  .et-pop button:focus-visible{outline:none; box-shadow:var(--ring)}
+  .et-pv{display:flex; flex-direction:column; min-width:0; flex:1}
+  .et-ph{font-size:11px; color:var(--faint); line-height:1.35}
+  .et-pc{color:var(--accent); font-size:12px; font-weight:800; flex:none}
+
+  @media (max-width:760px){
+    table.mxt .fz-n{width:40px; min-width:40px}
+    table.mxt .fz-t{left:40px; width:168px; min-width:168px}
+    .mx-t{padding:6px 9px}
+    .mx-sj{font-size:12.5px}
+  }
   #viewGantt{flex-direction:column; min-height:460px}
   .g2{background:var(--canvas); border:1px solid var(--border); border-radius:10px; overflow:hidden; flex:1; min-height:0; display:flex; flex-direction:column}
   .g2-head{display:flex; border-bottom:1px solid var(--border); flex:none}
@@ -181,6 +281,9 @@
   .g2-weeks{display:flex; font-size:10px; color:var(--faint)}
   .g2-weeks>div{text-align:center; padding:4px 0; border-right:1px solid var(--border); overflow:hidden; white-space:nowrap}
   .g2-weeks>div:last-child{border-right:none}
+  .g2-days{display:flex; font-size:9px; color:var(--faint); border-bottom:1px solid var(--border)}
+  .g2-days>div{text-align:center; padding:3px 0; border-right:1px solid var(--border); overflow:hidden; white-space:nowrap; font-weight:600}
+  .g2-days>div:last-child{border-right:none}
   .g2-body{position:relative; flex:1; min-height:0; overflow-y:auto}
   .g2-gridlayer{position:absolute; top:0; bottom:0; left:186px; right:0; display:flex; z-index:0; pointer-events:none}
   .g2-gridlayer>div{flex:1; border-right:1px solid var(--border)}
@@ -203,15 +306,15 @@
   .g2-bar .g2-prog{display:flex; gap:1.5px; align-items:center; flex:none; margin-left:auto}
   .g2-bar .g2-prog i{display:block; width:4px; height:10px; border-radius:1px}
   /* Barre segmentée : une tranche par étape du circuit, plus un losange par jalon */
-  .g2-seg{position:absolute; top:50%; transform:translateY(-50%); height:22px; display:flex; align-items:center;
-          padding:0 6px 0 11px; font-size:10.5px; font-weight:700; letter-spacing:.02em; overflow:hidden; cursor:pointer;
+  .g2-seg{position:absolute; top:50%; transform:translateY(-50%); height:22px; display:flex; align-items:center; justify-content:center;
+          padding:0 4px; min-width:32px; font-size:10px; font-weight:700; overflow:hidden; cursor:pointer;
           box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
   .g2-seg:first-of-type{border-radius:5px 0 0 5px}
   .g2-seg.tail{border-radius:0 5px 5px 0}
   .g2-seg.only{border-radius:5px}
   .g2-seg.done{opacity:.5}
   .g2-seg.late{box-shadow:inset 0 0 0 1.5px var(--danger)}
-  .g2-seg span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .g2-seg span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center}
   .g2-mk{position:absolute; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px; transform:rotate(45deg);
          background:var(--canvas); border:1.5px solid var(--muted); z-index:3; pointer-events:none;
          box-shadow:0 0 0 1.5px var(--canvas)}
@@ -295,7 +398,16 @@
   .jalons{position:relative}
   /* Le fil qui relie les pastilles, tracé derrière elles. */
   .jalons::before{content:""; position:absolute; left:8px; top:20px; bottom:20px; width:2px; background:var(--border)}
-  .jalon{display:grid; grid-template-columns:18px 1fr auto; align-items:center; gap:10px; padding:6px 0; position:relative}
+  .jalon{display:grid; grid-template-columns:18px 1fr auto auto; align-items:center; gap:10px; padding:6px 0; position:relative}
+  .jcount{font-size:11px; color:var(--faint); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .jcount.full{color:#4B8B5B; font-weight:600}
+  /* Piste parallèle : détachée de la chaîne, et sans puce à cocher. */
+  .par-row{border-top:1px dashed var(--border-strong); margin-top:6px; padding-top:11px}
+  .par-bul{border-style:dashed !important; background:var(--body) !important; color:var(--faint);
+           display:grid; place-items:center; font-size:9px; cursor:default}
+  /* Le retard des pièces se signale comme celui d'un jalon — même rouge, une
+     seule grammaire. La règle .jalon.late .jdate existante s'en charge. */
+  .par-row .jdate{border-style:dashed; color:var(--faint); background:transparent; padding:3px 7px; display:inline-block}
   .jbul{width:17px; height:17px; border-radius:50%; border:2px solid var(--border); background:var(--canvas);
         display:grid; place-items:center; font-size:10px; line-height:1; color:#fff; cursor:pointer; padding:0; flex:none}
   .jbul:hover{border-color:var(--muted)}
@@ -568,7 +680,7 @@
       </select>
       <div style="border-left:1px solid var(--border);margin:0 8px;height:20px;"></div>
       <button class="tbtn" id="btnViewGrid" title="Vue Grille">⊞ Grille</button>
-      <button class="tbtn" id="btnViewCalendar" title="Vue Calendrier">📅 Calendrier</button>
+      <button class="tbtn" id="btnViewMatrix" title="Vue Matrice">▤ Matrice</button>
       <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
       <button class="tbtn" id="btnCompact" title="Affichage compact / confortable">⊟ Compact</button>
       <button class="tbtn" id="btnUndo" title="Annuler la dernière action (Ctrl+Z)" disabled>↶ Annuler</button>
@@ -593,7 +705,7 @@
 <main>
   <div class="wrap">
     <div class="rail" id="rail"></div>
-    <div id="viewCalendar" style="display:none;"></div>
+    <div id="viewMatrix" style="display:none;"></div>
     <div id="viewGantt" style="display:none;"></div>
   </div>
 </main>
@@ -708,12 +820,68 @@ const STATUT_ALIAS = { en_cours:"ecriture", relu:"sr" };
    jalon franchi ; `gap` est le réglage du rythme qui sépare ce jalon du
    précédent. Le premier jalon n'a pas de gap : c'est l'ancre de la chaîne. */
 const MILESTONES = [
-  {key:"v1",      field:"rendu",    label:"Livraison V1",     short:"V1",  who:"Journaliste",              from:"ecriture", statut:"retours", gap:null},
-  {key:"retours", field:"d_retours",label:"Retours rédaction",short:"RET", who:"Rédac chef + interne",     from:"retours",  statut:"reprise", gap:"r_retours"},
-  {key:"v2",      field:"d_v2",     label:"Livraison V2",     short:"V2",  who:"Journaliste",              from:"reprise",  statut:"sr",      gap:"r_v2"},
-  {key:"sr",      field:"d_sr",     label:"Sortie de SR",     short:"SR",  who:"Secrétariat de rédaction", from:"sr",       statut:"agence",  gap:"r_sr_duree"},
-  {key:"agence",  field:"d_agence", label:"Mise en page",     short:"MEP", who:"Les Jumelles",             from:"agence",   statut:"boucle",  gap:"r_agence"},
+  {key:"v1",      field:"rendu",    label:"Livraison V1",     short:"V1",  who:"Journaliste",              from:"ecriture", statut:"retours", gap:null,         steps:["synopsis","redaction"]},
+  {key:"retours", field:"d_retours",label:"Retours rédaction",short:"L", who:"Rédac chef + interne",     from:"retours",  statut:"reprise", gap:"r_retours",  steps:["relecture","vredac"]},
+  {key:"v2",      field:"d_v2",     label:"Livraison V2",     short:"V2",  who:"Journaliste",              from:"reprise",  statut:"sr",      gap:"r_v2",       steps:["vinterv","vcr","titraille"]},
+  {key:"sr",      field:"d_sr",     label:"Sortie de SR",     short:"SR",  who:"Secrétariat de rédaction", from:"sr",       statut:"agence",  gap:"r_sr_duree", steps:["srword"]},
+  {key:"agence",  field:"d_agence", label:"Mise en page",     short:"MEP", who:"Les Jumelles",             from:"agence",   statut:"boucle",  gap:"r_agence",   steps:["maquette","srfinal"]},
 ];
+
+/* ---- Les 12 étapes de la vue Matrice --------------------------------
+   Dix composent le circuit du texte et se regroupent dans les jalons ci-dessus.
+   Les deux dernières — playlist et icono — forment une piste PARALLÈLE : on
+   peut commander une photo pendant que l'article est en relecture, et un
+   article dont l'icono traîne n'est pas « en retard de rédaction ». Elles ne
+   font donc pas avancer le statut, mais la maquette en dépend : leur échéance
+   implicite est la sortie de SR. */
+const ELEMENTS = {
+  label:"Éléments", short:"Élém.", who:"Iconographe + rédaction",
+  steps:["playlist","icono"], deadline:"sr",
+};
+const STEPS = {
+  synopsis: {l:"Synopsis",  l2:""},
+  redaction:{l:"Rédaction", l2:""},
+  relecture:{l:"Relecture", l2:""},
+  vredac:   {l:"Valid.",    l2:"rédac"},
+  vinterv:  {l:"Valid.",    l2:"interv."},
+  vcr:      {l:"Valid.",    l2:"CR"},
+  titraille:{l:"Titraille", l2:""},
+  srword:   {l:"SR",        l2:"Word"},
+  maquette: {l:"Maquette",  l2:""},
+  srfinal:  {l:"SR",        l2:"final"},
+  playlist: {l:"Playlist",  l2:""},
+  icono:    {l:"Icono",     l2:""},
+};
+const CHAIN_STEPS = MILESTONES.flatMap(m=>m.steps);
+const ALL_STEPS = [...CHAIN_STEPS, ...ELEMENTS.steps];
+const stepLabel = k => STEPS[k].l + (STEPS[k].l2 ? " " + STEPS[k].l2 : "");
+// Vocabulaire d'avancement d'une étape, du moins avancé au plus avancé.
+// « na » reste hors de l'échelle : il ne compare pas, il exclut.
+const ETAPES = {
+  ok:      {label:"Terminé",      hint:"L'étape est faite"},
+  encours: {label:"En cours",     hint:"Quelqu'un y travaille"},
+  afaire:  {label:"À faire",      hint:"Actionnable maintenant"},
+  attente: {label:"En attente",   hint:"Bloqué par une étape amont"},
+  na:      {label:"Non concerné", hint:"Cette étape ne s'applique pas"},
+};
+const ETAPE_ORDER = ["attente","afaire","encours","ok"];
+/* Une page qui n'est jamais passée par la Matrice n'a pas d'étapes en base.
+   Plutôt que de l'afficher entièrement « en attente » — ce qui contredirait le
+   statut déjà saisi — on lui déduit un état de départ : les jalons que ce
+   statut dit franchis sont réputés faits. Rien n'est écrit ; la première
+   modification matérialise cet état de départ, augmenté du changement. */
+function seedEtapes(p){
+  const k = STATUT_STEP[p.statut] || 0;
+  const e = {};
+  MILESTONES.forEach((m,i)=>{ for(const s of m.steps) e[s] = i<k ? "ok" : "attente"; });
+  for(const s of ELEMENTS.steps) e[s] = "attente";
+  return e;
+}
+const stepVal = (p,k) => {
+  if(p.etapes && p.etapes[k]) return p.etapes[k];
+  if(!p.etapes || Object.keys(p.etapes).length===0) return seedEtapes(p)[k] || "attente";
+  return "attente";
+};
 // Durées exprimées en JOURS OUVRÉS (cf. addOuvres).
 const RYTHME_DEFAUT = { r_retours:1, r_v2:1, r_sr_duree:1, r_agence:4 };
 // Nombre de jalons franchis correspondant à chaque statut (a_caler = rien de planifié).
@@ -770,8 +938,17 @@ const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", d_retours:"", d_v2:"", d_sr:"", d_agence:"", sr_duree:null, statut:"a_caler", journaliste:"", lot:"", notes:""}; }
-function rowToPage(r){ return {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", d_retours:r.d_retours||"", d_v2:r.d_v2||"", d_sr:r.d_sr||"", d_agence:r.d_agence||"", sr_duree:(r.sr_duree==null?null:Number(r.sr_duree)), statut:STATUT_ALIAS[r.statut]||r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||""}; }
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", d_retours:"", d_v2:"", d_sr:"", d_agence:"", sr_duree:null, statut:"a_caler", journaliste:"", lot:"", notes:"", etapes:{}}; }
+function rowToPage(r){
+  const p = {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", d_retours:r.d_retours||"", d_v2:r.d_v2||"", d_sr:r.d_sr||"", d_agence:r.d_agence||"", sr_duree:(r.sr_duree==null?null:Number(r.sr_duree)), statut:STATUT_ALIAS[r.statut]||r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||"", etapes:(r.etapes && typeof r.etapes==="object") ? {...r.etapes} : {}};
+  // Les étapes font foi : si le statut stocké les contredit — par exemple parce
+  // qu'un découpage jalon/étapes a changé depuis la dernière écriture — on le
+  // réaligne EN MÉMOIRE, pour que la Grille, le Gantt et la Matrice montrent la
+  // même chose. Rien n'est réécrit en base ici : la correction y descendra à la
+  // prochaine modification de la page.
+  p.statut = deriveStatut(p);
+  return p;
+}
 
 let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
 let issuesCache = [];
@@ -782,9 +959,7 @@ let selectedPages = new Set();
 let lastShiftClickPage = null;
 let draggedPages = null;
 let dropTarget = null;
-let currentView = "grid"; // grid, calendar, gantt
-let currentCalendarMonth = new Date();
-let calendarJalon = "all"; // "all" ou la clé d'un jalon du circuit
+let currentView = "grid"; // grid, matrix, gantt
 let ganttScope = "month"; // month | week
 let ganttAnchor = new Date();
 let colorCustomizations = {}; // { "rubrique:name": {bg, fg}, "statut:name": {bg, fg}, "lot:name": {bg, fg} }
@@ -1128,8 +1303,48 @@ function chainDates(p){
   for(let i=first+1; i<MILESTONES.length; i++) if(!out[i]) out[i] = addOuvres(out[i-1], gaps[i]);
   return MILESTONES.map((m,i) => ({...m, date:out[i], auto:!raw[i]}));
 }
-// Nombre de jalons franchis, d'après le statut de la page.
-function stepOf(p){ return STATUT_STEP[p.statut] || 0; }
+/* ---- Dérivation : étapes → jalons → statut --------------------------
+   Les 12 étapes sont la source de vérité. Une page dont `etapes` est vide n'a
+   pas encore été touchée par la Matrice : son statut saisi à la main fait
+   toujours autorité, pour qu'aucune page existante ne régresse. */
+const hasEtapes = p => !!p.etapes && Object.keys(p.etapes).length > 0;
+// Un jalon est franchi quand toutes ses étapes CONCERNÉES sont terminées.
+function jalonDone(p, m){
+  const act = m.steps.filter(k=>stepVal(p,k)!=="na");
+  return act.length > 0 && act.every(k=>stepVal(p,k)==="ok");
+}
+// Nombre de jalons franchis, en partant du début : la chaîne est linéaire, un
+// jalon sauté ne compte pas.
+function stepOf(p){
+  if(!hasEtapes(p)) return STATUT_STEP[p.statut] || 0;
+  let k = 0;
+  for(const m of MILESTONES){ if(!jalonDone(p,m)) break; k++; }
+  return k;
+}
+// Statut déduit des jalons. Écrit en base pour que la Grille, le Gantt et les
+// filtres continuent de lire `statut` sans rien savoir des étapes.
+function deriveStatut(p){
+  if(!hasEtapes(p)) return p.statut;
+  const k = stepOf(p);
+  if(k === 0) return chainDates(p)[0].date ? "ecriture" : "a_caler";
+  return MILESTONES[k-1].statut;
+}
+// Avancement d'une page, « non concerné » exclu du dénominateur.
+function etapeProgress(p){
+  const act = ALL_STEPS.filter(k=>stepVal(p,k)!=="na");
+  const done = act.filter(k=>stepVal(p,k)==="ok").length;
+  return {done, total:act.length, pct: act.length ? Math.round(done/act.length*100) : 0};
+}
+/* Piste parallèle. En retard dès que les retours rédaction sont franchis : le
+   sujet est arrêté, plus rien n'empêche de commander les pièces. Une page dont
+   personne n'a encore renseigné les étapes n'est jamais signalée : on ignore
+   où en sont ses pièces, et l'accuser de retard serait une invention. */
+function elementsState(p){
+  const act = ELEMENTS.steps.filter(k=>stepVal(p,k)!=="na");
+  const done = act.filter(k=>stepVal(p,k)==="ok").length;
+  const ready = done === act.length;
+  return {done, total:act.length, ready, known:hasEtapes(p), late: hasEtapes(p) && !ready && stepOf(p) >= 2};
+}
 // Date d'échéance d'une page : le dernier jalon du circuit (la mise en page).
 function echeance(p){ const c = chainDates(p); return c[c.length-1].date; }
 // Prochain jalon attendu, ou null si la page est bouclée / sans aucune date.
@@ -1470,182 +1685,188 @@ function dossierStatusHTML(g){
   return `<span title="${g.items.filter(p=>p.statut==='boucle').length}/${g.items.length} bouclées" style="display:flex;gap:1.5px;align-items:center;flex:none;margin-left:auto">${bars}</span>`;
 }
 
-function renderCalendarView(){
-  const cal=document.getElementById("viewCalendar");
-  cal.innerHTML="";
+/* ---- Vue Matrice ----------------------------------------------------
+   Une ligne par dossier, une colonne par étape, les colonnes regroupées sous
+   les cinq jalons du circuit — d'où les en-têtes colorés, qui répondent aux
+   segments du Gantt. Le sixième groupe, en pointillés, est la piste parallèle.
 
-  // Une entrée par jalon daté, filtrable par étape : le SR ne veut voir que ses
-  // sorties de SR, Les Jumelles que leurs mises en page.
-  const grouped={};
-  let firstRenduDate=null;
-  for(const g of visibleDossiers()){
-    g.chain.forEach((m,i)=>{
-      if(!m.date) return;
-      if(calendarJalon!=="all" && calendarJalon!==m.key) return;
-      if(!grouped[m.date]) grouped[m.date]=[];
-      grouped[m.date].push({g, m, i});
-      if(!firstRenduDate||m.date<firstRenduDate) firstRenduDate=m.date;
-    });
-  }
+   Les étapes sont stockées PAR PAGE, mais la matrice raisonne PAR DOSSIER :
+   « l'icono du Bikini est arrivée » vaut pour ses quatre pages, pas pour la
+   page 13 seule. Une cellule affiche donc l'état le moins avancé de ses pages,
+   et l'éditer écrit la même valeur sur toutes. */
 
-  const container=document.createElement("div");
-  container.style.cssText="display:flex;flex-direction:column;gap:16px;padding:20px 48px 40px;";
-
-  // Header avec navigation
-  const header=document.createElement("div");
-  header.style.cssText="display:flex;align-items:center;justify-content:space-between;";
-
-  const nav=document.createElement("div");
-  nav.style.cssText="display:flex;align-items:center;gap:12px;";
-
-  const prevBtn=document.createElement("button");
-  prevBtn.textContent="◀";
-  prevBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:18px;padding:6px 10px;border-radius:5px;";
-  prevBtn.addEventListener("click",()=>{
-    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth()-1);
-    renderCalendarView();
-  });
-
-  const title=document.createElement("div");
-  title.style.cssText="font-size:16px;font-weight:600;min-width:160px;text-align:center;";
-  title.textContent=currentCalendarMonth.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
-
-  const nextBtn=document.createElement("button");
-  nextBtn.textContent="▶";
-  nextBtn.style.cssText="border:none;background:transparent;cursor:pointer;color:var(--accent);font-size:18px;padding:6px 10px;border-radius:5px;";
-  nextBtn.addEventListener("click",()=>{
-    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth()+1);
-    renderCalendarView();
-  });
-
-  nav.appendChild(prevBtn);
-  nav.appendChild(title);
-  nav.appendChild(nextBtn);
-
-  const actions=document.createElement("div");
-  actions.style.cssText="display:flex;gap:8px;";
-
-  const jalonSel=document.createElement("select");
-  jalonSel.style.cssText="border:1px solid var(--border);background:var(--canvas);border-radius:5px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;";
-  jalonSel.title="N'afficher qu'une étape du circuit";
-  jalonSel.innerHTML=`<option value="all">Tous les jalons</option>`+
-    MILESTONES.map(m=>`<option value="${m.key}">${esc(m.label)}</option>`).join("");
-  jalonSel.value=calendarJalon;
-  jalonSel.addEventListener("change",e=>{ calendarJalon=e.target.value; renderCalendarView(); });
-  actions.appendChild(jalonSel);
-
-  const jumpBtn=document.createElement("button");
-  jumpBtn.textContent="⏭ Premier jalon";
-  jumpBtn.style.cssText="border:1px solid var(--border);background:var(--canvas);border-radius:5px;padding:6px 12px;cursor:pointer;font-size:13px;color:var(--muted);";
-  jumpBtn.addEventListener("click",()=>{
-    if(firstRenduDate){
-      const d=new Date(firstRenduDate+"T00:00:00");
-      currentCalendarMonth.setMonth(d.getMonth());
-      currentCalendarMonth.setFullYear(d.getFullYear());
-      renderCalendarView();
-    }
-  });
-
-  const todayBtn=document.createElement("button");
-  todayBtn.textContent="Aujourd'hui";
-  todayBtn.style.cssText="border:1px solid var(--border);background:var(--canvas);border-radius:5px;padding:6px 12px;cursor:pointer;font-size:13px;color:var(--muted);";
-  todayBtn.addEventListener("click",()=>{
-    currentCalendarMonth=new Date();
-    renderCalendarView();
-  });
-
-  actions.appendChild(jumpBtn);
-  actions.appendChild(todayBtn);
-  header.appendChild(nav);
-  header.appendChild(actions);
-  container.appendChild(header);
-
-  // Grille du calendrier
-  const calGrid=document.createElement("div");
-  // minmax(0,1fr) et non 1fr : sinon les entrées en white-space:nowrap imposent
-  // leur largeur minimale et poussent les derniers jours hors de l'écran.
-  calGrid.style.cssText="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;";
-
-  const dayNames=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
-  for(const day of dayNames){
-    const dayEl=document.createElement("div");
-    dayEl.style.cssText="background:var(--hover);padding:9px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;";
-    dayEl.textContent=day;
-    calGrid.appendChild(dayEl);
-  }
-
-  const firstDay=new Date(currentCalendarMonth.getFullYear(),currentCalendarMonth.getMonth(),1);
-  const lastDay=new Date(currentCalendarMonth.getFullYear(),currentCalendarMonth.getMonth()+1,0);
-  const startDate=new Date(firstDay);
-  startDate.setDate(startDate.getDate()-(firstDay.getDay()+6)%7);
-
-  const today=todayISO();
-  let currentDate=new Date(startDate);
-  while(currentDate<=lastDay||currentDate.getDay()!==1){
-    const dateStr=currentDate.toISOString().split("T")[0];
-    const dayEl=document.createElement("div");
-    const isToday=dateStr===today;
-    const isOtherMonth=currentDate.getMonth()!==currentCalendarMonth.getMonth();
-    dayEl.style.cssText=`background:${isToday?'rgba(35,131,226,0.04)':'var(--canvas)'};min-height:140px;padding:8px;position:relative;display:flex;flex-direction:column;min-width:0;${isOtherMonth?'opacity:0.3;background:var(--body);':''}${isToday?'border:2px solid var(--accent);':'border:1px solid var(--border);'}`;
-
-    const dateNum=document.createElement("div");
-    dateNum.style.cssText=`font-weight:600;font-size:${isToday?'13':'12'}px;color:${isToday?'var(--accent)':'var(--text)'};margin-bottom:8px;padding-right:40px;`;
-    dateNum.textContent=currentDate.getDate();
-    dayEl.appendChild(dateNum);
-
-    if(isToday){
-      const badge=document.createElement("div");
-      badge.style.cssText="position:absolute;top:2px;right:2px;font-size:9px;font-weight:700;color:var(--accent);background:white;padding:1px 3px;border-radius:2px;";
-      badge.textContent="auj.";
-      dayEl.appendChild(badge);
-    }
-
-    const entries=document.createElement("div");
-    entries.style.cssText="display:flex;flex-direction:column;gap:6px;";
-
-    if(grouped[dateStr]){
-      for(const {g,m,i} of grouped[dateStr]){
-        const entry=document.createElement("div");
-        // Couleur de l'étape que le jalon vient clore : on lit d'un coup d'œil
-        // qui tenait la main jusque-là.
-        const col=getTagColor(m.from,"statut");
-        const first=Math.min(...g.pages);
-        const done=i<g.step, late=i===g.step && m.date<today;
-        entry.style.cssText=`background:${col.bg};color:${col.fg};padding:6px 8px;border-radius:4px;cursor:pointer;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;${done?"opacity:.55;":""}${late?"box-shadow:inset 0 0 0 1.5px #D9534F;":""}`;
-        entry.title=`${m.label} — ${g.title} · ${g.rubrique||"sans rubrique"} · p.${formatPages(g.pages)} · ${frDate(m.date)}${m.auto?" (calculé)":""}${done?" · franchi":late?" · en retard":""}`;
-        entry.addEventListener("click",()=>openPeek(first));
-        entry.addEventListener("mouseenter",()=>{ entry.style.boxShadow="0 2px 6px rgba(0,0,0,0.1)"; entry.style.transform="translateX(2px)"; });
-        entry.addEventListener("mouseleave",()=>{ entry.style.boxShadow=late?"inset 0 0 0 1.5px #D9534F":""; entry.style.transform=""; });
-
-        const key=document.createElement("span");
-        key.style.cssText="font-size:9.5px;font-weight:800;letter-spacing:.04em;opacity:.75;flex:none";
-        key.textContent=m.short;
-        entry.appendChild(key);
-
-        const text=document.createElement("div");
-        text.style.cssText="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;";
-        text.textContent=g.title;
-        entry.appendChild(text);
-
-        // La pagination reste dans l'infobulle : sur sept colonnes, chaque
-        // pixel gagné va au titre du dossier.
-        entries.appendChild(entry);
-      }
-    } else {
-      const empty=document.createElement("div");
-      empty.style.cssText="color:var(--faint);font-size:12px;font-style:italic;";
-      empty.textContent="—";
-      entries.appendChild(empty);
-    }
-
-    dayEl.appendChild(entries);
-    calGrid.appendChild(dayEl);
-    currentDate.setDate(currentDate.getDate()+1);
-  }
-
-  container.appendChild(calGrid);
-  cal.appendChild(container);
+// État agrégé d'une étape sur un dossier : le moins avancé l'emporte, pour
+// qu'un dossier ne paraisse jamais plus fini qu'il ne l'est. « na » ne pèse
+// dans le calcul que si toutes les pages sont concernées de la même façon.
+function dossierEtape(items, key){
+  const real = items.map(p=>stepVal(p,key)).filter(v=>v!=="na");
+  if(!real.length) return "na";
+  return real.reduce((a,b)=> ETAPE_ORDER.indexOf(b) < ETAPE_ORDER.indexOf(a) ? b : a);
 }
+
+function renderMatrixView(){
+  const host=document.getElementById("viewMatrix");
+  host.innerHTML="";
+
+  // Les pages encore vides se regroupent en longues plages sans intérêt ici :
+  // la matrice suit des articles, pas des emplacements. On garde donc les
+  // dossiers qui portent au moins une rubrique ou un sujet.
+  const groups=buildDossiers()
+    .filter(g=>g.items.some(p=>p.rubrique||p.sujet))
+    .filter(g=>g.items.some(matches));
+
+  const wrap=document.createElement("div"); wrap.className="mx-wrap";
+
+  // ---- Barre d'outils de la vue ----
+  const bar=document.createElement("div"); bar.className="mx-bar";
+  const totPages=groups.reduce((a,g)=>a+g.pages.length,0);
+  const allSteps=groups.flatMap(g=>ALL_STEPS.map(k=>dossierEtape(g.items,k))).filter(v=>v!=="na");
+  const doneSteps=allSteps.filter(v=>v==="ok").length;
+  const pctAll=allSteps.length?Math.round(doneSteps/allSteps.length*100):0;
+  bar.innerHTML=`<span class="mx-count">${groups.length} article${groups.length>1?"s":""} · ${totPages} page${totPages>1?"s":""}</span>`
+    +`<span class="mx-spacer"></span>`
+    +`<span class="mx-total"><span class="mx-tbar"><i style="transform:scaleX(${pctAll/100})"></i></span>${pctAll} % des étapes faites</span>`;
+  wrap.appendChild(bar);
+
+  if(!groups.length){
+    const empty=document.createElement("div"); empty.className="mx-empty";
+    empty.innerHTML=`<b>Aucun article ne correspond au filtre.</b><br>Videz la recherche ou choisissez « Tous les statuts » pour retrouver le suivi complet.`;
+    wrap.appendChild(empty); host.appendChild(wrap); return;
+  }
+
+  // ---- Table ----
+  const scroller=document.createElement("div"); scroller.className="mx-scroller";
+  const table=document.createElement("table"); table.className="mxt";
+
+  const jalTr=MILESTONES.map(m=>{ const c=getTagColor(m.from,"statut");
+      return `<th class="mx-jal grp-edge" colspan="${m.steps.length}" title="${esc(m.label)} — ${esc(m.who)}"><span style="background:${c.bg};color:${c.fg}">${esc(m.short)}</span></th>`;
+    }).join("")
+    +`<th class="mx-jal par-edge" colspan="${ELEMENTS.steps.length}" title="${esc(ELEMENTS.label)} — piste parallèle, sans effet sur le statut"><span class="par-badge">${esc(ELEMENTS.short)}</span></th>`;
+
+  const stepTr=MILESTONES.map(m=>m.steps.map((k,j)=>
+      `<th class="${j===0?"grp-edge":""}" title="${esc(stepLabel(k))}">${esc(STEPS[k].l)}${STEPS[k].l2?`<span class="th2">${esc(STEPS[k].l2)}</span>`:""}</th>`).join("")).join("")
+    +ELEMENTS.steps.map((k,j)=>`<th class="${j===0?"par-edge":""}">${esc(STEPS[k].l)}</th>`).join("");
+
+  table.innerHTML=`<thead>
+      <tr><th class="fz fz-n" rowspan="2"></th><th class="fz fz-t fz-edge tl" rowspan="2">Article</th>${jalTr}
+          <th rowspan="2" class="grp-edge tl mx-cstat">Statut</th>
+          <th rowspan="2" class="tl mx-cred">Journaliste</th>
+          <th rowspan="2" class="mx-cpag">Pages</th>
+          <th rowspan="2" class="tl mx-ccal">Calibrage</th></tr>
+      <tr>${stepTr}</tr>
+    </thead><tbody></tbody>`;
+
+  const tb=table.querySelector("tbody");
+  for(const g of groups){
+    const pmin=Math.min(...g.pages);
+    const rt=getTagColor(g.rubrique,"rubrique");
+    const st=getTagColor(g.statut,"statut");
+    const stLabel=(STATUTS[g.statut]||{}).label||g.statut;
+    const lotLabel=g.items[0].lot && LOTS[g.items[0].lot] ? LOTS[g.items[0].lot].label : g.items[0].lot;
+    const lotPill=g.items[0].lot?pillHTML(lotLabel,getTagColor(g.items[0].lot,"lot"),"lot",g.items[0].lot):"";
+    // Le retard des pièces se juge sur la page la plus avancée du dossier :
+    // c'est elle qui entraîne la maquette.
+    const late=g.items.some(p=>elementsState(p).late);
+    const journalistes=[...new Set(g.items.map(p=>p.journaliste).filter(Boolean))];
+    const calib=g.items.map(p=>p.calib).find(Boolean);
+    const unite=g.items.find(p=>p.calib)?.unite||"signes";
+
+    const tr=document.createElement("tr");
+    tr.dataset.page=pmin;
+    tr.innerHTML=`
+      <td class="fz fz-n"><span class="mx-n">${esc(formatPages(g.pages))}</span></td>
+      <td class="fz fz-t fz-edge"><div class="mx-t">
+        <span class="mx-sj${g.title?"":" none"}">${esc(g.title||"Sujet à définir")}</span>
+        <span class="mx-rb">${g.rubrique?pillHTML(g.rubrique,rt,"rubrique",g.rubrique):""}${lotPill}</span>
+      </div></td>
+      ${MILESTONES.map(m=>m.steps.map((k,j)=>
+        `<td class="mx-cell ${j===0?"grp-edge":""}">${matrixCellHTML(g,k)}</td>`).join("")).join("")}
+      ${ELEMENTS.steps.map((k,j)=>`<td class="mx-cell ${j===0?"par-edge":""}">${matrixCellHTML(g,k)}</td>`).join("")}
+      <td class="grp-edge mx-cstat"><div class="mx-stat">${pillHTML(stLabel,st,"statut",g.statut)}${late?`<span class="mx-warn" title="Le sujet est arrêté depuis les retours, mais des pièces manquent encore">⚠ éléments</span>`:""}</div></td>
+      <td class="mx-cred"><div class="mx-txt${journalistes.length?"":" none"}" title="${esc(journalistes.join(", "))}">${esc(journalistes.join(", ")||"—")}</div></td>
+      <td class="mx-cpag"><div class="mx-num">${g.pages.length}</div></td>
+      <td class="mx-ccal"><div class="mx-txt${calib?"":" none"}">${calib?esc(fmt(calib)+" "+(unite==="signes"?"sg":unite==="feuillets"?"f.":"mots")):"—"}</div></td>`;
+
+    tr.querySelector(".mx-t").addEventListener("click",()=>openPeek(pmin));
+    tb.appendChild(tr);
+  }
+
+  scroller.appendChild(table);
+  wrap.appendChild(scroller);
+
+  // ---- Légende ----
+  const lg=document.createElement("div"); lg.className="mx-legend";
+  lg.innerHTML=Object.keys(ETAPES).map(v=>`<span class="mx-lg"><span class="et ${v}"></span>${esc(ETAPES[v].label)}</span>`).join("")
+    +`<span class="mx-note">Les colonnes en pointillés sont la piste parallèle : elles ne font pas avancer le statut.</span>`;
+  wrap.appendChild(lg);
+
+  host.appendChild(wrap);
+
+  // ---- Édition ----
+  if(!isVisitorMode) host.querySelectorAll("[data-et]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      openEtapePop(btn, Number(btn.dataset.page), btn.dataset.et);
+    });
+  });
+  if(isVisitorMode) host.querySelectorAll("[data-et]").forEach(b=>{
+    b.disabled=true; b.style.cursor="not-allowed";
+  });
+}
+
+function matrixCellHTML(g, key){
+  const v=dossierEtape(g.items, key);
+  const mixed=new Set(g.items.map(p=>stepVal(p,key))).size>1;
+  const pmin=Math.min(...g.pages);
+  return `<button type="button" data-et="${key}" data-page="${pmin}" class="et ${v}${mixed?" mixed":""}"
+    aria-label="${esc(stepLabel(key))} — ${esc(ETAPES[v].label)}"
+    title="${esc(stepLabel(key))} — ${esc(ETAPES[v].label)}${mixed?" (les pages du dossier diffèrent)":""}"></button>`;
+}
+
+/* Sélecteur de statut d'étape. Posé en `position:fixed` pour échapper au
+   défilement horizontal de la table, qui le rognerait sinon. */
+let etapePop=null, etapePopCtx=null;
+function ensureEtapePop(){
+  if(etapePop) return etapePop;
+  etapePop=document.createElement("div");
+  etapePop.className="et-pop"; etapePop.setAttribute("role","menu");
+  document.body.appendChild(etapePop);
+  etapePop.addEventListener("click",e=>{
+    const b=e.target.closest("button[data-v]");
+    if(!b||!etapePopCtx) return;
+    const {pages,key}=etapePopCtx;
+    closeEtapePop();
+    setEtape(pages, key, b.dataset.v);
+  });
+  return etapePop;
+}
+function openEtapePop(anchor, pageN, key){
+  const g=buildDossiers().find(x=>x.pages.includes(pageN));
+  if(!g) return;
+  const pop=ensureEtapePop();
+  etapePopCtx={pages:g.items, key};
+  const cur=dossierEtape(g.items,key);
+  pop.innerHTML=`<div class="et-pop-h">${esc(stepLabel(key))} · p.${esc(formatPages(g.pages))}</div>`
+    +Object.keys(ETAPES).map(v=>`<button type="button" role="menuitem" data-v="${v}">
+        <span class="et ${v}"></span>
+        <span class="et-pv"><span style="font-weight:${v===cur?650:450}">${esc(ETAPES[v].label)}</span><span class="et-ph">${esc(ETAPES[v].hint)}</span></span>
+        ${v===cur?'<span class="et-pc">✓</span>':""}</button>`).join("");
+  pop.classList.add("open");
+  const r=anchor.getBoundingClientRect(), pr=pop.getBoundingClientRect();
+  let left=Math.min(r.left, window.innerWidth-pr.width-12);
+  let top=r.bottom+6;
+  if(top+pr.height > window.innerHeight-12) top=r.top-pr.height-6;
+  pop.style.left=Math.max(12,left)+"px";
+  pop.style.top=Math.max(12,top)+"px";
+  pop.querySelector("button")?.focus();
+}
+function closeEtapePop(){ if(etapePop){ etapePop.classList.remove("open"); etapePopCtx=null; } }
+document.addEventListener("click",e=>{
+  if(etapePop && etapePop.classList.contains("open") && !etapePop.contains(e.target) && !e.target.closest("[data-et]")) closeEtapePop();
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeEtapePop(); });
+window.addEventListener("resize",closeEtapePop);
+document.addEventListener("scroll",closeEtapePop,true);
 
 const GANTT_MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 function gParse(iso){ const [y,m,d]=iso.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); }
@@ -1751,6 +1972,15 @@ function renderGanttView(){
       el.title="Semaine du "+d.getUTCDate()+" "+GANTT_MOIS[d.getUTCMonth()]; subRow.appendChild(el); }
   }
   axis.appendChild(subRow);
+
+  // Ajouter une ligne pour les abréviations de jours (L/M/M/J/V/S/D)
+  const dayRow=document.createElement("div"); dayRow.className="g2-days";
+  for(let i=0;i<totalDays;i++){ const d=gAdd(rangeStart,i); const el=document.createElement("div");
+    el.style.width=(100/totalDays)+"%"; el.textContent=GANTT_JOURS[d.getUTCDay()===0?6:d.getUTCDay()-1];
+    if(gWeekend(d)) el.style.color="var(--faint)";
+    dayRow.appendChild(el); }
+  axis.appendChild(dayRow);
+
   head.appendChild(axis);
   g2.appendChild(head);
 
@@ -1799,9 +2029,8 @@ function renderGanttView(){
       const seg=document.createElement("div");
       seg.className="g2-seg"+(i===dated.length-1?" tail":"")+(dated.length===1?" only":"")+(done?" done":"")+(late?" late":"");
       seg.style.cssText=`left:${l}%;width:${r-l}%;background:${st.bg};color:${st.fg}`;
-      // Sous ~7 % de la période, le libellé ne tient pas : mieux vaut une
-      // tranche muette qu'un mot tronqué à deux lettres.
-      seg.innerHTML = (r-l)>=7 ? `<span>${esc((STATUTS[dated[i].from]||{}).label||"")}</span>` : "";
+      // Afficher toujours le label court (V1/L/V2/SR/MEP)
+      seg.innerHTML = `<span>${esc(dated[i].short||"")}</span>`;
       seg.title=`${g.title} — ${(STATUTS[dated[i].from]||{}).label} jusqu'au ${frDate(dated[i].date)} (${dated[i].label})${dated[i].auto?" · date calculée":""}`;
       seg.addEventListener("click",()=>openPeek(pmin));
       track.appendChild(seg);
@@ -1865,14 +2094,14 @@ function scheduleRender(delay){
 function render(){
   if(renderTimer){ clearTimeout(renderTimer); renderTimer=null; }
   rail.innerHTML="";
-  document.getElementById("viewCalendar").style.display="none";
+  document.getElementById("viewMatrix").style.display="none";
   document.getElementById("viewGantt").style.display="none";
   rail.style.display="block";
 
-  if(currentView==="calendar"){
+  if(currentView==="matrix"){
     rail.style.display="none";
-    document.getElementById("viewCalendar").style.display="block";
-    renderCalendarView();
+    document.getElementById("viewMatrix").style.display="block";
+    renderMatrixView();
     return;
   }
   if(currentView==="gantt"){
@@ -2078,6 +2307,15 @@ function renderCircuit(){
       renderCircuit();
     }));
 
+    // Combien d'étapes de ce jalon sont faites : la puce dit « franchi ou non »,
+    // le compteur dit « où on en est » quand ce n'est pas encore franchi.
+    const act=m.steps.filter(s=>stepVal(p,s)!=="na");
+    const nb=act.filter(s=>stepVal(p,s)==="ok").length;
+    const cnt=document.createElement("div");
+    cnt.className="jcount"+(act.length&&nb===act.length?" full":"");
+    cnt.textContent=act.length ? `${nb}/${act.length}` : "—";
+    cnt.title=act.length ? `${nb} étape${nb>1?"s":""} terminée${nb>1?"s":""} sur ${act.length}` : "Aucune étape concernée";
+
     const d=document.createElement("input");
     d.type="date"; d.className="jdate"+(m.auto?" auto":""); d.value=m.date;
     d.title=m.auto ? "Date calculée d'après le rythme du numéro — la modifier la fige" : "Date saisie à la main";
@@ -2088,9 +2326,22 @@ function renderCircuit(){
       renderCircuit();
     });
 
-    row.appendChild(bul); row.appendChild(name); row.appendChild(d);
+    row.appendChild(bul); row.appendChild(name); row.appendChild(cnt); row.appendChild(d);
     list.appendChild(row);
   });
+
+  // La piste parallèle, posée sous la chaîne et séparée d'elle : pas de puce à
+  // cocher, puisqu'elle ne fait avancer aucun statut.
+  {
+    const el=elementsState(p);
+    const row=document.createElement("div");
+    row.className="jalon par-row"+(el.late?" late":"");
+    row.innerHTML=`<span class="jbul par-bul" title="Piste parallèle : aucun jalon à franchir">◇</span>`
+      +`<div class="jname">${esc(ELEMENTS.label)}<span class="who">${esc(ELEMENTS.who)}</span></div>`
+      +`<div class="jcount${el.ready?" full":""}">${el.total?`${el.done}/${el.total}`:"—"}</div>`
+      +`<div class="jdate auto" title="${el.ready?"Toutes les pièces sont là":"À fournir avant la maquette, donc au plus tard à la sortie de SR"}">${el.ready?"prêt":(el.late?"en retard":frDate(chain[3].date))}</div>`;
+    list.appendChild(row);
+  }
 
   const foot=host.querySelector("#circuitFoot");
   const manual=chain.filter(m=>!m.auto).length;
@@ -2118,18 +2369,32 @@ function renderCircuit(){
     el.disabled=true; el.style.opacity="0.5"; el.style.cursor="not-allowed";
   });
 }
-// Marque les `k` premiers jalons comme franchis et en déduit le statut.
+/* Marque les `k` premiers jalons comme franchis. C'est la synchronisation en
+   sens inverse de la Matrice : cocher une puce écrit dans `etapes`, d'où le
+   statut se redéduit. Deux réserves — une étape « non concernée » n'est jamais
+   réécrite, et la piste parallèle n'est pas touchée : cocher « Mise en page »
+   ne prétend pas que l'icono est arrivée. */
 function setStep(k){
   if(current==null) return;
   const p=state.pages[current-1];
-  const statut = k<=0 ? (chainDates(p)[0].date ? "ecriture" : "a_caler")
-                      : MILESTONES[k-1].statut;
-  if(p.statut!==statut){
-    pushUndo("Statut page "+current, [{...p}]);
+  const before={...p, etapes:{...p.etapes}};
+  if(!hasEtapes(p)) p.etapes=seedEtapes(p);   // page héritée : partir de son statut
+  MILESTONES.forEach((m,i)=>{
+    for(const s of m.steps){
+      if(stepVal(p,s)==="na") continue;
+      if(i < k) p.etapes[s]="ok";
+      else if(stepVal(p,s)==="ok") p.etapes[s]="attente";
+    }
+  });
+  const statut=deriveStatut(p);
+  const changed = statut!==p.statut || JSON.stringify(before.etapes)!==JSON.stringify(p.etapes);
+  if(changed){
+    p.statut=statut;
+    pushUndo("Circuit page "+current, [before]);
     logActivity(`a passé la page ${current} en « ${STATUTS[statut].label} »`, current);
-    commit("statut",statut);
+    persistEtapes([p]);
   }
-  renderCircuit();
+  render();
 }
 function renderLotChips(active){
   const c=document.getElementById("lotChips"); c.innerHTML="";
@@ -2174,6 +2439,37 @@ async function persistField(p, field){
   const { error } = await sb.from("pages").update({ [field]: val }).eq("id", p.id);
   if(error) console.error("Erreur de sauvegarde de la page :", error.message);
   else flashSaved();
+}
+
+/* ---- Écriture des étapes -------------------------------------------
+   `etapes` et le statut qui en découle partent dans la MÊME requête : sans
+   cela une coupure réseau entre les deux laisserait en base une page dont le
+   statut contredit ses étapes. */
+async function persistEtapes(pages){
+  const list = pages.filter(p=>p.id);
+  if(!list.length) return;
+  const results = await Promise.all(list.map(p =>
+    sb.from("pages").update({ etapes: p.etapes, statut: p.statut }).eq("id", p.id)
+  ));
+  const err = results.find(r=>r.error);
+  if(err) console.error("Erreur de sauvegarde des étapes :", err.error.message);
+  else flashSaved();
+}
+/* Applique une valeur d'étape à un ensemble de pages (une page seule, ou
+   toutes celles d'un dossier), recalcule le statut, persiste et re-rend. */
+function setEtape(pages, key, val, label){
+  const before = pages.map(p=>({...p, etapes:{...p.etapes}}));
+  for(const p of pages){
+    // Première écriture sur une page héritée : on matérialise l'état de départ
+    // déduit de son statut, sinon les jalons déjà franchis retomberaient tous
+    // en « attente » à cause de la première case cochée.
+    p.etapes = {...(hasEtapes(p) ? p.etapes : seedEtapes(p)), [key]: val};
+    p.statut = deriveStatut(p);
+  }
+  pushUndo(label || `Étape « ${stepLabel(key)} »`, before);
+  logActivity(`a passé « ${stepLabel(key)} » en « ${ETAPES[val].label} »${pages.length===1?` sur la page ${pages[0].n}`:` sur ${pages.length} pages`}`, pages[0].n);
+  persistEtapes(pages);
+  render();
 }
 dtitle.addEventListener("input",e=>{ autoGrow(e.target); commit("sujet",e.target.value); });
 F.rub.addEventListener("input",e=>commit("rubrique",e.target.value));
@@ -2357,15 +2653,14 @@ async function selectIssue(id, pushUrl){
   });
   await loadColorCustomizations(id);
 
-  // Si le mois courant n'a aucun rendu, ouvrir directement Calendrier/Gantt
-  // sur le premier rendu connu plutôt que sur un tableau vide autour d'aujourd'hui.
+  // Si le mois courant n'a aucun rendu, caler le Gantt sur le premier rendu
+  // connu plutôt que sur un tableau vide autour d'aujourd'hui.
   const renduDates = state.pages.flatMap(p=>chainDates(p).map(m=>m.date)).filter(Boolean).sort();
   if (renduDates.length) {
     const currentMonthKey = todayISO().slice(0,7);
     const hasDataThisMonth = renduDates.some(d => d.slice(0,7) === currentMonthKey);
     if (!hasDataThisMonth) {
       const firstDate = new Date(renduDates[0]+"T00:00:00");
-      currentCalendarMonth = firstDate;
       ganttAnchor = firstDate;
     }
   }
@@ -2481,21 +2776,21 @@ function download(text,name,type){ const b=new Blob([text],{type}),u=URL.createO
 document.getElementById("btnViewGrid").addEventListener("click",()=>{
   currentView="grid";
   document.getElementById("btnViewGrid").style.opacity="1";
-  document.getElementById("btnViewCalendar").style.opacity="0.5";
+  document.getElementById("btnViewMatrix").style.opacity="0.5";
   document.getElementById("btnViewGantt").style.opacity="0.5";
   render();
 });
-document.getElementById("btnViewCalendar").addEventListener("click",()=>{
-  currentView="calendar";
+document.getElementById("btnViewMatrix").addEventListener("click",()=>{
+  currentView="matrix";
   document.getElementById("btnViewGrid").style.opacity="0.5";
-  document.getElementById("btnViewCalendar").style.opacity="1";
+  document.getElementById("btnViewMatrix").style.opacity="1";
   document.getElementById("btnViewGantt").style.opacity="0.5";
   render();
 });
 document.getElementById("btnViewGantt").addEventListener("click",()=>{
   currentView="gantt";
   document.getElementById("btnViewGrid").style.opacity="0.5";
-  document.getElementById("btnViewCalendar").style.opacity="0.5";
+  document.getElementById("btnViewMatrix").style.opacity="0.5";
   document.getElementById("btnViewGantt").style.opacity="1";
   render();
 });
@@ -2513,10 +2808,14 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeMoreMenu(); 
 
 document.getElementById("btnCsv").addEventListener("click",()=>{
   const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)",
-    ...MILESTONES.map(m=>m.label),"Durée SR (j)","Statut","Journaliste","Notes"];
-  const rows=state.pages.map(p=>{ const sig=toSignes(p); const c=chainDates(p);
+    ...MILESTONES.map(m=>m.label),"Durée SR (j)","Statut","Journaliste",
+    ...ALL_STEPS.map(stepLabel),"Avancement","Notes"];
+  const rows=state.pages.map(p=>{ const sig=toSignes(p); const c=chainDates(p); const pr=etapeProgress(p);
     return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),
-      ...c.map(m=>m.date), srDuree(p), STATUTS[p.statut].label,p.journaliste,(p.notes||"").replace(/\n/g," ")]; });
+      ...c.map(m=>m.date), srDuree(p), STATUTS[p.statut].label,p.journaliste,
+      ...ALL_STEPS.map(k=>ETAPES[stepVal(p,k)].label),
+      pr.total?`${pr.done}/${pr.total}`:"",
+      (p.notes||"").replace(/\n/g," ")]; });
   const q=v=>{ v=(v==null?"":String(v)); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
   const csv=[head,...rows].map(r=>r.map(q).join(";")).join("\r\n");
   download("﻿"+csv, slug(currentIssue&&currentIssue.numero)+".csv","text/csv;charset=utf-8");
@@ -2885,7 +3184,11 @@ const VISITOR_LOCKED_SELECTORS = [
   "#btnImport", "#btnPrint", "#btnReset", "#dtitle", "#numero",
   "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes",
   // Circuit de production : dates, pastilles de jalon et réglage du SR
-  ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence"
+  ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence",
+  // Vue Matrice : pastilles d'étape. La vue se reconstruit à chaque rendu et
+  // repose son propre verrou, mais celui-ci couvre le passage en mode visiteur
+  // alors que la matrice est déjà à l'écran.
+  "[data-et]"
 ];
 
 function disableEditingUI() {
@@ -2923,3 +3226,4 @@ sb.auth.getSession().then(({data})=>{
 </script>
 </body>
 </html>
+<!-- Updated at Fri Jul 10 15:22:22 UTC 2026 -->
