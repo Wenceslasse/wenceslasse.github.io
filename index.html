@@ -101,7 +101,10 @@
   #app.compact .sujet{font-size:14px}
   #app.compact .rubrow{margin-bottom:5px}
   #app.compact .cardmeta{padding-top:6px}
-  #app.compact .pageband{padding-top:6px; padding-bottom:6px}
+  /* Le bandeau bave sur les côtés de la carte (bleed) pour rejoindre ses
+     bords ; sa marge négative doit donc suivre le padding réduit du mode
+     compact (12px), sinon il déborde de 12px de chaque côté de la carte. */
+  #app.compact .pageband{margin-left:-12px; margin-right:-12px; padding:6px 12px}
   #app.compact .spreadlabel{margin-bottom:3px}
   #app.compact .rail{gap:12px}
   /* Barre de progression du bouclage */
@@ -135,18 +138,19 @@
 
   /* ---- Rail ---- */
   main{padding:22px 0 140px}
-  .rail{display:flex; flex-direction:column; gap:20px}
+  .rail{display:flex; flex-direction:column; gap:22px}
   .spreadlabel{font-size:11px; color:var(--faint); letter-spacing:.06em; text-transform:uppercase; margin:0 0 6px 2px}
-  .spread{display:grid; grid-template-columns:1fr 1fr; gap:0}
+  /* Sans bordure de carte, un léger interstice (2px) reste nécessaire pour
+     que les deux pages d'un duo se distinguent encore l'une de l'autre. */
+  .spread{display:grid; grid-template-columns:1fr 1fr; gap:2px}
   .page{
-    background:var(--canvas); border:1px solid var(--border); min-height:172px; padding:14px 15px 0;
+    background:var(--canvas); min-height:172px; padding:24px 24px 0;
     position:relative; display:flex; flex-direction:column; cursor:pointer; text-align:left; width:100%; min-width:0;
-    transition:box-shadow .12s ease, background .12s ease;
+    transition:box-shadow .12s ease, background .12s ease; border-radius:12px;
   }
-  .page:first-child{border-radius:8px 0 0 8px}
-  .page.solo{border-radius:8px}
-  .spread .page.left{border-radius:8px 0 0 8px; border-right:none}
-  .spread .page.right{border-radius:0 8px 8px 0; box-shadow:inset 8px 0 12px -12px rgba(0,0,0,.14)}
+  .page.solo{border-radius:12px}
+  .spread .page.left{border-radius:12px 0 0 12px}
+  .spread .page.right{border-radius:0 12px 12px 0}
   .page:hover{box-shadow:0 1px 2px rgba(15,15,15,.06), 0 3px 10px rgba(15,15,15,.05); z-index:2}
   .page:focus-visible{outline:none; box-shadow:var(--ring); z-index:3}
   .page.blank{background:transparent; border:1px dashed var(--border); cursor:default}
@@ -157,24 +161,35 @@
 
   .pill{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; max-width:100%}
   .pill .ptxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .rubrow{min-height:20px; margin-bottom:8px; padding-right:70px}
+  /* Rubrique et lot perdent leur fond plein pour un point de couleur + un
+     libellé : sur une carte déjà teintée par sa rubrique, une seconde pastille
+     pleine ferait double emploi. `!important` bat la couleur inline posée par
+     pillHTML (bg/fg calculés par tag), qu'on ne peut pas retirer autrement. */
+  .rubrow .pill, .lotrow .pill{background:transparent!important; padding:0 0 0 13px; position:relative; font-weight:650; font-size:11.5px}
+  .rubrow .pill .ptxt, .lotrow .pill .ptxt{overflow:visible}
+  .rubrow .pill::before, .lotrow .pill::before{content:""; position:absolute; left:0; top:50%; transform:translateY(-50%); width:6px; height:6px; border-radius:50%; background:currentColor}
+  .rubrow{min-height:20px; margin-bottom:15px; padding-right:70px}
   .lotrow{position:absolute; top:14px; right:15px}
-  .sujet{font-size:15px; font-weight:600; letter-spacing:-.01em; line-height:1.3}
+  .sujet{font-size:16.5px; font-weight:600; letter-spacing:-.01em; line-height:1.35}
   .sujet.empty{color:var(--faint); font-weight:400}
-  .cardmeta{padding-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--muted)}
+  .cardmeta{padding-top:16px; padding-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--muted)}
   .cardmeta .sep{color:var(--border-strong)}
   .due.late{color:var(--danger); font-weight:600}
 
   /* ---- Bandeau de pied de carte : folio, journaliste, statut — une seule
-     ligne, pinguée en bas de la carte quel que soit le contenu au-dessus. ---- */
+     ligne, pinguée en bas de la carte quel que soit le contenu au-dessus.
+     Fond gris neutre EXPLICITE : sans lui le bandeau serait transparent et
+     laisserait le lavis de la carte remonter jusque sous le folio — la
+     séparation « contenu coloré / suivi neutre » doit se voir, pas seulement
+     se lire dans le code. ---- */
   .pageband{
-    margin:8px -15px 0; padding:8px 15px; margin-top:auto;
-    background:var(--hover); border-top:1px solid var(--border);
+    margin:8px -24px 0; padding:11px 24px; margin-top:auto;
+    background:var(--hover); border-top:1.5px solid var(--border-strong);
     display:flex; align-items:center; gap:8px;
   }
-  .page.left .pageband{border-radius:0 0 0 7px}
-  .page.right .pageband{border-radius:0 0 7px 0}
-  .page.solo .pageband{border-radius:0 0 7px 7px}
+  .page.left .pageband{border-radius:0 0 0 11px}
+  .page.right .pageband{border-radius:0 0 11px 0}
+  .page.solo .pageband{border-radius:0 0 11px 11px}
   .pageband .pb-n{font-size:12px; color:var(--muted-on-hover); font-variant-numeric:tabular-nums; flex:none}
   .pageband .pb-cvr{color:var(--accent); font-weight:700; letter-spacing:.06em; font-size:10px; flex:none}
   /* flex:1 + min-width:0 : sans ça, un enfant flex refuse de rétrécir sous sa
@@ -950,6 +965,16 @@ function getTagColor(text, fieldType) {
   }
   return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
 }
+// Mélange un hex avec du blanc à une opacité donnée — pour le lavis de fond
+// des cartes de la Grille, dérivé de la couleur de rubrique mais dilué : le
+// couple fg/bg de TAG_PALETTE est vérifié AAA contre le blanc ET contre son
+// propre bg (plus foncé) ; ce lavis se situe entre les deux, donc le contraste
+// du texte de la pastille au-dessus ne peut que rester bon.
+function tint(hex, alpha){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  const mix=c=>Math.round(c*alpha+255*(1-alpha));
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+}
 
 /* ---- Supabase ---- */
 const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
@@ -1515,6 +1540,12 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   }, true);
 
   const rt=getTagColor(p.rubrique, "rubrique");
+  // Lavis de fond tiré de la rubrique — une page sans rubrique reste blanche :
+  // lui prêter la couleur par défaut de la palette inventerait une catégorie
+  // qu'elle n'a pas. Une carte sélectionnée garde le bleu de sélection : un
+  // style inline gagnerait toujours contre le fond bleu posé par la classe
+  // .selected, qui deviendrait invisible sur une carte colorée.
+  el.style.background = (p.rubrique && !selectedPages.has(p.n)) ? tint(rt.bg, .35) : "";
   const rub = `<div class="rubrow">${p.rubrique?pillHTML(p.rubrique,rt,"rubrique",p.rubrique):""}</div>`;
   const lotLabel = p.lot && LOTS[p.lot] ? LOTS[p.lot].label : p.lot;
   const lot = p.lot?`<div class="lotrow">${pillHTML(lotLabel,getTagColor(p.lot,"lot"),"lot",p.lot)}</div>`:"";
