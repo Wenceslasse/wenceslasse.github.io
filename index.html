@@ -14,6 +14,10 @@
     --accent:#2383E2; --danger:#9B2C1E;
     --sans:ui-sans-serif,-apple-system,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif;
     --ring:0 0 0 3px rgba(35,131,226,.16);
+    /* --faint (2.5:1) et --muted (3.96:1) passent sous l'AA une fois posés sur
+       le fond teinté --hover du bandeau de carte : ce gris-ci y reste lisible
+       (5.65:1) sans introduire une nouvelle couleur de côté. */
+    --muted-on-hover:#605F5C;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
@@ -93,10 +97,11 @@
   .save-toast{position:fixed; bottom:20px; right:22px; z-index:300; background:#2C5E3E; color:#fff; font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.18); display:flex; align-items:center; gap:7px; opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .2s ease, transform .2s ease}
   .save-toast.show{opacity:1; transform:translateY(0)}
   /* Mode compact : cartes plus denses */
-  #app.compact .page{min-height:118px; padding:10px 12px 26px}
+  #app.compact .page{min-height:118px; padding:10px 12px 0}
   #app.compact .sujet{font-size:14px}
   #app.compact .rubrow{margin-bottom:5px}
   #app.compact .cardmeta{padding-top:6px}
+  #app.compact .pageband{padding-top:6px; padding-bottom:6px}
   #app.compact .spreadlabel{margin-bottom:3px}
   #app.compact .rail{gap:12px}
   /* Barre de progression du bouclage */
@@ -134,8 +139,8 @@
   .spreadlabel{font-size:11px; color:var(--faint); letter-spacing:.06em; text-transform:uppercase; margin:0 0 6px 2px}
   .spread{display:grid; grid-template-columns:1fr 1fr; gap:0}
   .page{
-    background:var(--canvas); border:1px solid var(--border); min-height:172px; padding:14px 15px 32px;
-    position:relative; display:flex; flex-direction:column; cursor:pointer; text-align:left; width:100%;
+    background:var(--canvas); border:1px solid var(--border); min-height:172px; padding:14px 15px 0;
+    position:relative; display:flex; flex-direction:column; cursor:pointer; text-align:left; width:100%; min-width:0;
     transition:box-shadow .12s ease, background .12s ease;
   }
   .page:first-child{border-radius:8px 0 0 8px}
@@ -156,17 +161,30 @@
   .lotrow{position:absolute; top:14px; right:15px}
   .sujet{font-size:15px; font-weight:600; letter-spacing:-.01em; line-height:1.3}
   .sujet.empty{color:var(--faint); font-weight:400}
-  .cardmeta{margin-top:auto; padding-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--muted)}
+  .cardmeta{padding-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--muted)}
   .cardmeta .sep{color:var(--border-strong)}
   .due.late{color:var(--danger); font-weight:600}
-  .cardmeta .statuswrap{margin-left:auto}
-  .folio{position:absolute; bottom:9px; font-size:12px; color:var(--faint); font-variant-numeric:tabular-nums}
-  .page.left .folio, .page.solo.p56 .folio{left:15px}
-  .page.right .folio, .page.solo.p1 .folio{right:15px}
-  .cvr{position:absolute; bottom:9px; font-size:10px; letter-spacing:.08em; color:var(--accent); font-weight:600}
-  .page.left .cvr{right:15px}
-  .page.right .cvr, .page.solo .cvr{left:15px}
-  .page.solo.p56 .cvr{right:15px; left:auto}
+
+  /* ---- Bandeau de pied de carte : folio, journaliste, statut — une seule
+     ligne, pinguée en bas de la carte quel que soit le contenu au-dessus. ---- */
+  .pageband{
+    margin:8px -15px 0; padding:8px 15px; margin-top:auto;
+    background:var(--hover); border-top:1px solid var(--border);
+    display:flex; align-items:center; gap:8px;
+  }
+  .page.left .pageband{border-radius:0 0 0 7px}
+  .page.right .pageband{border-radius:0 0 7px 0}
+  .page.solo .pageband{border-radius:0 0 7px 7px}
+  .pageband .pb-n{font-size:12px; color:var(--muted-on-hover); font-variant-numeric:tabular-nums; flex:none}
+  .pageband .pb-cvr{color:var(--accent); font-weight:700; letter-spacing:.06em; font-size:10px; flex:none}
+  /* flex:1 + min-width:0 : sans ça, un enfant flex refuse de rétrécir sous sa
+     largeur de contenu et l'ellipse ne s'active jamais — un nom long pousse
+     alors le bandeau hors de la carte au lieu d'être tronqué. */
+  .pageband .pb-name{flex:1 1 0; min-width:0; font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pageband .pb-name.empty{color:var(--muted-on-hover); font-weight:500}
+  .pageband .pb-status{margin-left:auto; flex:none}
+  .ava{width:18px; height:18px; border-radius:50%; flex:none; display:inline-flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; letter-spacing:.01em}
+  .ava.empty{background:transparent; border:1.5px dashed var(--border-strong); color:var(--faint)}
 
   /* ---- Calendar & Gantt views ---- */
   #viewMatrix, #viewGantt{width:100%}
@@ -1394,6 +1412,24 @@ function pillHTML(text, tag, fieldType, tagName){
   return `<span class="pill" style="background:${tag.bg};color:${tag.fg}"><span class="ptxt">${esc(text)}</span>${recolor}</span>`;
 }
 
+// Initiales d'un journaliste pour la pastille du bandeau : les deux lettres
+// utiles d'un nom composé (prénom + nom), ou les deux premières s'il n'y a
+// qu'un seul mot (ex. « Sacem »).
+function initials(name){
+  const parts=name.trim().split(/\s+/);
+  if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0]+parts[parts.length-1][0]).toUpperCase();
+}
+// Pastille de journaliste : couleur puisée dans la même palette « Encre &
+// lumière » que rubriques et lots (via getTagColor, fieldType dédié pour ne
+// jamais entrer en collision avec une éventuelle personnalisation de couleur
+// des rubriques). Sans nom, une pastille pointillée signale l'absence.
+function journalisteAvatar(name){
+  if(!name) return `<span class="ava empty"></span>`;
+  const c=getTagColor(name,"journaliste");
+  return `<span class="ava" style="background:${c.bg};color:${c.fg}">${esc(initials(name))}</span>`;
+}
+
 function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' | 'blank'
   if(!p){ const b=document.createElement("div"); b.className="page blank "+role; return b; }
   const el=document.createElement("div");
@@ -1492,18 +1528,29 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   // La carte annonce le prochain jalon attendu, pas la date de départ du circuit.
   const nx=nextMilestone(p);
   if(nx) bits.push(`<span class="due${isLate(p)?" late":""}" title="${esc(nx.label)}${nx.auto?" (calculé)":""}">◷ ${nx.short} ${frDate(nx.date)}</span>`);
-  const st=getTagColor(p.statut, "statut");
-  const statLabel=STATUTS[p.statut]?STATUTS[p.statut].label:p.statut;
-  const status=`<span class="statuswrap">${pillHTML(statLabel,st,"statut",p.statut)}</span>`;
-  const meta=`<div class="cardmeta">${bits.join('<span class="sep">·</span>')}${status}</div>`;
+  const meta=bits.length ? `<div class="cardmeta">${bits.join('<span class="sep">·</span>')}</div>` : "";
 
   const separator = `<div style="border-top:1px solid var(--border);margin:8px 0;"></div>`;
   const notes = p.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4;">${esc(p.notes)}</div>`:"";
   const themaTag = p.thematique?getTagColor(p.thematique, "thematique"):null;
   const thema = p.thematique?pillHTML(p.thematique,themaTag,"thematique",p.thematique):"";
 
-  const folio=`<span class="folio">${p.n}</span>` + (COVER[p.n]?`<span class="cvr">${COVER[p.n]}</span>`:"");
-  el.innerHTML = rub + lot + suj + separator + notes + thema + meta + folio;
+  // Bandeau de pied de carte, une seule ligne : folio (+ couverture éventuelle),
+  // journaliste en charge, puis statut — toujours dans cet ordre, quel que
+  // soit le côté de la carte dans la double page.
+  const st=getTagColor(p.statut, "statut");
+  const statLabel=STATUTS[p.statut]?STATUTS[p.statut].label:p.statut;
+  const cvr = COVER[p.n] ? `<span class="pb-cvr">${esc(COVER[p.n])}</span>` : "";
+  const jname = p.journaliste
+    ? `<span class="pb-name" title="${esc(p.journaliste)}">${esc(p.journaliste)}</span>`
+    : `<span class="pb-name empty">Non assigné</span>`;
+  const band = `<div class="pageband">
+    <span class="pb-n">${p.n}</span>${cvr}
+    ${journalisteAvatar(p.journaliste)}${jname}
+    <span class="pb-status">${pillHTML(statLabel,st,"statut",p.statut)}</span>
+  </div>`;
+
+  el.innerHTML = rub + lot + suj + separator + notes + thema + meta + band;
   return el;
 }
 
