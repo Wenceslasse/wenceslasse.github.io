@@ -135,6 +135,9 @@
   .more-menu.open{display:flex}
   .more-menu-item{border:none; background:transparent; text-align:left; padding:7px 10px; border-radius:5px; cursor:pointer; font-size:13.5px; color:var(--text)}
   .more-menu-item:hover{background:var(--hover)}
+  .more-menu-sep{height:1px; background:var(--border); margin:5px 2px}
+  .more-menu-item.danger{color:var(--danger)}
+  .more-menu-item.danger:hover{background:rgba(155,44,30,.08)}
 
   /* ---- Rail ---- */
   main{padding:22px 0 140px}
@@ -728,6 +731,8 @@
           <button class="more-menu-item" id="btnImport">Importer</button>
           <button class="more-menu-item" id="btnPrint">Imprimer</button>
           <button class="more-menu-item" id="btnReset">Réinitialiser</button>
+          <div class="more-menu-sep"></div>
+          <button class="more-menu-item danger" id="btnDeleteIssue">🗑 Supprimer ce numéro</button>
         </div>
       </div>
       <input type="file" id="fileInput" accept="application/json" hidden>
@@ -2787,6 +2792,9 @@ async function duplicateIssue(id){
       calib:(s.calib==null?null:s.calib), unite:s.unite||"signes", rendu:s.rendu||null,
       d_retours:s.d_retours||null, d_v2:s.d_v2||null, d_sr:s.d_sr||null, d_agence:s.d_agence||null,
       sr_duree:(s.sr_duree==null?null:Number(s.sr_duree)), statut:s.statut||"a_caler",
+      // L'avancement des 12 étapes de la Matrice suit la page dupliquée, comme
+      // tout le reste — l'oublier ici la ramènerait silencieusement à zéro.
+      etapes:(s.etapes && typeof s.etapes==="object") ? s.etapes : {},
       journaliste:s.journaliste||"", lot:s.lot||"", notes:s.notes||"" }; });
   const { error:e2 } = await sb.from("pages").insert(pages);
   if(e2){ alert("Erreur de copie des pages : "+e2.message); return; }
@@ -2927,7 +2935,10 @@ document.getElementById("fileInput").addEventListener("change",e=>{
         unite:p.unite||"signes", rendu:p.rendu||null, statut:STATUT_ALIAS[p.statut]||p.statut||"a_caler",
         journaliste:p.journaliste||"", lot:p.lot||"", notes:p.notes||"",
         d_retours:p.d_retours||null, d_v2:p.d_v2||null, d_sr:p.d_sr||null, d_agence:p.d_agence||null,
-        sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null
+        sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null,
+        // La sauvegarde capture l'avancement de la Matrice (state.pages complet) ;
+        // l'omettre ici la restaurerait à vide alors que le fichier l'a bien.
+        etapes:(p.etapes && typeof p.etapes==="object") ? p.etapes : {}
       }));
       const { error } = await sb.from("pages").upsert(updates);
       if(error) throw error;
@@ -2956,6 +2967,25 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   undoStack.length=0; updateUndoButton(); // la réinitialisation vide l'historique d'annulation
   logActivity("a réinitialisé le numéro", null);
   render();
+});
+
+// Supprimer le numéro lui-même — contrairement à Réinitialiser, qui ne vide
+// que son contenu, celle-ci fait disparaître la ligne « issues » en base ;
+// pages, couleurs personnalisées et journal d'activité suivent par cascade
+// (on delete cascade dans le schéma), donc un seul appel suffit côté client.
+document.getElementById("btnDeleteIssue").addEventListener("click", async ()=>{
+  if(!currentIssue) return;
+  const nom = currentIssue.numero || "ce numéro";
+  if(!confirm(`Supprimer définitivement « ${nom} » ?\n\nLe numéro lui-même disparaîtra, avec ses 56 pages, ses couleurs personnalisées et son journal d'activité. Contrairement à « Réinitialiser », cette action ne laisse rien derrière elle et ne peut pas être annulée.\n\nExporte une sauvegarde avant si besoin.`)) return;
+  const id = currentIssue.id;
+  const { error } = await sb.from("issues").delete().eq("id", id);
+  if(error){ alert("Erreur de suppression : "+error.message); return; }
+  issuesCache = issuesCache.filter(i=>i.id!==id);
+  populateIssueSelect();
+  // Comme au premier chargement : jamais d'appli sans numéro ouvert. S'il n'en
+  // reste aucun, on en recrée un plutôt que d'afficher un état vide inédit.
+  if(issuesCache.length===0) await createIssue();
+  else await selectIssue(issuesCache[0].id);
 });
 
 document.getElementById("btnUndo").addEventListener("click", undoLast);
@@ -3269,7 +3299,7 @@ function exitVisitorMode() {
 
 const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
-  "#btnImport", "#btnPrint", "#btnReset", "#dtitle", "#numero",
+  "#btnImport", "#btnPrint", "#btnReset", "#btnDeleteIssue", "#dtitle", "#numero",
   "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes",
   // Circuit de production : dates, pastilles de jalon et réglage du SR
   ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence",
