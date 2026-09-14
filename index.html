@@ -2397,12 +2397,22 @@ function renderCircuit(){
     const d=document.createElement("input");
     d.type="date"; d.className="jdate"+(m.auto?" auto":""); d.value=m.date;
     d.title=m.auto ? "Date calculée d'après le rythme du numéro — la modifier la fige" : "Date saisie à la main";
-    d.addEventListener("change",()=>{
+    // Un <input type="date"> déclenche "change" dès qu'une sous-partie devient
+    // valide — donc à CHAQUE chiffre tapé dans l'année, puisque jour et mois
+    // le sont déjà. Sans ce débounce, chaque chiffre relançait aussitôt
+    // commit() (qui fait un render() complet) puis renderCircuit() : le champ
+    // était détruit et recréé en cours de frappe, le focus sautait, et il
+    // devenait impossible de taper plus d'un chiffre d'affilée dans l'année.
+    let jdateTimer=null;
+    const commitDate=()=>{
+      clearTimeout(jdateTimer); jdateTimer=null;
       pushUndo(m.label+" page "+current, [{...p}]);
       commit(m.field, d.value);
       logActivity(d.value ? `a fixé « ${m.label} » de la page ${current} au ${frDate(d.value)}` : `a libéré « ${m.label} » de la page ${current}`, current);
       renderCircuit();
-    });
+    };
+    d.addEventListener("change",()=>{ clearTimeout(jdateTimer); jdateTimer=setTimeout(commitDate,500); });
+    d.addEventListener("blur",()=>{ if(jdateTimer) commitDate(); });
 
     row.appendChild(bul); row.appendChild(name); row.appendChild(cnt); row.appendChild(d);
     list.appendChild(row);
