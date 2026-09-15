@@ -1027,7 +1027,13 @@ async function reorderPages(draggedPageNums, targetPageNum){
   render(); // mise à jour optimiste immédiate
 
   // Ne persiste que les pages réellement enregistrées (id non nul).
-  const updates=remaining.filter(p=>p.id).map(p=>({id:p.id, n:p.n}));
+  // upsert() de PostgREST se traduit en INSERT ... ON CONFLICT DO UPDATE : même
+  // pour une ligne déjà existante, Postgres construit d'abord la ligne à insérer
+  // et vérifie ses contraintes NOT NULL AVANT de détecter le conflit. Omettre
+  // issue_id (NOT NULL, sans défaut) faisait donc échouer l'upsert avec "null
+  // value in column issue_id violates not-null constraint", même si la valeur
+  // existante n'allait jamais réellement être touchée.
+  const updates=remaining.filter(p=>p.id).map(p=>({id:p.id, issue_id:currentIssue.id, n:p.n}));
   if(updates.length===0) return;
 
   const {error}=await sb.from("pages").upsert(updates);
