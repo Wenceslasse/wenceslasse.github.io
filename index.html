@@ -208,15 +208,29 @@
   #viewMatrix, #viewGantt{width:100%}
 
   /* ---- Vue Matrice ---- */
-  .mx-wrap{background:var(--canvas); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-top:4px}
-  .mx-bar{display:flex; align-items:center; gap:12px; padding:9px 14px; border-bottom:1px solid var(--border); background:var(--body); flex-wrap:wrap}
+  /* La carte est mise en colonne (barre fixe + zone défilante) et reçoit sa
+     hauteur en JS (cf. renderMatrixView), à l'instar du Gantt : c'est ce qui
+     permet à .mx-scroller de défiler pour de vrai, condition pour que l'en-tête
+     sticky de la table reste réellement visible (voir commentaire sur .mx-scroller). */
+  .mx-wrap{background:var(--canvas); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-top:4px; display:flex; flex-direction:column}
+  .mx-bar{display:flex; align-items:center; gap:12px; padding:9px 14px; border-bottom:1px solid var(--border); background:var(--body); flex-wrap:wrap; flex:none}
   .mx-count{font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
   .mx-spacer{flex:1}
   .mx-total{display:inline-flex; align-items:center; gap:9px; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
   .mx-tbar{display:block; width:70px; height:5px; border-radius:3px; background:var(--border); overflow:hidden; flex:none}
   .mx-tbar i{display:block; width:100%; height:100%; background:#4B8B5B; transform-origin:left center; transition:transform .25s cubic-bezier(.2,.8,.2,1)}
   .mx-empty{padding:46px 20px; text-align:center; color:var(--muted); font-size:13.5px; line-height:1.7}
-  .mx-scroller{overflow-x:auto}
+  /* thead th est en position:sticky (plus bas), mais un sticky ne colle qu'au
+     bord du plus proche ANCÊTRE qui défile réellement. Tant que .mx-wrap se
+     contentait de grandir avec son contenu, c'était la PAGE qui défilait : le
+     seul ancêtre non "visible" (.mx-wrap, overflow:hidden pour les coins
+     arrondis) ne défilant lui-même jamais, le sticky n'avait aucun effet et
+     l'en-tête — donc le libellé de chaque colonne à cocher — disparaissait dès
+     qu'on descendait dans les 56 lignes. En donnant à .mx-scroller une hauteur
+     bornée (flex:1 dans .mx-wrap, dont la hauteur totale est fixée en JS) et
+     son propre défilement, c'est LUI qui devient l'ancêtre défilant : l'en-tête
+     reste maintenant collé en haut de la zone visible pendant le scroll. */
+  .mx-scroller{overflow:auto; flex:1; min-height:0}
   .mx-scroller::-webkit-scrollbar{height:11px}
   .mx-scroller::-webkit-scrollbar-thumb{background:var(--border-strong); border-radius:6px; border:3px solid var(--canvas)}
 
@@ -283,7 +297,7 @@
   .et.mixed{box-shadow:inset -3px 3px 0 -1px rgba(120,119,116,.55)}
 
   .mx-legend{display:flex; gap:16px; flex-wrap:wrap; align-items:center; padding:11px 14px;
-             border-top:1px solid var(--border); background:var(--body); font-size:12px; color:var(--muted)}
+             border-top:1px solid var(--border); background:var(--body); font-size:12px; color:var(--muted); flex:none}
   .mx-lg{display:inline-flex; align-items:center; gap:7px}
   .mx-note{margin-left:auto; color:var(--faint); font-size:11.5px}
 
@@ -1891,6 +1905,12 @@ function renderMatrixView(){
 
   host.appendChild(wrap);
 
+  // ---- Occuper toute la hauteur disponible de la page (comme le Gantt) : sans
+  // cela .mx-scroller ne défile jamais lui-même et l'en-tête sticky de la table
+  // ne reste pas visible (cf. commentaire sur .mx-scroller).
+  const top=wrap.getBoundingClientRect().top;
+  wrap.style.height=Math.max(320, window.innerHeight-top-24)+"px";
+
   // ---- Édition ----
   if(!isVisitorMode) host.querySelectorAll("[data-et]").forEach(btn=>{
     btn.addEventListener("click",e=>{
@@ -1976,7 +1996,10 @@ function formatPages(ns){ // [3,4,5,8] -> "3-5, 8"
   for(let i=1;i<s.length;i++){ if(s[i]===prev+1){ prev=s[i]; continue; } parts.push(a===prev?`${a}`:`${a}-${prev}`); a=s[i]; prev=s[i]; }
   parts.push(a===prev?`${a}`:`${a}-${prev}`); return parts.join(", ");
 }
-window.addEventListener("resize",()=>{ if(currentView==="gantt"){ const g=document.getElementById("viewGantt"); if(g&&g.style.display!=="none"){ const top=g.getBoundingClientRect().top; g.style.height=Math.max(460, window.innerHeight-top-24)+"px"; } } });
+window.addEventListener("resize",()=>{
+  if(currentView==="gantt"){ const g=document.getElementById("viewGantt"); if(g&&g.style.display!=="none"){ const top=g.getBoundingClientRect().top; g.style.height=Math.max(460, window.innerHeight-top-24)+"px"; } }
+  if(currentView==="matrix"){ const w=document.querySelector("#viewMatrix .mx-wrap"); if(w){ const top=w.getBoundingClientRect().top; w.style.height=Math.max(320, window.innerHeight-top-24)+"px"; } }
+});
 
 const GANTT_MOIS_ABBR=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 const GANTT_JOURS=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
@@ -2781,16 +2804,44 @@ async function createIssue(){
   populateIssueSelect();
   await selectIssue(data.id);
 }
+// PostgREST refuse une ligne entière dès qu'UNE seule colonne du payload lui
+// est inconnue (« Could not find the 'X' column of 'pages' in the schema
+// cache ») — signe que le cache de schéma d'un projet est en retard sur une
+// migration (une colonne ajoutée depuis, par ex. d_agence, pas encore vue par
+// PostgREST). Plutôt que d'abandonner toute la copie pour une seule colonne
+// en cause, on retire celle que PostgREST vient de signaler et on réessaie :
+// tout le reste du contenu est ainsi copié quand même, et on prévient
+// l'utilisateur de ce qui a dû être laissé de côté.
+async function insertResilient(table, rows){
+  let payload = rows.map(r=>({...r}));
+  const dropped=[];
+  for(let attempt=0; attempt<10; attempt++){
+    const { error } = await sb.from(table).insert(payload);
+    if(!error) return { error:null, dropped };
+    const m = /Could not find the '([^']+)' column/.exec(error.message||"");
+    if(!m) return { error, dropped };
+    dropped.push(m[1]);
+    payload = payload.map(row=>{ const { [m[1]]:_, ...rest }=row; return rest; });
+  }
+  return { error:{message:"Trop de colonnes absentes du cache de schéma — relancez la migration supabase/schema.sql."}, dropped };
+}
 async function duplicateIssue(id){
   const src = issuesCache.find(i=>i.id===id);
   if(!src) return;
   if(!confirm(`Dupliquer « ${src.numero||"ce numéro"} » ?\n\nUn nouveau chemin de fer sera créé avec une copie de toutes les pages.`)) return;
+  // issuesCache — donc `src` — ne porte que id/numero/bouclage/created_at (cf.
+  // loadIssues, qui limite volontairement sa sélection) : le rythme du numéro
+  // (r_retours, r_v2, r_sr_duree, r_agence) n'y figure pas. Sans cette relecture
+  // complète, la copie retombait toujours sur le rythme par défaut au lieu de
+  // celui réellement réglé sur le numéro source.
+  const { data: fullSrc, error:eSrc } = await sb.from("issues").select("*").eq("id", id).single();
+  if(eSrc){ alert("Erreur de lecture du numéro : "+eSrc.message); return; }
   const { data: srcPages, error:e0 } = await sb.from("pages").select("*").eq("issue_id", id);
   if(e0){ alert("Erreur de lecture des pages : "+e0.message); return; }
   const { data: srcColors, error:e1 } = await sb.from("color_customizations").select("*").eq("issue_id", id);
   if(e1){ alert("Erreur de lecture des couleurs : "+e1.message); return; }
-  const rSrc={}; for(const k in RYTHME_DEFAUT){ const v=Number(src[k]); rSrc[k]=Number.isFinite(v)?v:RYTHME_DEFAUT[k]; }
-  const { data: newIss, error } = await sb.from("issues").insert({ numero:(src.numero||"Sans nom")+" (copie)", bouclage: src.bouclage||null, ...rSrc }).select().single();
+  const rSrc={}; for(const k in RYTHME_DEFAUT){ const v=Number(fullSrc[k]); rSrc[k]=Number.isFinite(v)?v:RYTHME_DEFAUT[k]; }
+  const { data: newIss, error } = await sb.from("issues").insert({ numero:(fullSrc.numero||"Sans nom")+" (copie)", bouclage: fullSrc.bouclage||null, ...rSrc }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
   const bySrcN={}; (srcPages||[]).forEach(p=>{ bySrcN[p.n]=p; });
   const pages = Array.from({length:TOTAL},(_,i)=>{ const n=i+1; const s=bySrcN[n]||{};
@@ -2802,8 +2853,11 @@ async function duplicateIssue(id){
       // tout le reste — l'oublier ici la ramènerait silencieusement à zéro.
       etapes:(s.etapes && typeof s.etapes==="object") ? s.etapes : {},
       journaliste:s.journaliste||"", lot:s.lot||"", notes:s.notes||"" }; });
-  const { error:e2 } = await sb.from("pages").insert(pages);
+  const { error:e2, dropped } = await insertResilient("pages", pages);
   if(e2){ alert("Erreur de copie des pages : "+e2.message); return; }
+  if(dropped.length){
+    alert(`Copie effectuée, mais la base de données ne connaît pas encore la colonne « ${dropped.join(", ")} » : ce champ n'a pas pu être recopié.\n\nRelancez la migration supabase/schema.sql (ou « Reload schema cache » dans Supabase) puis recommencez pour une copie complète.`);
+  }
   if((srcColors||[]).length>0){
     const newColors = (srcColors||[]).map(c=>({ issue_id:newIss.id, field_type:c.field_type, tag_name:c.tag_name, bg_color:c.bg_color, fg_color:c.fg_color }));
     const { error:e3 } = await sb.from("color_customizations").insert(newColors);
