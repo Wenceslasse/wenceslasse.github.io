@@ -245,6 +245,16 @@
   .mx-jal{font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; font-weight:800; padding:6px 4px 4px !important;
           border-bottom:none !important; text-align:center; position:sticky; top:0}
   .mx-jal span{display:inline-block; padding:2px 8px; border-radius:4px}
+  /* La deuxième ligne d'en-tête (une cellule par étape, sous les groupes de
+     jalons) hérite elle aussi de "position:sticky; top:0" via la règle
+     générale `table.mxt thead th`. Comme les DEUX lignes visent alors le même
+     top:0, la deuxième finit par rattraper puis recouvrir la première dès
+     qu'on descend d'un peu plus que sa hauteur : les libellés V1/L/V2/SR/MEP/
+     Élém. semblent alors « ne plus suivre » le défilement, alors qu'ils sont
+     simplement passés sous l'autre ligne. --mx-h1 (hauteur réelle de la
+     première ligne, mesurée en JS dans renderMatrixView) la décale pour
+     qu'elle se colle juste EN DESSOUS, jamais par-dessus. */
+  table.mxt thead tr:nth-child(2) th{top:var(--mx-h1, 29px)}
   .par-badge{background:var(--hover); color:var(--muted); border:1px dashed var(--border-strong)}
   table.mxt tbody tr:hover td{background:var(--hover)}
   table.mxt tbody tr:last-child td{border-bottom:none}
@@ -1910,6 +1920,12 @@ function renderMatrixView(){
   // ne reste pas visible (cf. commentaire sur .mx-scroller).
   const top=wrap.getBoundingClientRect().top;
   wrap.style.height=Math.max(320, window.innerHeight-top-24)+"px";
+
+  // ---- Décaler la 2e ligne d'en-tête sous la 1re (cf. commentaire CSS sur
+  // --mx-h1) : mesurée ici plutôt que figée en dur, pour rester juste quel que
+  // soit le texte, la police ou la largeur d'écran.
+  const jalRow=table.querySelector("thead tr:first-child");
+  if(jalRow) table.style.setProperty("--mx-h1", jalRow.getBoundingClientRect().height+"px");
 
   // ---- Édition ----
   if(!isVisitorMode) host.querySelectorAll("[data-et]").forEach(btn=>{
