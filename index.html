@@ -512,6 +512,40 @@
   .rythme-in span{color:var(--faint); font-size:12.5px}
   #rythmeTotal{margin:16px 0 0; padding-top:12px; border-top:1px solid var(--border)}
 
+  /* ---- Étendre une rubrique (panneau de page) ---- */
+  .extent{margin:2px 0 8px; border:1px solid var(--accent); border-radius:9px; padding:10px 12px; background:#F5F9FE; display:flex; flex-direction:column; gap:8px}
+  .extent[hidden]{display:none}
+  .ext-h{font-size:11.5px; font-weight:650; color:var(--accent); text-transform:uppercase; letter-spacing:.05em}
+  .ext-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:13.5px}
+  .ext-row input{width:54px; text-align:center; border:1px solid var(--border-strong); border-radius:5px; padding:4px; font-variant-numeric:tabular-nums; background:var(--canvas)}
+  .ext-row input:focus{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+  .ext-b{border:1px solid var(--border-strong); background:var(--canvas); border-radius:5px; width:26px; height:26px; cursor:pointer; line-height:1}
+  .ext-n{color:var(--muted)}
+  .ext-chips{display:flex; gap:5px; flex-wrap:wrap}
+  .ext-chip{border:1px solid var(--border-strong); background:var(--canvas); border-radius:99px; padding:2px 9px; font-size:12px; cursor:pointer}
+  .ext-chip.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .ext-chip:disabled{opacity:.4; cursor:default}
+  .ext-strip{display:flex; gap:1px; height:9px}
+  .ext-strip i{flex:1; background:#E3E8EE; border-radius:1px}
+  .ext-strip i.same{background:#A9C7E8}
+  .ext-strip i.on{background:var(--accent)}
+  .ext-strip i.cf{background:var(--danger)}
+  .ext-strip-l{display:flex; justify-content:space-between; font-size:11px; color:var(--faint); margin-top:-4px}
+  .ext-strip-l b{color:var(--accent); font-weight:650}
+  .ext-warn{background:#FDEBEC; color:var(--danger); border-radius:6px; padding:7px 9px; font-size:12.5px; line-height:1.45}
+  .ext-ok{font-size:12.5px; color:#2C6E3F}
+  .ext-apply{align-self:flex-start; background:var(--accent); color:#fff; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; font-weight:500; font-size:13px}
+  .ext-apply:hover{background:#1a72cc}
+  .ext-fill{border-top:1px solid #D6E4F3; padding-top:8px; font-size:13px}
+  .ext-fill summary{cursor:pointer; font-weight:600; color:var(--text)}
+  .ext-fill-g{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0}
+  .ext-fill-g label{display:flex; flex-direction:column; gap:3px; font-size:11.5px; color:var(--faint)}
+  .ext-fill-g label:last-child{grid-column:1 / -1}
+  .ext-fill-g input, .ext-fill-g select{border:1px solid var(--border); border-radius:5px; padding:5px 7px; font-size:13px; background:var(--canvas); color:var(--text)}
+  .ext-fill-a{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:11.5px; color:var(--faint)}
+  .page.ext-pv{box-shadow:0 0 0 2px var(--accent); z-index:4}
+  .page.ext-cf{box-shadow:0 0 0 2px var(--danger); z-index:4}
+
   /* ---- Sujets envisagés (panneau de page) ---- */
   .envis{margin:4px 0 18px; padding-top:14px; border-top:1px solid var(--border)}
   .envis-h{display:flex; align-items:center; gap:8px; margin-bottom:8px}
@@ -962,6 +996,7 @@
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Rubrique</div>
         <div class="pval"><input id="fRubrique" list="rubriques" placeholder="Vide"><datalist id="rubriques"></datalist></div>
       </div>
+      <div class="extent" id="extentBox" hidden></div>
       <div class="prow">
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16M4 12h16M4 20h12"/></svg>Thématique</div>
         <div class="pval"><input id="fThematique" placeholder="Vide"></div>
@@ -1221,6 +1256,7 @@ let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
 let props = [];                 // sujets envisagés (propositions) du numéro ouvert
 let propsUnavailable = false;   // table absente : migration non jouée
 let propsChannel = null;
+let extEnd = null;              // « Étendre la rubrique » : dernière page visée pour la page ouverte
 let issuesCache = [];
 let currentIssue = null;
 let appInited = false;
@@ -2499,6 +2535,7 @@ function render(){
   }
   rail.appendChild(frag);
   renderStats(); renderDatalist();
+  applyExtPreview();
 }
 function row(label,a,b){
   const w=document.createElement("div");
@@ -2592,12 +2629,13 @@ function openPeek(n){
   dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes; F.brief.value=p.brief;
   renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes); autoGrow(F.brief);
   renderPropsPeek();
+  extEnd=null; renderExtent(true);
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
   document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
   setTimeout(()=>dtitle.focus(),120);
 }
-function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; }
+function closePeek(){ peek.classList.remove("open"); scrim.classList.remove("open"); current=null; renderExtent(); }
 /* ---- Le fil vertical des cinq jalons -------------------------------
    Une pastille par jalon : cliquer dessus marque le jalon comme franchi (et
    les précédents avec lui), ce dont découle le statut de la page. La date à
@@ -2823,7 +2861,7 @@ function setEtape(pages, key, val, label){
   render();
 }
 dtitle.addEventListener("input",e=>{ autoGrow(e.target); commit("sujet",e.target.value); });
-F.rub.addEventListener("input",e=>{ commit("rubrique",e.target.value); clearTimeout(F.rub._envT); F.rub._envT=setTimeout(renderPropsPeek, 300); presRefresh(); });
+F.rub.addEventListener("input",e=>{ commit("rubrique",e.target.value); clearTimeout(F.rub._envT); F.rub._envT=setTimeout(()=>{ renderPropsPeek(); extEnd=null; renderExtent(); }, 300); presRefresh(); });
 F.thematique.addEventListener("input",e=>commit("thematique",e.target.value));
 F.calib.addEventListener("input",e=>commit("calib",e.target.value));
 F.unite.addEventListener("change",e=>commit("unite",e.target.value));
@@ -2861,7 +2899,7 @@ function refreshPeekIfIdle(n){
   const p=state.pages[n-1];
   dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes; F.brief.value=p.brief;
   renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes); autoGrow(F.brief);
-  renderPropsPeek();
+  renderPropsPeek(); renderExtent();
 }
 
 /* ---- header fields (numero / bouclage of the current issue) ---- */
@@ -3114,6 +3152,126 @@ async function duplicateIssue(id){
   populateIssueSelect();
   await selectIssue(newIss.id);
 }
+
+/* ---- Étendre une rubrique sur plusieurs pages -------------------------
+   Depuis le panneau d'une page : « cette rubrique va de la page 24 à la
+   page 31 ». Les pages visées sont montrées avant d'appliquer, sur un
+   bandeau et sur le chemin de fer, et celles qui portent déjà une AUTRE
+   rubrique sont signalées : on ne remplace rien sans l'avoir vu. Ensuite,
+   « Compléter le dossier » saisit journaliste, lot et thématique une seule
+   fois pour toutes les pages de la rubrique. */
+const extRange = (a,b) => Array.from({length:b-a+1},(_,i)=>a+i);
+// Suite de pages de même rubrique à partir de n (vers l'avant), ou autour de n.
+function rubRunFrom(n){ const r=state.pages[n-1].rubrique; if(!r) return [n,n]; let b=n; while(b<TOTAL && state.pages[b].rubrique===r) b++; return [n,b]; }
+function rubRunAround(n){ const r=state.pages[n-1].rubrique; if(!r) return [n,n]; let a=n, b=n;
+  while(a>1 && state.pages[a-2].rubrique===r) a--; while(b<TOTAL && state.pages[b].rubrique===r) b++; return [a,b]; }
+function extTargets(){
+  if(current==null) return null;
+  const rub=(state.pages[current-1].rubrique||"").trim(); if(!rub) return null;
+  if(extEnd==null) extEnd=rubRunFrom(current)[1];
+  extEnd=Math.max(current, Math.min(TOTAL, extEnd));
+  const ns=extRange(current, extEnd);
+  return { rub, ns, change:ns.filter(n=>state.pages[n-1].rubrique!==rub),
+           conflicts:ns.filter(n=>state.pages[n-1].rubrique && state.pages[n-1].rubrique!==rub) };
+}
+// Aperçu sur la grille : cases encadrées (et en rouge si elles changent de rubrique).
+function applyExtPreview(){
+  document.querySelectorAll(".page.ext-pv, .page.ext-cf").forEach(el=>el.classList.remove("ext-pv","ext-cf"));
+  const t = isVisitorMode ? null : extTargets(); if(!t || t.ns.length<2) return;
+  const cf=new Set(t.conflicts);
+  t.ns.forEach(n=>{ const el=document.querySelector(`.page[data-page-n="${n}"]`); if(el) el.classList.add(cf.has(n)?"ext-cf":"ext-pv"); });
+}
+function renderExtent(force){
+  const box=document.getElementById("extentBox"); if(!box) return;
+  const t = (current==null || isVisitorMode) ? null : extTargets();
+  if(!t){ box.hidden=true; box.innerHTML=""; applyExtPreview(); return; }
+  // Une mise à jour venue d'ailleurs attend la fin d'une saisie dans l'encadré.
+  const ae=document.activeElement;
+  if(!force && box.contains(ae) && ae.matches("input,select")){ box.dataset.dirty="1"; applyExtPreview(); return; }
+  box.dataset.dirty="";
+  const {rub, ns, change, conflicts}=t;
+  const by={}; conflicts.forEach(n=>(by[state.pages[n-1].rubrique]=by[state.pages[n-1].rubrique]||[]).push(n));
+  const cfText=Object.entries(by).map(([r,l])=>`« ${esc(r)} » (p. ${formatPages(l)})`).join(", ");
+  const on=new Set(ns), cf=new Set(conflicts);
+  const [ba,bb]=rubRunAround(current), blk=extRange(ba,bb);
+  const P=state.pages, uniform=f=>{ const v=[...new Set(blk.map(n=>P[n-1][f]||""))]; return v.length===1?v[0]:""; };
+  const lotNow=uniform("lot");
+  const nb=ns.length;
+  box.hidden=false;
+  box.innerHTML=`
+    <div class="ext-h">Étendre « ${esc(rub)} »</div>
+    <div class="ext-row">de la p. <b>${current}</b> à la p.
+      <button type="button" class="ext-b" data-d="-1" aria-label="Une page de moins">−</button><input id="extEnd" type="number" min="${current}" max="${TOTAL}" value="${extEnd}" aria-label="Dernière page"><button type="button" class="ext-b" data-d="1" aria-label="Une page de plus">+</button>
+      <span class="ext-n">${nb} page${nb>1?"s":""}</span></div>
+    <div class="ext-chips">${[1,2,4,6,8].map(k=>`<button type="button" class="ext-chip${nb===k?" on":""}" data-k="${k}"${current+k-1>TOTAL?" disabled":""}>${k===1?"1 page":k===2?"Double":k+" pages"}</button>`).join("")}</div>
+    <div class="ext-strip" aria-hidden="true">${extRange(1,TOTAL).map(n=>`<i class="${cf.has(n)?"cf":on.has(n)?"on":P[n-1].rubrique===rub?"same":""}"></i>`).join("")}</div>
+    <div class="ext-strip-l"><span>p. 1</span><b>p. ${formatPages(ns)}</b><span>p. ${TOTAL}</span></div>
+    ${conflicts.length?`<div class="ext-warn">⚠ ${conflicts.length>1?`${conflicts.length} pages portent`:"1 page porte"} déjà une autre rubrique : ${cfText}. ${conflicts.length>1?"Elles seront remplacées":"Elle sera remplacée"}.</div>`:""}
+    ${change.length
+      ? `<button type="button" class="ext-apply" id="extApply">Appliquer « ${esc(rub)} » ${nb>1?`aux pages ${formatPages(ns)}`:`à la page ${current}`}</button>`
+      : `<div class="ext-ok">✓ ${nb>1?`Les pages ${formatPages(ns)} sont`:`La page ${current} est`} en « ${esc(rub)} ».</div>`}
+    ${blk.length>1?`<details class="ext-fill" id="extFill"${box.dataset.fillOpen?" open":""}><summary>Compléter le dossier · p. ${formatPages(blk)} (${blk.length} pages)</summary>
+      <div class="ext-fill-g">
+        <label>Journaliste<input data-ff="journaliste" list="journalistes" placeholder="${esc(uniform("journaliste")||"inchangé")}"></label>
+        <label>Lot<select data-ff="lot"><option value="">${lotNow&&LOTS[lotNow]?esc(LOTS[lotNow].label)+" (inchangé)":"— inchangé —"}</option>${Object.entries(LOTS).map(([k,v])=>`<option value="${k}">${esc(v.label)}</option>`).join("")}<option value="__clear__">Aucun lot</option></select></label>
+        <label>Thématique<input data-ff="thematique" placeholder="${esc(uniform("thematique")||"inchangée")}"></label>
+      </div>
+      <div class="ext-fill-a"><span>Seuls les champs remplis sont appliqués aux ${blk.length} pages.</span><button type="button" class="ext-apply" id="extFillApply">Appliquer au dossier</button></div>
+    </details>`:""}`;
+  applyExtPreview();
+}
+async function applyExtent(){
+  const t=extTargets(); if(!t || !t.change.length || isVisitorMode) return;
+  const {rub, ns, change}=t;
+  pushUndo(`Rubrique « ${rub} » p. ${formatPages(ns)}`, snapshotPages(change));
+  change.forEach(n=>{ state.pages[n-1].rubrique=rub; });
+  const { error } = await sb.from("pages").upsert(change.map(n=>pageToRow(state.pages[n-1])));
+  if(error){ alert("Erreur d'enregistrement : "+error.message); if(currentIssue) await selectIssue(currentIssue.id, false); return; }
+  flashSaved(`✓ « ${rub} » sur ${change.length} page${change.length>1?"s":""}`);
+  logActivity(`a étendu la rubrique « ${rub} » aux pages ${formatPages(ns)}`, ns[0]);
+  render();
+  const box=document.getElementById("extentBox"); if(box) box.dataset.fillOpen="1"; // enchaîner sur « Compléter le dossier »
+  renderExtent(true); renderPropsPeek(); presRefresh();
+}
+async function applyDossierFill(){
+  const box=document.getElementById("extentBox"); if(!box || current==null || isVisitorMode) return;
+  const vals={}; box.querySelectorAll("[data-ff]").forEach(el=>{ if(el.value) vals[el.dataset.ff]=el.value; });
+  if(!Object.keys(vals).length){ alert("Remplissez au moins un champ à appliquer au dossier."); return; }
+  const [a,b]=rubRunAround(current), ns=extRange(a,b);
+  pushUndo(`Dossier p. ${formatPages(ns)}`, snapshotPages(ns));
+  ns.forEach(n=>{ const p=state.pages[n-1];
+    if(vals.journaliste) p.journaliste=vals.journaliste;
+    if(vals.thematique) p.thematique=vals.thematique;
+    if(vals.lot) p.lot = vals.lot==="__clear__" ? "" : vals.lot; });
+  const { error } = await sb.from("pages").upsert(ns.map(n=>pageToRow(state.pages[n-1])));
+  if(error){ alert("Erreur d'enregistrement : "+error.message); return; }
+  const what={journaliste:"le journaliste", thematique:"la thématique", lot:"le lot"};
+  flashSaved(`✓ Dossier complété (${ns.length} pages)`);
+  logActivity(`a complété ${Object.keys(vals).map(k=>what[k]).join(", ")} du dossier « ${state.pages[a-1].rubrique} » (p. ${formatPages(ns)})`, a);
+  delete box.dataset.fillOpen;
+  render(); refreshPeekIfIdle(current); renderExtent(true);
+}
+(function wireExtent(){
+  const box=document.getElementById("extentBox"); if(!box) return;
+  box.addEventListener("click", e=>{
+    const d=e.target.closest("[data-d]"), k=e.target.closest("[data-k]");
+    if(d){ extEnd=(extEnd||current)+Number(d.dataset.d); renderExtent(true); }
+    else if(k){ extEnd=current+Number(k.dataset.k)-1; renderExtent(true); }
+    else if(e.target.closest("#extApply")) applyExtent();
+    else if(e.target.closest("#extFillApply")) applyDossierFill();
+  });
+  box.addEventListener("input", e=>{
+    if(e.target.id!=="extEnd") return;
+    // On n'agit que sur une page valide : taper « 3 » avant « 31 » ne doit
+    // pas ramener le champ à la page de départ au milieu de la frappe.
+    const v=Number(e.target.value); if(!v || v<current || v>TOTAL) return;
+    extEnd=v; renderExtent(true);
+    const i=document.getElementById("extEnd"); if(i){ i.focus(); }
+  });
+  box.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.id==="extEnd"){ e.preventDefault(); applyExtent(); } });
+  box.addEventListener("toggle", e=>{ if(e.target.id==="extFill"){ if(e.target.open) box.dataset.fillOpen="1"; else delete box.dataset.fillOpen; } }, true);
+  box.addEventListener("focusout", ()=>{ setTimeout(()=>{ if(box.dataset.dirty && !box.contains(document.activeElement)) renderExtent(); }, 0); });
+})();
 
 /* ---- Sujets envisagés (propositions) ---------------------------------
    Une page du chemin de fer ne porte qu'un sujet ; une rubrique peut en
