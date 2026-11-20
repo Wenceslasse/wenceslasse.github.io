@@ -1019,24 +1019,6 @@ function getTagColor(text, fieldType) {
   }
   return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
 }
-// Même logique que getTagColor, mais paramétrée par une table de couleurs
-// personnalisées au lieu du global `colorCustomizations` — qui ne reflète que
-// le numéro actuellement ouvert. Nécessaire pour la présentation des sujets
-// pressentis, qui peut regrouper plusieurs numéros à la fois, chacun avec ses
-// propres couleurs personnalisées.
-function resolveTagColor(text, fieldType, customMap){
-  if (!text) return TAG_PALETTE[0];
-  const key = fieldType ? `${fieldType}:${text}` : `rubrique:${text}`;
-  if (customMap && customMap[key]) return customMap[key];
-  if (fieldType === "statut" && STATUTS[text]) return STATUTS[text];
-  if (fieldType === "lot" && LOTS[text]) return LOTS[text];
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = ((hash << 5) - hash) + text.charCodeAt(i);
-    hash = hash & hash;
-  }
-  return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
-}
 // Mélange un hex avec du blanc à une opacité donnée — pour le lavis de fond
 // des cartes de la Grille, dérivé de la couleur de rubrique mais dilué : le
 // couple fg/bg de TAG_PALETTE est vérifié AAA contre le blanc ET contre son
@@ -2942,6 +2924,13 @@ async function duplicateIssue(id){
    Le document généré est un fichier HTML autonome (pas de dépendance
    réseau) ouvert dans un nouvel onglet — pas une page publiée par Claude :
    il vit entièrement dans le navigateur de l'utilisateur. */
+// Charte graphique Sacem (extraite du gabarit PowerPoint 16:9 fourni) — utilisée
+// UNIQUEMENT par la présentation des sujets pressentis, pas par le reste de l'appli.
+// Fond : dégradé orange/pêche du gabarit (recompressé, c'est un flou : la
+// résolution réduite ne se voit pas). Logo : tracés vectoriels du logo Sacem.
+const SACEM_BG_JPEG = "data:image/jpeg;base64,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oLJZCWLJS5WLM6k1mai5mpLmajWVLlUZUsmoRSxRFEURSS0RRFEURRlRJqLFEmhlauVploZtJFpm2mbSS1ZLaRSKqSqkqpKUKkURRFEUnqGuKWKBJZKlipYslixYslksmouZqSyai5aiyaGZouVRFEVUaGbRFqZtEmhlaZahJqLFGWi5URURRGhm1ZFpFqZtEtJKpLSS0kq2RQCFEUSykFAeoXiligQSwLJYsWElLJUuViyaiyaksmoRS5ahFEURRFEtEURSRSxRJqEURYsURoZURaZaJFEtEUS0kqpFtRSCpFAUCAAAAAekXkligQSwLFhJSyUslElSyUslEUuVEVGWi5WmWhFJFVGoRqEURURRlSxRFEURRFploZtJFEtVFIUkoFWRRKAEoSiRSwAIB6ReYLARZKlglLJSyUSUsWEUuWpEUZUsURRFEURaZqkUSaGWoRRFEUZaGWhlqEWmbRFEUgpFVFIAKkURRFgAAAAAACegXAECpYqVECxRJSwEUSUsUQEUsURRFEUAgpAJRFEUsURRFEURSRRCkURRFIAACACkLUAAABKAAAH3DAECpRBKlECxRARSxRJRFEURRFEURRFEURRFEUQKCRRFEURRFEUkURRFEVUogAAAAACUAAAAAfYMgRSwCURYoRFECgRRFgAlAAAAAACUsURRAgACUJVSgCShFEURRKCUAgAAAACUBUoAAAfVUzAoCUsWACURUsAlEURYoAAAAAAAAEUQAWAAJRFEUkURRFEoSgAFAiUJRKEoASgAAAAB9RIlEWKABFLFEAlEUsVEAAAAAAAAlEVUWBYAgCURRFEUkURVRRFEURRFEURRFEUARQlAAUCACmxkAlCUQKAACxRAAAAAAJRFEoARRFgAAlEUkUQUAACFgAURRFEUQpFEpSUShKAEoSgAABtZIEAoACURYoAAEUsURRFEokoARRFEKQAUlEURSQAAAABZQAIAKRRFEURRFEUJRFEUSgAFAblmQAQCgAAJRFLFEWABRFEURSRRFVFgAABFEAAAFgAAAAAAABRFEURVRRFEURRFEoAAgGhmgRRFEUQASgAABQAApFEURRFgCAJRFgAFAJRFEUSgCABQQFAAAAFEURRFEURQAFAAUYAAoAAAAAAAAAAAAAAAVFEACARRFEAAKRZQpFEURRKAAAAAABVRSRRFLFJKAABWLFgU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";
+const SACEM_LOGO_VIEWBOX = "0 0 273.28 77.28";
+const SACEM_LOGO_PATHS = ["M39.57 56.02 39.57 56.02 39.57 56.03Z", "M59.35 6.27C49.92 6.27 42.97 13.09 40.76 24.57L36.49 50.16 35.64 49.65 35.47 49.55C34.34 48.94 32.04 48.71 29.96 48.84 25.31 49.14 19.85 51.22 15.4 54.71L15.4 54.71C10.92 58.25 8.53 62.37 8.73 65.77 8.84 67.63 9.77 69.26 11.53 70.35L11.53 70.35C13.33 71.47 15.73 71.88 18.38 71.72 23.04 71.43 28.51 69.34 32.95 65.85L32.95 65.85C36.9 62.73 39.2 59.16 39.56 56.03L39.83 53.85 44.6 25.26C45.48 20.72 48.66 10.17 59.35 10.17L264.22 10.21 264.22 6.31 59.35 6.27Z", "M65.17 50.26C65.71 53.73 69.39 55.09 72.45 55.09 75.85 55.09 77.96 53.39 77.96 51.55 77.96 50.33 77.08 49.37 75.24 48.83L68.58 46.72C63.82 45.29 60.76 42.16 60.76 37.27 60.76 30.81 66.06 26.12 74.7 26.12 82.79 26.12 88.43 30.27 89.59 35.5L81.91 37.81C81.43 35.09 78.78 33.12 74.7 33.12 70.76 33.12 69.67 34.96 69.67 36.52 69.67 37.61 70.21 38.83 73.48 39.85L77.63 41.14C83.61 43.04 86.67 46.04 86.67 51.07 86.67 58.07 80.07 62.08 71.85 62.08 64.78 62.08 57.84 59.16 56.28 52.77L65.17 50.26Z", "M124.33 40.74 119.64 61.07 111.07 61.07 111.68 58.35C108.82 60.53 105.02 62.09 100.39 62.09 93.52 62.09 89.37 58.69 89.37 52.84 89.37 45.97 95.35 40.4 106.3 40.4L115.82 40.4 116.02 39.58C116.84 36.18 115.07 33.66 110.65 33.66 106.98 33.66 103.71 35.43 102.15 38.83L94.13 36.72C96.85 30.33 103.85 26.11 111.47 26.11 121.06 26.12 126.5 31.22 124.33 40.74ZM114.26 47.2 104.26 47.2C100.25 47.2 98.21 48.9 98.21 51.41 98.21 53.65 100.25 54.95 103.38 54.95 108.28 54.95 113.24 51.69 114.05 48.01L114.26 47.2Z", "M152.95 47.94 161.52 49.37C158.39 57.12 151.25 62.08 143.16 62.08 132.55 62.08 125.48 54.81 127.18 44.13 128.88 33.46 138.26 26.11 148.19 26.11 156.08 26.11 162.2 31.01 163.22 38.62L153.97 40.32C153.7 36.31 150.84 34.34 146.9 34.34 141.26 34.34 136.84 38.35 135.89 44.13 135.01 49.98 138.2 53.85 143.85 53.85 147.79 53.86 151.05 51.96 152.95 47.94Z", "M199.46 46.52 173.08 46.52C173.15 51.69 175.87 54.41 181.1 54.41 183.82 54.41 187.08 53.66 189.73 49.58L197.75 51.62C194.35 58.69 187.69 62.09 180.55 62.09 170.89 62.09 164.84 55.9 164.84 46.59 164.84 34.69 174.7 26.12 184.97 26.12 194.77 26.12 201.64 33.94 199.46 46.52ZM191.85 40.19C191.24 35.7 188.38 33.59 184.3 33.59 179.68 33.59 176.14 36.31 174.37 40.19L191.85 40.19Z", "M262.7 39.85 257.8 61.06 248.89 61.06 253.38 41.68C254.4 37.26 252.36 34.34 248.42 34.34 243.8 34.34 239.99 37.47 238.22 44.2L234.34 61.06 225.37 61.06 229.86 41.68C230.88 37.26 228.84 34.34 224.9 34.34 220.34 34.34 216.67 37.33 214.9 43.86L210.96 61.06 201.98 61.06 209.8 27.13 218.78 27.13 218.03 30.26C220.48 27.68 223.67 26.11 228.3 26.11 233.67 26.11 237.62 28.42 239.11 32.3 242.03 28.49 246.11 26.11 251.82 26.11 259.85 26.12 264.61 31.63 262.7 39.85Z"];
 const presModal=document.getElementById("presModal"), presScrim=document.getElementById("presScrim");
 function openPresDialog(){
   const list=document.getElementById("presIssueList");
@@ -2981,150 +2970,231 @@ async function generatePresentation(issueIds){
       if(error){ alert(`Erreur de lecture des pages de « ${iss.numero||"ce numéro"} » : `+error.message); continue; }
       pages = (data||[]).map(rowToPage);
     }
-    const { data: colorRows, error:ecol } = await sb.from("color_customizations").select("*").eq("issue_id", iss.id);
-    const colorMap={};
-    if(ecol) console.error("Erreur chargement couleurs :", ecol.message);
-    else (colorRows||[]).forEach(r=>{ colorMap[`${r.field_type}:${r.tag_name}`] = {bg:r.bg_color, fg:r.fg_color}; });
 
     // Seuls les dossiers qui portent déjà une rubrique ou un sujet ont
     // quelque chose à présenter — une page entièrement vide n'est pas
     // encore un « sujet pressenti ».
     const dossiers = buildDossiersFrom(pages).filter(g=>g.rubrique || g.sujets.length);
     for(const g of dossiers){
-      const rubColor = resolveTagColor(g.rubrique, "rubrique", colorMap);
       const journalistes = [...new Set(g.items.map(p=>p.journaliste).filter(Boolean))].join(", ");
       // Plusieurs pages d'un même dossier portent en théorie le même brief ;
       // au cas où elles divergent, on les montre toutes plutôt que d'en
       // perdre une silencieusement.
       const brief = [...new Set(g.items.map(p=>p.brief).filter(Boolean))].join("\n\n");
       entries.push({
+        issueId: iss.id,
+        pagesCount: g.pages.length,
+        sigCount: Math.round(g.sig),
         numero: iss.numero||"(sans nom)",
         bouclage: frDateFull(iss.bouclage),
-        rubrique: g.rubrique, rubColor,
+        rubrique: g.rubrique,
         thematique: g.thematique,
         title: g.title,
         brief,
         journalistes,
         pagesLabel: formatPages(g.pages),
-        signsLabel: g.sig>0 ? Math.round(g.sig).toLocaleString("fr-FR")+" signes" : "",
       });
     }
   }
   if(entries.length===0){ alert("Aucun sujet renseigné (rubrique ou sujet) dans les numéros sélectionnés."); return; }
-  const issuesLabel = selected.length<=3
-    ? selected.map(i=>i.numero||"(sans nom)").join(" · ")
-    : `${selected.length} numéros à venir`;
-  const html = buildPresentationDoc(entries, issuesLabel);
+  const html = buildPresentationDoc(selected, entries);
   const blob = new Blob([html], {type:"text/html"});
   window.open(URL.createObjectURL(blob), "_blank");
 }
 
-function presSlideHTML(e, idx){
-  const onLeft = idx%2===0;
+/* Gabarit des slides : reprend la charte Sacem du modèle PowerPoint 16:9
+   (Arial, orange accent3 #FF6016, dégradé orange/pêche, logo). Chaque slide
+   est un cadre 16:9 dont toutes les cotes sont en cqw (1 cqw = 1 % de la
+   largeur) : positions et corps de texte sont ceux du .pptx, convertis en
+   pourcentages de la largeur, et restent proportionnels à toute taille. */
+function sacemLogoSVG(variant){
+  const grad = variant==="color"
+    ? `<defs><linearGradient id="sacemLg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="273" y2="0"><stop offset="0" stop-color="#DC1945"/><stop offset=".7" stop-color="#FF3956"/><stop offset="1" stop-color="#FF6211"/></linearGradient></defs>` : "";
+  const fill = variant==="color" ? "url(#sacemLg)" : "#FFFFFF";
+  return `<svg viewBox="${SACEM_LOGO_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" aria-label="Sacem" role="img">${grad}${SACEM_LOGO_PATHS.map(d=>`<path d="${d}" fill="${fill}"/>`).join("")}</svg>`;
+}
+const pad2 = n => String(n).padStart(2,"0");
+
+function presCoverHTML(selected, total){
+  const sub = selected.length<=3 ? selected.map(i=>i.numero||"(sans nom)").join(" · ") : `${selected.length} numéros à venir`;
   return `
-  <section class="slide">
-    <div class="blob" style="width:46vw;height:46vw;${onLeft?"left":"right"}:-14vw;bottom:-18vw;background:${e.rubColor.bg}"></div>
-    <div class="inner">
-      <div class="eyebrow">
-        ${e.rubrique?`<span class="pill" style="background:${e.rubColor.bg};color:${e.rubColor.fg}">${esc(e.rubrique)}</span>`:""}
-        ${e.thematique?`<span class="thematique-tag">${esc(e.thematique)}</span>`:""}
-        <span class="issue-tag">${esc(e.numero)}${e.bouclage?" · bouclage "+esc(e.bouclage):""}</span>
-      </div>
-      <h1 class="sujet">${esc(e.title)}</h1>
-      <div class="brief-card">
-        <div class="brief-label">Proposition de brief</div>
-        <div class="brief-text${e.brief?"":" empty"}">${e.brief?esc(e.brief):"Brief à rédiger — à compléter dans Chemin de fer."}</div>
-      </div>
-      <div class="meta-row">
-        ${e.journalistes?`<div class="meta-item"><b>Journaliste</b>${esc(e.journalistes)}</div>`:""}
-        <div class="meta-item"><b>Pages</b>${esc(e.pagesLabel)}</div>
-        ${e.signsLabel?`<div class="meta-item"><b>Calibrage</b>${esc(e.signsLabel)}</div>`:""}
+  <section class="slide grad">
+    <div class="bg"></div>
+    <div class="cover-t">
+      <div class="t1">Sujets pressentis</div>
+      <div class="t2">${esc(sub)} · ${total} sujet${total>1?"s":""}</div>
+    </div>
+    <div class="logo logo-cover">${sacemLogoSVG("white")}</div>
+  </section>`;
+}
+function presSectionHTML(iss, idx, count){
+  const bits=[iss.bouclage?"Bouclage "+frDateFull(iss.bouclage):"", `${count} sujet${count>1?"s":""}`].filter(Boolean).map(esc).join("<br>");
+  return `
+  <section class="slide grad">
+    <div class="bg"></div>
+    <div class="sec-t"><div class="t1">${esc(iss.numero||"(sans nom)")}</div><div class="t2">${bits}</div></div>
+    <div class="sec-n">${pad2(idx)}</div>
+    <div class="sec-rule"></div>
+    <div class="logo logo-sec">${sacemLogoSVG("white")}</div>
+  </section>`;
+}
+function presTopicHTML(e, secIdx, topicIdx, pageNo){
+  const stat=(n,label,desc)=>`<div class="stat"><div class="n">${esc(n)}</div><div class="l">${esc(label)}</div>${desc?`<div class="d">${esc(desc)}</div>`:""}</div>`;
+  return `
+  <section class="slide content">
+    <div class="strip"></div>
+    <div class="num">${secIdx}.${topicIdx}</div>
+    <div class="num-rule"></div>
+    <div class="side">
+      <div class="side-t">${esc(e.rubrique||"Sans rubrique")}</div>
+      ${e.thematique?`<div class="side-s">${esc(e.thematique)}</div>`:""}
+      <div class="side-i">${esc(e.numero)}</div>
+    </div>
+    <div class="vrule"></div>
+    <div class="main">
+      <h2 class="sujet${e.title.length>110?" xl":e.title.length>60?" l":""}">${esc(e.title)}</h2>
+      <div class="row">
+        <div class="card${e.brief?"":" empty"}">
+          <div class="card-t">Proposition de brief</div>
+          <div class="card-b">${e.brief?esc(e.brief):"Brief à rédiger — à compléter dans Chemin de fer."}</div>
+        </div>
+        <div class="stats">
+          ${stat(String(e.pagesCount), e.pagesCount>1?"Pages":"Page", "p. "+e.pagesLabel)}
+          ${e.sigCount>0?stat(e.sigCount.toLocaleString("fr-FR"), "Signes", "calibrage prévu"):""}
+          ${e.journalistes?`<div class="stat"><div class="l">Journaliste</div><div class="d">${esc(e.journalistes)}</div></div>`:""}
+        </div>
       </div>
     </div>
+    <div class="logo logo-content">${sacemLogoSVG("color")}</div>
+    <div class="pno">${pageNo}</div>
+  </section>`;
+}
+function presEndHTML(){
+  return `
+  <section class="slide grad">
+    <div class="bg"></div>
+    <div class="end-rule"></div>
+    <div class="logo logo-end">${sacemLogoSVG("white")}</div>
+    <div class="end-t">Merci</div>
   </section>`;
 }
 
-function buildPresentationDoc(entries, issuesLabel){
-  const genDate=new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
-  const titleSlide=`
-  <section class="slide active title-slide">
-    <div class="blob" style="width:58vw;height:58vw;left:-20vw;top:-20vw;background:#EFE1DC"></div>
-    <div class="inner">
-      <div class="thematique-tag" style="margin-bottom:18px">Sujets pressentis</div>
-      <h1>${esc(issuesLabel)}</h1>
-      <p>${entries.length} sujet${entries.length>1?"s":""} · généré le ${genDate}</p>
-    </div>
-  </section>`;
-  const body=entries.map((e,idx)=>presSlideHTML(e,idx)).join("\n");
+function buildPresentationDoc(selected, entries){
+  // Un numéro coché mais sans aucun sujet renseigné n'a ni intercalaire ni
+  // place sur la couverture : il n'aurait rien à montrer.
+  selected = selected.filter(i=>entries.some(e=>e.issueId===i.id));
+  const slides=[presCoverHTML(selected, entries.length)];
+  let pageNo=1, secIdx=0;
+  for(const iss of selected){
+    const mine=entries.filter(e=>e.issueId===iss.id);
+    if(!mine.length) continue;
+    secIdx++; pageNo++;
+    slides.push(presSectionHTML(iss, secIdx, mine.length));
+    mine.forEach((e,k)=>{ pageNo++; slides.push(presTopicHTML(e, secIdx, k+1, pageNo)); });
+  }
+  slides.push(presEndHTML());
+  const docTitle = selected.map(i=>i.numero||"(sans nom)").join(" · ");
   return `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(issuesLabel)} — Sujets pressentis</title>
+<title>Sujets pressentis — ${esc(docTitle)}</title>
 <style>
-:root{color-scheme:light}
+:root{color-scheme:light; --or:#FF6016}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;height:100%;background:#f7f5f1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c1b19;overflow:hidden}
-.deck{position:relative;width:100vw;height:100vh;overflow:hidden}
-.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(28px,6vw,96px);opacity:0;pointer-events:none;transform:translateY(14px);transition:opacity .35s ease,transform .35s ease;overflow:hidden}
-.slide.active{opacity:1;pointer-events:auto;transform:translateY(0)}
-.blob{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55;z-index:0}
-.inner{position:relative;z-index:1;max-width:980px}
-.eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:28px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.thematique-tag{font-size:12.5px;text-transform:uppercase;letter-spacing:.09em;color:#6b6a63;font-weight:600}
-.issue-tag{margin-left:auto;font-size:12.5px;color:#8d8c84}
-h1.sujet{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;font-size:clamp(26px,4.2vw,54px);line-height:1.14;margin:0 0 26px;max-width:17ch}
-.title-slide h1{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;font-size:clamp(32px,6vw,68px);margin:0 0 16px;max-width:18ch}
-.title-slide p{font-size:15px;color:#6b6a63}
-.brief-card{background:rgba(255,255,255,.72);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;margin-bottom:26px;max-width:640px}
-.brief-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8d8c84;font-weight:700;margin-bottom:8px}
-.brief-text{font-size:15.5px;line-height:1.6;white-space:pre-wrap}
-.brief-text.empty{color:#9a9890;font-style:italic}
-.meta-row{display:flex;gap:28px;flex-wrap:wrap;font-size:13px;color:#555349}
-.meta-item b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#9a9890;font-weight:700;margin-bottom:3px}
-.nav{position:fixed;bottom:22px;right:26px;display:flex;align-items:center;gap:10px;z-index:5;font-size:13px;color:#6b6a63}
-.nav button{border:1px solid rgba(0,0,0,.14);background:rgba(255,255,255,.85);border-radius:999px;width:36px;height:36px;cursor:pointer;font-size:16px;color:#1c1b19;line-height:1}
-.nav button:hover:not(:disabled){background:#fff}
+html,body{margin:0;height:100%;background:#1b1b1b;font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;overflow:hidden}
+.deck{position:fixed;inset:0;display:grid;place-items:center}
+.frame{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;container-type:inline-size;overflow:hidden;background:#fff}
+.slide{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .35s ease;background:#fff;color:#000;overflow:hidden}
+.slide.active{opacity:1;pointer-events:auto}
+.slide>*{position:absolute}
+/* Fond dégradé : même recadrage que le gabarit (fillRect l/r -1,23 %, t -30,5 %, b -51,7 %). */
+.grad{color:#fff}
+.grad .bg{left:-1.231%;right:-1.231%;top:-30.496%;bottom:-51.658%;background:url(${SACEM_BG_JPEG}) center/100% 100% no-repeat}
+.logo svg{display:block;width:100%;height:auto}
+.t1{font-size:5.14cqw;text-transform:uppercase;line-height:1.1}
+.t2{font-size:2.36cqw;text-transform:uppercase;margin-top:1.2cqw;line-height:1.25}
+.cover-t{left:6%;right:6%;top:23.3%;height:30.6%;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.logo-cover{left:3.3%;top:84.5%;width:14.9%}
+/* Le bloc s'ancre au-dessus du filet et grandit vers le haut : un nom de numéro
+   long passe sur deux lignes sans jamais déborder sur le filet. */
+.sec-t{left:31.6%;width:39.8%;bottom:39.5%;max-height:58%;display:flex;flex-direction:column;justify-content:flex-end}
+.sec-t .t1{overflow-wrap:anywhere}
+.sec-n{left:71.4%;width:24.1%;top:32%;height:31%;font-size:16cqw;line-height:1;text-align:right;display:flex;align-items:center;justify-content:flex-end;font-weight:300}
+.sec-rule{left:31.6%;right:0;top:62.9%;border-top:.09cqw solid #fff}
+.logo-sec{left:2.3%;top:87.2%;width:10.5%}
+.end-rule{left:17.3%;top:5.3%;height:89.2%;border-left:.09cqw solid #fff}
+.logo-end{left:19.2%;top:36.7%;width:34.3%}
+.end-t{left:20.2%;top:57.2%;font-size:3.33cqw}
+/* Mise en page « contenu » : liseré dégradé à gauche, colonne de titre, filet vertical orange. */
+.strip{left:0;top:0;bottom:0;width:1.6%;background:linear-gradient(180deg,#FC4A2C 0%,#F9542F 32%,#FA8468 55%,#F5CBAA 76%,#F1EADA 100%)}
+.num{left:2.6%;top:2.9%;width:14.2%;height:7.9%;font-size:4.03cqw;color:var(--or);display:flex;align-items:center}
+.num-rule{left:2.6%;width:14.2%;top:15%;border-top:.09cqw solid var(--or)}
+.side{left:3.4%;width:13.4%;top:21.7%;color:var(--or);font-size:1.81cqw;line-height:1.3}
+.side-t{font-weight:700;overflow-wrap:anywhere}
+.side-i{margin-top:2.2cqw;font-size:1.25cqw;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.vrule{left:17.94%;top:2.9%;height:94.9%;border-left:.09cqw solid var(--or)}
+.logo-content{left:3.4%;top:92.9%;width:6.04%}
+.pno{right:4%;bottom:2.6%;font-size:1.81cqw;color:var(--or)}
+.main{left:24.4%;right:5%;top:9%;bottom:12%;display:flex;flex-direction:column;justify-content:center}
+/* Un titre long réduit son corps plutôt que d'être tronqué. */
+.sujet{margin:0 0 3.2cqw;font-size:3.6cqw;line-height:1.18;font-weight:700;color:#000;max-width:60cqw;padding-bottom:.2em;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.sujet.l{font-size:2.9cqw}
+.sujet.xl{font-size:2.35cqw}
+.row{display:flex;gap:4.5cqw;align-items:flex-start}
+.card{flex:0 0 40cqw;background:var(--or);color:#fff;border-radius:.9cqw;padding:2.2cqw 2.4cqw}
+.card-t{font-size:1.81cqw;font-weight:700;margin-bottom:.9cqw}
+.card-b{font-size:1.6cqw;line-height:1.4;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:9;-webkit-box-orient:vertical;overflow:hidden}
+.card.empty{background:#FFF0E8;color:var(--or)}
+.card.empty .card-b{font-style:italic}
+.stats{flex:1;display:flex;flex-direction:column;gap:2.4cqw;min-width:0}
+.stat .n{font-size:5.7cqw;line-height:1;color:var(--or);font-weight:300}
+.stat .l{font-size:1.67cqw;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:.15em;margin-top:.6cqw}
+.stat .d{font-size:1.32cqw;letter-spacing:.08em;color:#000;margin-top:.3cqw;overflow-wrap:anywhere}
+/* Commandes centrées en bas (le coin droit porte le numéro de page de la
+   charte) et masquées tant que la souris ne bouge pas : rien ne parasite la
+   projection. */
+.nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;z-index:5;font:13px Arial,sans-serif;color:#fff;opacity:0;transition:opacity .25s}
+.nav.show,.nav:hover,.nav:focus-within{opacity:1}
+.nav button{border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:16px;color:#fff;line-height:1}
 .nav button:disabled{opacity:.3;cursor:default}
-.progress{position:fixed;top:0;left:0;height:3px;background:#1c1b19;z-index:6;transition:width .3s ease;width:0}
-@media (max-width:640px){ .meta-row{gap:16px} .nav{right:14px;bottom:14px} }
+#counter{text-shadow:0 1px 2px rgba(0,0,0,.6)}
 </style>
 </head><body>
-<div class="progress" id="progress"></div>
-<div class="deck">
-${titleSlide}
-${body}
-</div>
+<div class="deck"><div class="frame">
+${slides.join("\n")}
+</div></div>
 <div class="nav">
-  <button id="prevBtn" title="Précédent (←)">‹</button>
+  <button id="prevBtn" title="Précédent (←)" aria-label="Slide précédente">‹</button>
   <span id="counter"></span>
-  <button id="nextBtn" title="Suivant (→)">›</button>
-  <button id="fsBtn" title="Plein écran">⛶</button>
+  <button id="nextBtn" title="Suivant (→)" aria-label="Slide suivante">›</button>
+  <button id="fsBtn" title="Plein écran (F)" aria-label="Plein écran">⛶</button>
 </div>
 <script>
 (function(){
   var slides=[].slice.call(document.querySelectorAll(".slide"));
   var i=0;
-  var counter=document.getElementById("counter"), progress=document.getElementById("progress");
+  var counter=document.getElementById("counter");
   var prevBtn=document.getElementById("prevBtn"), nextBtn=document.getElementById("nextBtn");
   function show(n){
     i=Math.max(0,Math.min(slides.length-1,n));
     slides.forEach(function(s,idx){ s.classList.toggle("active", idx===i); });
     counter.textContent=(i+1)+" / "+slides.length;
-    progress.style.width=((i+1)/slides.length*100)+"%";
     prevBtn.disabled=i===0; nextBtn.disabled=i===slides.length-1;
   }
+  function fs(){ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }
   prevBtn.addEventListener("click",function(){ show(i-1); });
   nextBtn.addEventListener("click",function(){ show(i+1); });
-  document.getElementById("fsBtn").addEventListener("click",function(){
-    if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
-  });
+  document.getElementById("fsBtn").addEventListener("click",fs);
   window.addEventListener("keydown",function(e){
     if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ e.preventDefault(); show(i+1); }
     else if(e.key==="ArrowLeft"||e.key==="PageUp"){ e.preventDefault(); show(i-1); }
     else if(e.key==="Home") show(0);
     else if(e.key==="End") show(slides.length-1);
+    else if(e.key==="f"||e.key==="F") fs();
   });
-  show(0);
+  var nav=document.querySelector(".nav"), hideT=null;
+  function wake(){ nav.classList.add("show"); clearTimeout(hideT); hideT=setTimeout(function(){ nav.classList.remove("show"); },2200); }
+  window.addEventListener("mousemove",wake); window.addEventListener("touchstart",wake);
+  show(0); wake();
 })();
 <\/script>
 </body></html>`;
