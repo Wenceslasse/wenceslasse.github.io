@@ -512,12 +512,52 @@
   .rythme-in span{color:var(--faint); font-size:12.5px}
   #rythmeTotal{margin:16px 0 0; padding-top:12px; border-top:1px solid var(--border)}
 
-  .pres-issue-list{display:flex; flex-direction:column; gap:2px; max-height:280px; overflow-y:auto; margin:-4px -6px 4px}
-  .pres-issue-row{display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:6px; cursor:pointer; font-size:13.5px}
-  .pres-issue-row:hover{background:var(--hover)}
-  .pres-issue-row input{flex:none}
-  .pres-issue-row .pin{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .pres-issue-row .pid{color:var(--faint); font-size:12px; flex:none}
+  /* ---- Sujets envisagés (panneau de page) ---- */
+  .envis{margin:4px 0 18px; padding-top:14px; border-top:1px solid var(--border)}
+  .envis-h{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+  .envis-h .t{font-weight:650; font-size:13.5px}
+  .envis-h .spacer{flex:1}
+  .envis-c{font-size:12px; color:var(--muted)}
+  .envis-empty{font-size:12.5px; color:var(--faint); margin:4px 0 8px}
+  .envi{border:1px solid var(--border); border-radius:8px; padding:9px 10px; margin-bottom:8px; background:var(--canvas)}
+  .envi.st-retenue{border-color:#FF6016; box-shadow:inset 3px 0 0 #FF6016}
+  .envi.st-ecartee{opacity:.6}
+  .envi-top{display:flex; align-items:center; gap:8px}
+  .envi-l{flex:none; width:22px; height:22px; border-radius:50%; background:#FFEDE3; color:#D9480F; font-size:12px; font-weight:700; display:grid; place-items:center}
+  .envi-st{flex:none; font-size:11px; font-weight:650; letter-spacing:.04em; text-transform:uppercase; color:var(--faint)}
+  .envi.st-retenue .envi-st{color:#D9480F}
+  .envi input, .envi textarea{width:100%; border:none; background:transparent; font:inherit; color:var(--text); padding:3px 4px; border-radius:4px; resize:none}
+  .envi input:focus, .envi textarea:focus{outline:none; background:var(--hover)}
+  .envi .envi-t{font-weight:650; font-size:14px; flex:1; min-width:0}
+  .envi .envi-a{font-size:12.5px; color:#D9480F; margin-top:2px}
+  .envi .envi-b{font-size:12.5px; color:var(--muted); line-height:1.45; margin-top:2px}
+  .envi-d{margin-top:4px; font-size:12px; color:var(--muted)}
+  .envi-d summary{cursor:pointer; padding:2px 4px}
+  .envi-g{display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; padding:6px 4px 0}
+  .envi-g label{display:flex; flex-direction:column; font-size:11px; color:var(--faint)}
+  .envi-g input{border-bottom:1px solid var(--border); border-radius:0; font-size:12.5px; padding:3px 0}
+  .envi-act{display:flex; align-items:center; gap:6px; margin-top:6px}
+  .envi-act .spacer{flex:1}
+  .envi-act button{border:1px solid var(--border-strong); background:var(--canvas); border-radius:99px; padding:3px 10px; font-size:12px; cursor:pointer; color:var(--text)}
+  .envi-act button.on{background:#FF6016; border-color:#FF6016; color:#fff}
+  .envi-act button.del{border-color:transparent; color:var(--faint)}
+  .envi-act button.del:hover{color:var(--danger)}
+  .envis-out{font-size:12.5px; color:var(--muted); margin:2px 0 8px}
+  .envis-out summary{cursor:pointer; padding:2px 0 6px}
+  .envis-add{width:100%; justify-content:center; border:1px dashed var(--border-strong)}
+  /* Carte du chemin de fer : sujets envisagés de la rubrique */
+  .envis-pill{display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; font-size:12px; line-height:1.5; background:#FFEDE3; color:#B53B0A; font-weight:600}
+  .sujet.empty.envis-n{color:#B53B0A; font-style:italic}
+
+  /* ---- Mode présentation ---- */
+  .pv-ov{position:fixed; inset:0; z-index:300; background:#1b1b1b; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:14px}
+  .pv-ov[hidden]{display:none !important}
+  .pv-stage{width:min(100%, calc((100vh - 84px) * 16 / 9))}
+  .pv-bar{display:flex; align-items:center; gap:10px; color:#bbb; font-size:13px; flex-wrap:wrap; justify-content:center; font-variant-numeric:tabular-nums}
+  .pv-bar button{border:1px solid #444; background:#2a2a2a; color:#eee; border-radius:99px; min-width:34px; height:34px; padding:0 12px; cursor:pointer; font-size:13px}
+  .pv-bar button:disabled{opacity:.35; cursor:default}
+  .pv-bar .pv-hint{color:#999; font-size:12.5px}
+  .pv-bar .pv-sep{width:1px; height:18px; background:#444}
 
   .peek-foot{display:flex; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid var(--border)}
   .ghostbtn{border:none; background:transparent; border-radius:5px; padding:6px 10px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; gap:6px}
@@ -650,6 +690,134 @@
     main{padding:0}
   }
 </style>
+<style id="pvStyle">
+/* Présentation du comité — charte Sacem (gabarit PowerPoint 16:9). Toutes les
+   classes sont sous .pv : rien ne déborde sur le reste de l'appli. */
+.pv.frame{position:relative; width:100%; aspect-ratio:16/9; container-type:inline-size; overflow:hidden; background:#fff; color:#000;
+  font-family:Arial,"Helvetica Neue",Helvetica,sans-serif; line-height:1.25; text-align:left}
+.pv .sl{position:absolute; inset:0}
+.pv .sl>*{position:absolute}
+.pv .grad{color:#fff}
+.pv .grad .bg{left:-1.231%; right:-1.231%; top:-30.496%; bottom:-51.658%; background:var(--sacem-bg) center/100% 100% no-repeat}
+.pv .logo svg{display:block; width:100%; height:auto}
+.pv .t1{font-size:5.14cqw; text-transform:uppercase; line-height:1.1}
+.pv .t2{font-size:2.36cqw; text-transform:uppercase; margin-top:1.2cqw; line-height:1.3}
+.pv .cover-t{left:6%; right:6%; top:23.3%; height:30.6%; display:flex; flex-direction:column; justify-content:center; text-align:center}
+.pv .logo-cover{left:3.3%; top:84.5%; width:14.9%}
+.pv .sec-t{left:31.6%; width:39.8%; bottom:39.5%; display:flex; flex-direction:column; justify-content:flex-end}
+.pv .sec-n{left:60%; width:35.5%; top:30%; height:33%; font-size:16cqw; line-height:1; display:flex; align-items:center; justify-content:flex-end; font-weight:300; white-space:nowrap}
+.pv .sec-rule{left:31.6%; right:0; top:62.9%; border-top:.09cqw solid #fff}
+.pv .logo-sec{left:2.3%; top:87.2%; width:10.5%}
+.pv .end-rule{left:17.3%; top:5.3%; height:89.2%; border-left:.09cqw solid #fff}
+.pv .logo-end{left:19.2%; top:36.7%; width:34.3%}
+.pv .end-t{left:20.2%; top:57.2%; font-size:3.33cqw}
+.pv .strip{left:0; top:0; bottom:0; width:1.6%; background:linear-gradient(180deg,#FC4A2C 0%,#F9542F 32%,#FA8468 55%,#F5CBAA 76%,#F1EADA 100%)}
+.pv .num{left:2.6%; top:2.9%; width:14.2%; height:7.9%; font-size:4.03cqw; color:#FF6016; display:flex; align-items:center}
+.pv .num-rule{left:2.6%; width:14.2%; top:15%; border-top:.09cqw solid #FF6016}
+.pv .side{left:3.4%; width:13.4%; top:21.7%; color:#FF6016; font-size:1.81cqw; line-height:1.3}
+.pv .side-t{font-weight:700; overflow-wrap:anywhere}
+.pv .side-k{margin-top:2.2cqw; font-size:1.2cqw; letter-spacing:.12em; text-transform:uppercase; font-weight:700}
+.pv .side-x{margin-top:1.2cqw; font-size:1.25cqw; color:#000; line-height:1.4}
+.pv .vrule{left:17.94%; top:2.9%; height:94.9%; border-left:.09cqw solid #FF6016}
+.pv .logo-content{left:3.4%; top:92.9%; width:6.04%}
+.pv .pno{right:4%; bottom:2.6%; font-size:1.81cqw; color:#FF6016}
+.pv .main{left:24.4%; right:5%; top:7%; bottom:11%}
+.pv .kick{font-size:1.25cqw; letter-spacing:.15em; text-transform:uppercase; font-weight:700; color:#FF6016}
+.pv .kick.sm{font-size:1cqw}
+.pv .st .n{font-size:5.7cqw; line-height:1; color:#FF6016; font-weight:300}
+.pv .st .l{font-size:1.45cqw; font-weight:700; color:#FF6016; text-transform:uppercase; letter-spacing:.15em; margin-top:.7cqw}
+.pv .st .d{font-size:1.2cqw; letter-spacing:.06em; margin-top:.35cqw; line-height:1.35}
+.pv .pv-abs{position:absolute; left:0; right:0}
+.pv .pv-rule{border-top:.09cqw solid #FF6016}
+.pv .pv-rule.soft{border-color:#FFD2BD}
+.pv .pv-note{font-size:1.15cqw; color:#8d8c84}
+.pv .pv-theme{font-size:2.6cqw; line-height:1.3; font-weight:700; margin-top:1cqw; max-width:62cqw}
+.pv .pv-stats{display:grid; grid-template-columns:1.7fr 1fr 1fr 1fr; gap:2cqw}
+/* Champs éditables */
+.pv .ed{outline:none; border-radius:.3cqw; transition:background .15s, box-shadow .15s; cursor:text; min-width:2cqw; display:inline-block; max-width:100%}
+.pv .ed:hover{background:rgba(255,96,22,.07); box-shadow:0 0 0 .3cqw rgba(255,96,22,.07)}
+.pv .ed:focus{background:rgba(255,96,22,.1); box-shadow:0 0 0 .3cqw rgba(255,96,22,.18)}
+.pv .ed:empty::before{content:attr(data-ph); color:#c9a996; font-style:italic; font-weight:400}
+.pv .pv-btn{font:inherit; font-size:1.05cqw; font-weight:700; border:.1cqw solid #FF6016; color:#FF6016; background:#fff; border-radius:99cqw; padding:.3cqw 1cqw; cursor:pointer; white-space:nowrap}
+.pv .pv-btn.on{background:#FF6016; color:#fff}
+.pv .pv-btn:hover{filter:brightness(.95)}
+.pv .pv-btn:focus-visible{outline:none; box-shadow:0 0 0 .3cqw rgba(255,96,22,.35)}
+.pv .pv-act{display:flex; gap:.7cqw; margin-top:.9cqw; flex-wrap:wrap}
+.pv .pv-badge{display:inline-block; font-size:.95cqw; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8d8c84; border:.09cqw solid #d9cfc8; border-radius:99cqw; padding:.15cqw .7cqw; vertical-align:middle; white-space:nowrap}
+.pv .pv-badge.on{color:#fff; background:#FF6016; border-color:#FF6016}
+.pv .pv-chip{display:inline-block; border:.09cqw solid #FF6016; color:#FF6016; border-radius:99cqw; padding:.15cqw .8cqw; font-size:1cqw; margin:0 .5cqw .4cqw 0; vertical-align:middle}
+/* Chemin de fer */
+.pv .pv-spreads{display:grid; grid-template-columns:repeat(10,1fr); gap:1cqw .8cqw}
+.pv .pv-sp{height:5cqw; display:flex; gap:.12cqw; border-radius:.2cqw; overflow:hidden}
+.pv .pv-sp.first{width:50%; margin-left:auto}
+.pv .pv-sp.last{width:50%}
+.pv .pv-pg{flex:1; height:100%; position:relative}
+.pv .pv-pg span{position:absolute; left:.3cqw; bottom:.2cqw; font-size:.8cqw; font-weight:700}
+.pv .pv-legend{display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:min-content; gap:1.05cqw 2.4cqw; overflow:hidden}
+.pv .pv-lg{display:grid; grid-template-columns:1.2cqw 3.6cqw 1fr auto; gap:.8cqw; align-items:center}
+.pv .pv-lg i{width:1.2cqw; height:1.2cqw; border-radius:.2cqw; display:block}
+.pv .pv-lg-n{font-size:2cqw; font-weight:300; color:#FF6016; line-height:1}
+.pv .pv-lg-t{font-size:1.2cqw; line-height:1.2}
+.pv .pv-lg-t span{color:#8d8c84}
+.pv .pv-dec{background:#FF6016; color:#fff; border-radius:99cqw; padding:.25cqw .8cqw; font-size:1.05cqw; font-weight:700; white-space:nowrap}
+/* Bandeau « vous êtes ici » */
+.pv .pv-strip{display:flex; gap:.1cqw; height:1.25cqw}
+.pv .pv-strip i{flex:1; background:#F2E6DD; border-radius:.08cqw}
+.pv .pv-strip i.on{background:#FF6016}
+.pv .pv-strip-l{display:flex; justify-content:space-between; font-size:.95cqw; margin-top:.35cqw; color:#8d8c84}
+.pv .pv-strip-l b{color:#FF6016}
+.pv .pv-topbar{display:flex; justify-content:space-between; align-items:center; gap:2cqw}
+/* Une proposition */
+.pv .pv-hero{display:flex; flex-direction:column; justify-content:center}
+.pv .pv-hero-t{font-size:2.9cqw; font-weight:700; line-height:1.15; margin-bottom:1.6cqw}
+.pv .pv-hero-b{font-size:2.05cqw; line-height:1.38; max-width:60cqw}
+.pv .pv-details{display:grid; grid-template-columns:2fr 1.2fr 1.4fr 1fr; gap:2cqw; margin-top:2.4cqw; padding-top:1.4cqw; border-top:.09cqw solid #FFD2BD}
+.pv .pv-dv{font-size:1.35cqw; margin-top:.35cqw; line-height:1.3}
+/* Deux ou trois propositions pour une place */
+.pv .pv-cards{display:grid; gap:2cqw; align-items:stretch}
+.pv .pv-card{background:#FFF0E8; border-radius:.9cqw; padding:1.8cqw 2cqw; display:flex; flex-direction:column}
+.pv .pv-card.won{box-shadow:inset 0 0 0 .2cqw #FF6016}
+.pv .pv-card-h{display:flex; align-items:baseline; gap:1cqw; flex-wrap:wrap}
+.pv .pv-letter{font-size:4cqw; font-weight:300; color:#FF6016; line-height:.9}
+.pv .pv-card-t{font-size:2.3cqw; font-weight:700; line-height:1.15; margin:.6cqw 0}
+.pv .pv-card-a{font-size:1.5cqw; font-weight:700; color:#FF6016; line-height:1.3}
+.pv .pv-card-b{font-size:1.5cqw; line-height:1.42; margin-top:1cqw; flex:1}
+.pv .pv-card-f{margin-top:1.4cqw}
+/* Plusieurs places (portraits) */
+.pv .pv-grid{display:grid; grid-auto-rows:1fr; gap:1.6cqw 2cqw}
+.pv .pv-mini{display:flex; gap:1.2cqw; align-items:flex-start; min-width:0}
+.pv .pv-oval{width:5cqw; height:6.2cqw; border-radius:50%; background:#FFEDE3; display:grid; place-items:center; flex:none; color:#FF6016; font-size:2.4cqw; font-weight:300}
+.pv .pv-mini-c{min-width:0}
+.pv .pv-mini-t{font-size:1.7cqw; font-weight:700; line-height:1.15}
+.pv .pv-mini-a{font-size:1.1cqw; font-weight:700; color:#FF6016; margin:.3cqw 0 .4cqw}
+.pv .pv-mini-b{font-size:1.05cqw; line-height:1.38; margin-bottom:.4cqw}
+.pv .pv-mini .pv-act{margin-top:.5cqw}
+/* Rubriques courtes */
+.pv .pv-cols{display:grid; gap:2.2cqw}
+.pv .pv-col{display:flex; flex-direction:column; gap:1cqw; min-width:0}
+.pv .pv-col-h{border-bottom:.09cqw solid #FF6016; padding-bottom:.6cqw; display:flex; justify-content:space-between; align-items:baseline; gap:1cqw}
+.pv .pv-col-h b{font-size:1.6cqw; color:#FF6016}
+.pv .pv-col-h span{font-size:1.05cqw; white-space:nowrap}
+.pv .pv-cc.boxed{background:#FFF0E8; border-radius:.9cqw; padding:1.1cqw 1.3cqw}
+.pv .pv-cc-l{font-size:1.05cqw; font-weight:700; color:#FF6016}
+.pv .pv-cc-t{font-size:1.5cqw; font-weight:700; line-height:1.2; margin-top:.2cqw}
+.pv .pv-cc-a{font-size:1.1cqw; font-weight:700; color:#FF6016; margin:.3cqw 0}
+.pv .pv-cc-b{font-size:1.12cqw; line-height:1.38}
+.pv .pv-col .pv-add{align-self:flex-start}
+.pv .out{opacity:.45}
+/* Grille de décision */
+.pv .pv-decide{display:flex; flex-direction:column; justify-content:center; gap:1.3cqw}
+.pv .pv-dr{display:grid; grid-template-columns:15cqw 6cqw 1fr; gap:1.6cqw; align-items:start; padding-bottom:1.1cqw; border-bottom:.09cqw solid #FFD2BD}
+.pv .pv-dr b{font-size:1.45cqw}
+.pv .pv-dr>div:first-child span{display:block; font-size:1.05cqw; color:#8d8c84}
+.pv .pv-dn{font-size:2.4cqw; font-weight:300; color:#FF6016; line-height:1}
+.pv .pv-dl{display:flex; flex-wrap:wrap; gap:.7cqw 1.8cqw}
+.pv .pv-dc{display:inline-flex; align-items:center; gap:.6cqw; font:inherit; font-size:1.22cqw; white-space:nowrap; background:none; border:none; padding:0; color:#000; cursor:pointer}
+.pv span.pv-dc{cursor:default}
+.pv .pv-dc i{width:1.5cqw; height:1.5cqw; border:.12cqw solid #FF6016; border-radius:.25cqw; display:inline-grid; place-items:center; font-style:normal; font-size:1.1cqw; color:#fff; font-weight:700}
+.pv .pv-dc.won i{background:#FF6016}
+.pv .pv-dc b{color:#FF6016; font-size:1.22cqw}
+</style>
 </head>
 <body>
 
@@ -761,7 +929,7 @@
           <button class="more-menu-item" id="btnJson">Sauvegarde</button>
           <button class="more-menu-item" id="btnImport">Importer</button>
           <button class="more-menu-item" id="btnPrint">Imprimer</button>
-          <button class="more-menu-item" id="btnPresentation">🎬 Sujets pressentis</button>
+          <button class="more-menu-item" id="btnPresentation">🎬 Présenter au comité</button>
           <button class="more-menu-item" id="btnReset">Réinitialiser</button>
           <div class="more-menu-sep"></div>
           <button class="more-menu-item danger" id="btnDeleteIssue">🗑 Supprimer ce numéro</button>
@@ -826,6 +994,8 @@
       </div>
     </div>
 
+    <div class="envis" id="envis"></div>
+
     <div class="circuit" id="circuit"></div>
   </div>
   <div class="peek-foot">
@@ -867,16 +1037,16 @@
   </div>
 </div>
 
-<div class="scrim" id="presScrim"></div>
-<div class="modal" id="presModal" role="dialog" aria-modal="true" aria-labelledby="presTitle">
-  <div class="modal-h"><span id="presTitle">Sujets pressentis</span><span class="spacer"></span><button class="ghostbtn" id="closePres" title="Fermer">✕</button></div>
-  <div class="modal-b">
-    <p class="modal-i">Choisissez les numéros à présenter : une slide par dossier (rubrique + sujet), avec sa proposition de brief. Les pages sans rubrique ni sujet n'apparaissent pas.</p>
-    <div class="pres-issue-list" id="presIssueList"></div>
-    <div class="peek-foot" style="padding:14px 0 0; border-top:none">
-      <span class="spacer"></span>
-      <button class="ghostbtn primary" id="presGenerate">Générer la présentation →</button>
-    </div>
+<div class="pv-ov" id="presOverlay" hidden role="dialog" aria-modal="true" aria-label="Présentation du comité éditorial">
+  <div class="pv-stage"><div class="pv frame" id="presFrame"></div></div>
+  <div class="pv-bar">
+    <button type="button" id="pvPrev" aria-label="Slide précédente">‹</button><span id="pvCount"></span><button type="button" id="pvNext" aria-label="Slide suivante">›</button>
+    <span class="pv-sep"></span>
+    <span class="pv-hint">Cliquez sur un texte pour le modifier : tout est enregistré dans le chemin de fer</span>
+    <span class="pv-sep"></span>
+    <button type="button" id="pvExport" title="Télécharger une copie HTML (lecture seule)">⤓ Copie</button>
+    <button type="button" id="pvFs" title="Plein écran (F)">⛶ Plein écran</button>
+    <button type="button" id="pvClose" title="Fermer (Échap)">✕</button>
   </div>
 </div>
 
@@ -1048,6 +1218,9 @@ function rowToPage(r){
 }
 
 let state = { pages: Array.from({length:TOTAL},(_,i)=>blankPage(i+1)) };
+let props = [];                 // sujets envisagés (propositions) du numéro ouvert
+let propsUnavailable = false;   // table absente : migration non jouée
+let propsChannel = null;
 let issuesCache = [];
 let currentIssue = null;
 let appInited = false;
@@ -1610,10 +1783,16 @@ function pageCard(p, role){ // role: 'left' | 'right' | 'solo-p1' | 'solo-p56' |
   // style inline gagnerait toujours contre le fond bleu posé par la classe
   // .selected, qui deviendrait invisible sur une carte colorée.
   el.style.background = (p.rubrique && !selectedPages.has(p.n)) ? tint(rt.bg, .35) : "";
-  const rub = `<div class="rubrow">${p.rubrique?pillHTML(p.rubrique,rt,"rubrique",p.rubrique):""}</div>`;
+  // Sujets envisagés : annoncés sur la première page du bloc de la rubrique.
+  const prevP = state.pages[p.n-2];
+  const nEnv = (p.rubrique && (!prevP || prevP.rubrique!==p.rubrique)) ? propsFor(p.rubrique).filter(x=>x.statut==="pressentie").length : 0;
+  const envPill = nEnv ? `<span class="envis-pill" title="${nEnv} sujet${nEnv>1?"s":""} envisagé${nEnv>1?"s":""} pour cette rubrique">✦ ${nEnv} envisagé${nEnv>1?"s":""}</span>` : "";
+  const rub = `<div class="rubrow">${p.rubrique?pillHTML(p.rubrique,rt,"rubrique",p.rubrique):""}${envPill}</div>`;
   const lotLabel = p.lot && LOTS[p.lot] ? LOTS[p.lot].label : p.lot;
   const lot = p.lot?`<div class="lotrow">${pillHTML(lotLabel,getTagColor(p.lot,"lot"),"lot",p.lot)}</div>`:"";
-  const suj = `<div class="sujet${p.sujet?"":" empty"}">${p.sujet?esc(p.sujet):"Sujet à définir"}</div>`;
+  const suj = p.sujet ? `<div class="sujet">${esc(p.sujet)}</div>`
+    : nEnv ? `<div class="sujet empty envis-n">${nEnv} sujet${nEnv>1?"s":""} envisagé${nEnv>1?"s":""}${nEnv>rubPlaces(p.rubrique)?", à trancher":""}</div>`
+    : `<div class="sujet empty">Sujet à définir</div>`;
 
   const bits=[];
   if(p.calib){
@@ -2412,6 +2591,7 @@ function openPeek(n){
   document.getElementById("dnum").textContent = "Page "+n+(COVER[n]?"  ·  "+COVER[n]:"");
   dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes; F.brief.value=p.brief;
   renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes); autoGrow(F.brief);
+  renderPropsPeek();
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
   document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
@@ -2643,7 +2823,7 @@ function setEtape(pages, key, val, label){
   render();
 }
 dtitle.addEventListener("input",e=>{ autoGrow(e.target); commit("sujet",e.target.value); });
-F.rub.addEventListener("input",e=>commit("rubrique",e.target.value));
+F.rub.addEventListener("input",e=>{ commit("rubrique",e.target.value); clearTimeout(F.rub._envT); F.rub._envT=setTimeout(renderPropsPeek, 300); presRefresh(); });
 F.thematique.addEventListener("input",e=>commit("thematique",e.target.value));
 F.calib.addEventListener("input",e=>commit("calib",e.target.value));
 F.unite.addEventListener("change",e=>commit("unite",e.target.value));
@@ -2681,6 +2861,7 @@ function refreshPeekIfIdle(n){
   const p=state.pages[n-1];
   dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes; F.brief.value=p.brief;
   renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes); autoGrow(F.brief);
+  renderPropsPeek();
 }
 
 /* ---- header fields (numero / bouclage of the current issue) ---- */
@@ -2824,6 +3005,11 @@ async function selectIssue(id, pushUrl){
     return r ? rowToPage(r) : blankPage(i+1);
   });
   await loadColorCustomizations(id);
+  await loadPropositions(id);
+  // Thème pressenti du numéro (présentation du comité). Absent de issuesCache,
+  // qui ne charge que l'essentiel ; une colonne pas encore migrée est ignorée.
+  { const { data:t, error:te } = await sb.from("issues").select("theme").eq("id", id).single();
+    iss.theme = (!te && t && t.theme) || ""; }
 
   // Si le mois courant n'a aucun rendu, caler le Gantt sur le premier rendu
   // connu plutôt que sur un tableau vide autour d'aujourd'hui.
@@ -2839,6 +3025,8 @@ async function selectIssue(id, pushUrl){
 
   render();
   subscribePages(id);
+  subscribeProps(id);
+  presRefresh();
 }
 async function createIssue(){
   const name = prompt("Nom du nouveau chemin de fer :", "");
@@ -2908,6 +3096,15 @@ async function duplicateIssue(id){
   if(dropped.length){
     alert(`Copie effectuée, mais la base de données ne connaît pas encore la colonne « ${dropped.join(", ")} » : ce champ n'a pas pu être recopié.\n\nRelancez la migration supabase/schema.sql (ou « Reload schema cache » dans Supabase) puis recommencez pour une copie complète.`);
   }
+  // Les sujets envisagés suivent, avec leur statut : les pages étant copiées à
+  // l'identique, un sujet retenu retrouve sa page dans la copie. Table absente
+  // (migration pas encore jouée) : on copie le reste sans s'arrêter.
+  { const { data: srcProps, error:ep } = await sb.from("propositions").select("*").eq("issue_id", id);
+    if(!ep && (srcProps||[]).length){
+      const rows=srcProps.map(({id:_i, created_at:_c, issue_id:_s, ...r})=>({...r, issue_id:newIss.id}));
+      const { error:ep2 } = await sb.from("propositions").insert(rows);
+      if(ep2) console.error("Erreur copie sujets envisagés :", ep2.message);
+    } }
   if((srcColors||[]).length>0){
     const newColors = (srcColors||[]).map(c=>({ issue_id:newIss.id, field_type:c.field_type, tag_name:c.tag_name, bg_color:c.bg_color, fg_color:c.fg_color }));
     const { error:e3 } = await sb.from("color_customizations").insert(newColors);
@@ -2918,12 +3115,246 @@ async function duplicateIssue(id){
   await selectIssue(newIss.id);
 }
 
-/* ---- Présentation des sujets pressentis ------------------------------
-   Une slide par dossier (rubrique + sujet regroupant ses pages, cf.
-   buildDossiersFrom) sur les numéros choisis, avec sa proposition de brief.
-   Le document généré est un fichier HTML autonome (pas de dépendance
-   réseau) ouvert dans un nouvel onglet — pas une page publiée par Claude :
-   il vit entièrement dans le navigateur de l'utilisateur. */
+/* ---- Sujets envisagés (propositions) ---------------------------------
+   Une page du chemin de fer ne porte qu'un sujet ; une rubrique peut en
+   attendre plusieurs pendant le comité éditorial. Les propositions sont donc
+   rattachées à une RUBRIQUE, dont les pages viennent du chemin de fer. Une
+   proposition retenue est recopiée sur une page libre de sa rubrique : la
+   page devient alors la source de vérité, et toute modification faite dans
+   la présentation y est répercutée. */
+const PROP_FIELDS = ["rubrique","titre","angle","brief","thematique","format","nb_pages","calib","statut","page_n","ordre"];
+const propSort = (a,b) => ((a.ordre||0)-(b.ordre||0)) || String(a.created_at||"").localeCompare(String(b.created_at||""));
+const propsFor = rub => props.filter(x=>x.rubrique===rub).sort(propSort);
+const rubPages = rub => state.pages.filter(p=>p.rubrique===rub).map(p=>p.n);
+const PROP_LETTERS = "ABCDEFGHIJKLMNOP";
+// Nombre de places d'une rubrique : ses pages divisées par la taille habituelle
+// d'une proposition (4 pages d'« Entrée des artistes » à 1 page chacune = 4
+// places ; 8 pages de Dossier pour une proposition de 8 pages = 1 place).
+function rubPlaces(rub){
+  const n = rubPages(rub).length; if(!n) return 1;
+  const sizes = propsFor(rub).filter(x=>x.statut!=="ecartee").map(x=>Number(x.nb_pages)).filter(v=>v>0).sort((a,b)=>a-b);
+  if(!sizes.length) return 1;
+  return Math.max(1, Math.floor(n / sizes[Math.floor(sizes.length/2)]));
+}
+// Page qui accueille une proposition retenue. On la retrouve par son sujet
+// dans la rubrique plutôt que par son seul numéro : un glisser-déposer de
+// pages change les numéros, pas les sujets.
+function propPage(x){
+  if(x.statut!=="retenue") return null;
+  const byN = x.page_n ? state.pages[x.page_n-1] : null;
+  if(byN && byN.rubrique===x.rubrique && byN.sujet===(x.titre||"")) return byN;
+  return state.pages.find(p=>p.rubrique===x.rubrique && p.sujet && p.sujet===(x.titre||"")) || byN;
+}
+
+async function loadPropositions(issueId){
+  const { data, error } = await sb.from("propositions").select("*").eq("issue_id", issueId).order("ordre",{ascending:true});
+  if(error){ props=[]; propsUnavailable=true; console.warn("Propositions indisponibles (relancez supabase/schema.sql) :", error.message); return; }
+  propsUnavailable=false;
+  props=(data||[]).slice().sort(propSort);
+}
+function onPropsChanged(){ scheduleRender(120); renderPropsPeek(); presRefresh(); }
+function subscribeProps(issueId){
+  if(propsChannel){ sb.removeChannel(propsChannel); propsChannel=null; }
+  if(propsUnavailable) return;
+  propsChannel = sb.channel("props-"+issueId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"propositions",filter:`issue_id=eq.${issueId}`}, payload=>{
+      if(payload.eventType==="DELETE"){ const id=payload.old && payload.old.id; props=props.filter(x=>x.id!==id); }
+      else {
+        const row=payload.new; if(!row || !row.id) return;
+        const local=props.find(x=>x.id===row.id);
+        // Une saisie locale pas encore écrite garde la main sur la valeur reçue.
+        if(local){ for(const k of PROP_FIELDS){ if(!propTimers[local.id+":"+k]) local[k]=row[k]; } }
+        else props.push(row);
+      }
+      onPropsChanged();
+    }).subscribe();
+}
+
+const propTimers={};
+function setPropField(x, field, val){
+  x[field]=val;
+  const key=x.id+":"+field; clearTimeout(propTimers[key]);
+  propTimers[key]=setTimeout(async ()=>{
+    delete propTimers[key];
+    const { error } = await sb.from("propositions").update({[field]: x[field]}).eq("id", x.id);
+    if(error) console.error("Erreur de sauvegarde de la proposition :", error.message); else flashSaved();
+  }, 450);
+  // Retenue : la page qui l'accueille suit (titre → sujet, angle + brief → brief…).
+  const p = propPage(x);
+  if(p){
+    const map = {titre:"sujet", thematique:"thematique"};
+    if(map[field]) setPageFieldFromPres(p, map[field], val);
+    if(field==="brief" || field==="angle") setPageFieldFromPres(p, "brief", composeBrief(x));
+    if(field==="calib"){ setPageFieldFromPres(p, "unite", "signes"); setPageFieldFromPres(p, "calib", val==null?"":val); }
+    if(field==="titre") x.page_n = p.n;
+  }
+}
+const composeBrief = x => [x.angle, x.brief].filter(Boolean).join(" — ");
+// Écriture d'un champ de page depuis la présentation ou le panneau des sujets
+// envisagés : même débounce que la saisie dans le panneau de la page.
+function setPageFieldFromPres(p, field, val){
+  p[field]=val;
+  const key=p.id+":"+field;
+  clearTimeout(writeTimers[key]);
+  writeTimers[key]=setTimeout(()=>persistField(p, field), 350);
+  scheduleRender(200);
+  if(current===p.n) refreshPeekIfIdle(p.n);
+}
+
+async function addProposition(rub, fields){
+  if(!currentIssue || isVisitorMode) return null;
+  const ordre = Math.max(0, ...propsFor(rub).map(x=>x.ordre||0)) + 1;
+  const row = { issue_id:currentIssue.id, rubrique:rub, titre:"", angle:"", brief:"", thematique:"", format:"", statut:"pressentie", ordre, ...(fields||{}) };
+  const { data, error } = await sb.from("propositions").insert(row).select().single();
+  if(error){
+    alert("Impossible d'ajouter le sujet envisagé : "+error.message+(propsUnavailable||/propositions/.test(error.message)?"\n\nLa table « propositions » n'existe pas encore dans Supabase : relancez supabase/schema.sql (puis « Reload schema cache »).":""));
+    return null;
+  }
+  if(!props.find(x=>x.id===data.id)) props.push(data);
+  logActivity(`a envisagé un sujet en « ${rub} »`, null);
+  onPropsChanged();
+  return data;
+}
+async function updatePropStatus(x, patch){
+  Object.assign(x, patch);
+  const { error } = await sb.from("propositions").update(patch).eq("id", x.id);
+  if(error) console.error("Erreur de sauvegarde de la proposition :", error.message); else flashSaved();
+}
+async function persistPageRow(p){
+  if(!p.id) return true;
+  const { error } = await sb.from("pages").upsert(pageToRow(p));
+  if(error){ alert("Erreur d'écriture de la page : "+error.message); return false; }
+  return true;
+}
+// Retenir : la proposition remplit la première page sans sujet de sa rubrique.
+async function retainProposition(x){
+  if(isVisitorMode) return false;
+  const pages = state.pages.filter(p=>p.rubrique===x.rubrique);
+  if(!pages.length){ alert(`La rubrique « ${x.rubrique} » n'a pas encore de page dans le chemin de fer : donnez d'abord cette rubrique à une page.`); return false; }
+  const p = pages.find(pg=>!pg.sujet);
+  if(!p){ alert(`Toutes les pages de « ${x.rubrique} » ont déjà un sujet. Remettez-en un en « envisagé », ou donnez cette rubrique à une page de plus.`); return false; }
+  pushUndo(`Retenir « ${x.titre||"sans titre"} »`, [{...p}]);
+  p.sujet = x.titre||"";
+  if(x.angle || x.brief) p.brief = composeBrief(x);
+  if(x.thematique) p.thematique = x.thematique;
+  if(x.calib!=null && x.calib!==""){ p.calib = x.calib; p.unite = "signes"; }
+  if(!(await persistPageRow(p))) return false;
+  await updatePropStatus(x, {statut:"retenue", page_n:p.n});
+  logActivity(`a retenu « ${x.titre||"sans titre"} » pour la page ${p.n}`, p.n);
+  render(); if(current===p.n) refreshPeekIfIdle(p.n);
+  onPropsChanged();
+  return true;
+}
+async function unretainProposition(x, silent){
+  const p = propPage(x);
+  if(p && p.sujet===(x.titre||"")){
+    pushUndo(`Remettre « ${x.titre||"sans titre"} » en envisagé`, [{...p}]);
+    p.sujet=""; if(p.brief===composeBrief(x)) p.brief=""; if(p.thematique===x.thematique) p.thematique="";
+    if(x.calib!=null && String(p.calib)===String(x.calib)) p.calib="";
+    await persistPageRow(p);
+  }
+  await updatePropStatus(x, {statut:"pressentie", page_n:null});
+  if(!silent) logActivity(`a remis « ${x.titre||"sans titre"} » en sujet envisagé`, p?p.n:null);
+  render(); if(p && current===p.n) refreshPeekIfIdle(p.n);
+  onPropsChanged();
+}
+async function discardProposition(x){
+  if(x.statut==="retenue") await unretainProposition(x, true);
+  await updatePropStatus(x, {statut:"ecartee", page_n:null});
+  logActivity(`a écarté « ${x.titre||"sans titre"} »`, null);
+  onPropsChanged();
+}
+async function restoreProposition(x){ await updatePropStatus(x, {statut:"pressentie"}); onPropsChanged(); }
+async function deleteProposition(x){
+  if(!confirm(`Supprimer définitivement « ${x.titre||"ce sujet envisagé"} » ? (« Écarter » le garde de côté.)`)) return;
+  if(x.statut==="retenue") await unretainProposition(x, true);
+  props=props.filter(y=>y.id!==x.id);
+  const { error } = await sb.from("propositions").delete().eq("id", x.id);
+  if(error) alert("Erreur de suppression : "+error.message);
+  onPropsChanged();
+}
+async function propAction(act, x){
+  if(isVisitorMode || !x) return;
+  if(act==="retain") await retainProposition(x);
+  else if(act==="unretain") await unretainProposition(x);
+  else if(act==="discard") await discardProposition(x);
+  else if(act==="restore") await restoreProposition(x);
+  else if(act==="delete") await deleteProposition(x);
+}
+function setTheme(val){
+  if(!currentIssue) return;
+  currentIssue.theme = val;
+  clearTimeout(propTimers.theme);
+  propTimers.theme = setTimeout(async ()=>{
+    delete propTimers.theme;
+    const { error } = await sb.from("issues").update({theme: currentIssue.theme}).eq("id", currentIssue.id);
+    if(error) console.error("Erreur de sauvegarde du thème :", error.message); else flashSaved();
+  }, 450);
+}
+
+/* ---- Panneau de page : les sujets envisagés de sa rubrique ---------- */
+const propStatusLabel = x => x.statut==="retenue" ? `Retenu${propPage(x)?" · p. "+propPage(x).n:""}` : x.statut==="ecartee" ? "Écarté" : "Envisagé";
+function renderPropsPeek(){
+  const host=document.getElementById("envis"); if(!host) return;
+  if(current==null){ host.innerHTML=""; return; }
+  // Ne pas reconstruire sous une saisie en cours (un bouton qui a le focus, lui, ne compte pas).
+  const ae=document.activeElement;
+  if(host.contains(ae) && ae.matches("input,textarea")) { host.dataset.dirty="1"; return; }
+  host.dataset.dirty="";
+  const p=state.pages[current-1];
+  const ro = isVisitorMode ? " disabled" : "";
+  if(!p.rubrique){
+    host.innerHTML=`<div class="envis-h"><span class="t">Sujets envisagés</span></div><div class="envis-empty">Donnez une rubrique à la page pour y envisager des sujets.</div>`; return;
+  }
+  const list=propsFor(p.rubrique), open=list.filter(x=>x.statut!=="ecartee"), out=list.filter(x=>x.statut==="ecartee");
+  const item=(x,i)=>`<div class="envi st-${x.statut}" data-id="${x.id}">
+      <div class="envi-top"><span class="envi-l">${PROP_LETTERS[i]||"·"}</span>
+        <input class="envi-t" data-f="titre" value="${esc(x.titre)}" placeholder="Titre provisoire"${ro}>
+        <span class="envi-st">${esc(propStatusLabel(x))}</span></div>
+      <input class="envi-a" data-f="angle" value="${esc(x.angle)}" placeholder="Angle, en une ligne"${ro}>
+      <textarea class="envi-b" data-f="brief" rows="2" placeholder="Brief : ce qu'on va chercher, pourquoi maintenant"${ro}>${esc(x.brief)}</textarea>
+      <details class="envi-d"><summary>Répertoire, format, calibrage</summary>
+        <div class="envi-g">
+          <label>Répertoire<input data-f="thematique" value="${esc(x.thematique)}" placeholder="—"${ro}></label>
+          <label>Format<input data-f="format" value="${esc(x.format)}" placeholder="Portrait, enquête…"${ro}></label>
+          <label>Pages<input data-f="nb_pages" type="number" min="1" max="56" value="${x.nb_pages??""}" placeholder="toute la rubrique"${ro}></label>
+          <label>Signes<input data-f="calib" type="number" min="0" step="500" value="${x.calib??""}" placeholder="—"${ro}></label>
+        </div></details>
+      ${isVisitorMode?"":`<div class="envi-act">
+        ${x.statut==="pressentie"?`<button type="button" data-act="retain" class="on">Retenir</button><button type="button" data-act="discard">Écarter</button>`:""}
+        ${x.statut==="retenue"?`<button type="button" data-act="unretain">Remettre en envisagé</button>`:""}
+        ${x.statut==="ecartee"?`<button type="button" data-act="restore">Rétablir</button>`:""}
+        <span class="spacer"></span><button type="button" data-act="delete" class="del" title="Supprimer">Supprimer</button></div>`}
+    </div>`;
+  const places=rubPlaces(p.rubrique), nOpen=open.length;
+  host.innerHTML=`<div class="envis-h"><span class="t">Sujets envisagés</span><span class="spacer"></span>
+      <span class="envis-c">${esc(p.rubrique)} · ${nOpen} pour ${places} place${places>1?"s":""}</span></div>
+    ${propsUnavailable?`<div class="envis-empty">La table « propositions » n'existe pas encore dans Supabase : relancez <b>supabase/schema.sql</b>.</div>`:""}
+    ${open.map((x,i)=>item(x,i)).join("")}
+    ${out.length?`<details class="envis-out"><summary>${out.length} écarté${out.length>1?"s":""}</summary>${out.map((x,i)=>item(x,open.length+i)).join("")}</details>`:""}
+    ${isVisitorMode||propsUnavailable?"":`<button type="button" class="ghostbtn envis-add" id="envisAdd">+ Envisager un sujet pour « ${esc(p.rubrique)} »</button>`}`;
+  host.querySelectorAll("textarea").forEach(autoGrow);
+}
+(function wirePropsPeek(){
+  const host=document.getElementById("envis"); if(!host) return;
+  host.addEventListener("input", e=>{
+    const el=e.target.closest("[data-f]"), card=e.target.closest(".envi"); if(!el||!card) return;
+    const x=props.find(y=>y.id===card.dataset.id); if(!x) return;
+    let v=el.value; if(el.type==="number") v = v==="" ? null : Number(v);
+    setPropField(x, el.dataset.f, v);
+    if(el.tagName==="TEXTAREA") autoGrow(el);
+  });
+  host.addEventListener("click", async e=>{
+    const b=e.target.closest("[data-act]");
+    if(b){ const card=b.closest(".envi"); await propAction(b.dataset.act, props.find(y=>y.id===card.dataset.id)); return; }
+    if(e.target.closest("#envisAdd")){
+      const p=state.pages[current-1]; const x=await addProposition(p.rubrique);
+      if(x){ if(document.activeElement) document.activeElement.blur(); renderPropsPeek(); const t=host.querySelector(`.envi[data-id="${x.id}"] .envi-t`); if(t) t.focus(); }
+    }
+  });
+  host.addEventListener("focusout", ()=>{ setTimeout(()=>{ if(host.dataset.dirty && !host.contains(document.activeElement)) renderPropsPeek(); }, 0); });
+})();
+
 // Charte graphique Sacem (extraite du gabarit PowerPoint 16:9 fourni) — utilisée
 // UNIQUEMENT par la présentation des sujets pressentis, pas par le reste de l'appli.
 // Fond : dégradé orange/pêche du gabarit (recompressé, c'est un flou : la
@@ -2931,273 +3362,296 @@ async function duplicateIssue(id){
 const SACEM_BG_JPEG = "data:image/jpeg;base64,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oLJZCWLJS5WLM6k1mai5mpLmajWVLlUZUsmoRSxRFEURSS0RRFEURRlRJqLFEmhlauVploZtJFpm2mbSS1ZLaRSKqSqkqpKUKkURRFEUnqGuKWKBJZKlipYslixYslksmouZqSyai5aiyaGZouVRFEVUaGbRFqZtEmhlaZahJqLFGWi5URURRGhm1ZFpFqZtEtJKpLSS0kq2RQCFEUSykFAeoXiligQSwLJYsWElLJUuViyaiyaksmoRS5ahFEURRFEtEURSRSxRJqEURYsURoZURaZaJFEtEUS0kqpFtRSCpFAUCAAAAAekXkligQSwLFhJSyUslElSyUslEUuVEVGWi5WmWhFJFVGoRqEURURRlSxRFEURRFploZtJFEtVFIUkoFWRRKAEoSiRSwAIB6ReYLARZKlglLJSyUSUsWEUuWpEUZUsURRFEURaZqkUSaGWoRRFEUZaGWhlqEWmbRFEUgpFVFIAKkURRFgAAAAAACegXAECpYqVECxRJSwEUSUsUQEUsURRFEUAgpAJRFEUsURRFEURSRRCkURRFIAACACkLUAAABKAAAH3DAECpRBKlECxRARSxRJRFEURRFEURRFEURRFEUQKCRRFEURRFEUkURRFEVUogAAAAACUAAAAAfYMgRSwCURYoRFECgRRFgAlAAAAAACUsURRAgACUJVSgCShFEURRKCUAgAAAACUBUoAAAfVUzAoCUsWACURUsAlEURYoAAAAAAAAEUQAWAAJRFEUkURRFEoSgAFAiUJRKEoASgAAAAB9RIlEWKABFLFEAlEUsVEAAAAAAAAlEVUWBYAgCURRFEUkURVRRFEURRFEURRFEUARQlAAUCACmxkAlCUQKAACxRAAAAAAJRFEoARRFgAAlEUkUQUAACFgAURRFEUQpFEpSUShKAEoSgAABtZIEAoACURYoAAEUsURRFEokoARRFEKQAUlEURSQAAAABZQAIAKRRFEURRFEUJRFEUSgAFAblmQAQCgAAJRFLFEWABRFEURSRRFVFgAABFEAAAFgAAAAAAABRFEURVRRFEURRFEoAAgGhmgRRFEUQASgAABQAApFEURRFgCAJRFgAFAJRFEUSgCABQQFAAAAFEURRFEURQAFAAUYAAoAAAAAAAAAAAAAAAVFEACARRFEAAKRZQpFEURRKAAAAAABVRSRRFLFJKAABWLFgU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";
 const SACEM_LOGO_VIEWBOX = "0 0 273.28 77.28";
 const SACEM_LOGO_PATHS = ["M39.57 56.02 39.57 56.02 39.57 56.03Z", "M59.35 6.27C49.92 6.27 42.97 13.09 40.76 24.57L36.49 50.16 35.64 49.65 35.47 49.55C34.34 48.94 32.04 48.71 29.96 48.84 25.31 49.14 19.85 51.22 15.4 54.71L15.4 54.71C10.92 58.25 8.53 62.37 8.73 65.77 8.84 67.63 9.77 69.26 11.53 70.35L11.53 70.35C13.33 71.47 15.73 71.88 18.38 71.72 23.04 71.43 28.51 69.34 32.95 65.85L32.95 65.85C36.9 62.73 39.2 59.16 39.56 56.03L39.83 53.85 44.6 25.26C45.48 20.72 48.66 10.17 59.35 10.17L264.22 10.21 264.22 6.31 59.35 6.27Z", "M65.17 50.26C65.71 53.73 69.39 55.09 72.45 55.09 75.85 55.09 77.96 53.39 77.96 51.55 77.96 50.33 77.08 49.37 75.24 48.83L68.58 46.72C63.82 45.29 60.76 42.16 60.76 37.27 60.76 30.81 66.06 26.12 74.7 26.12 82.79 26.12 88.43 30.27 89.59 35.5L81.91 37.81C81.43 35.09 78.78 33.12 74.7 33.12 70.76 33.12 69.67 34.96 69.67 36.52 69.67 37.61 70.21 38.83 73.48 39.85L77.63 41.14C83.61 43.04 86.67 46.04 86.67 51.07 86.67 58.07 80.07 62.08 71.85 62.08 64.78 62.08 57.84 59.16 56.28 52.77L65.17 50.26Z", "M124.33 40.74 119.64 61.07 111.07 61.07 111.68 58.35C108.82 60.53 105.02 62.09 100.39 62.09 93.52 62.09 89.37 58.69 89.37 52.84 89.37 45.97 95.35 40.4 106.3 40.4L115.82 40.4 116.02 39.58C116.84 36.18 115.07 33.66 110.65 33.66 106.98 33.66 103.71 35.43 102.15 38.83L94.13 36.72C96.85 30.33 103.85 26.11 111.47 26.11 121.06 26.12 126.5 31.22 124.33 40.74ZM114.26 47.2 104.26 47.2C100.25 47.2 98.21 48.9 98.21 51.41 98.21 53.65 100.25 54.95 103.38 54.95 108.28 54.95 113.24 51.69 114.05 48.01L114.26 47.2Z", "M152.95 47.94 161.52 49.37C158.39 57.12 151.25 62.08 143.16 62.08 132.55 62.08 125.48 54.81 127.18 44.13 128.88 33.46 138.26 26.11 148.19 26.11 156.08 26.11 162.2 31.01 163.22 38.62L153.97 40.32C153.7 36.31 150.84 34.34 146.9 34.34 141.26 34.34 136.84 38.35 135.89 44.13 135.01 49.98 138.2 53.85 143.85 53.85 147.79 53.86 151.05 51.96 152.95 47.94Z", "M199.46 46.52 173.08 46.52C173.15 51.69 175.87 54.41 181.1 54.41 183.82 54.41 187.08 53.66 189.73 49.58L197.75 51.62C194.35 58.69 187.69 62.09 180.55 62.09 170.89 62.09 164.84 55.9 164.84 46.59 164.84 34.69 174.7 26.12 184.97 26.12 194.77 26.12 201.64 33.94 199.46 46.52ZM191.85 40.19C191.24 35.7 188.38 33.59 184.3 33.59 179.68 33.59 176.14 36.31 174.37 40.19L191.85 40.19Z", "M262.7 39.85 257.8 61.06 248.89 61.06 253.38 41.68C254.4 37.26 252.36 34.34 248.42 34.34 243.8 34.34 239.99 37.47 238.22 44.2L234.34 61.06 225.37 61.06 229.86 41.68C230.88 37.26 228.84 34.34 224.9 34.34 220.34 34.34 216.67 37.33 214.9 43.86L210.96 61.06 201.98 61.06 209.8 27.13 218.78 27.13 218.03 30.26C220.48 27.68 223.67 26.11 228.3 26.11 233.67 26.11 237.62 28.42 239.11 32.3 242.03 28.49 246.11 26.11 251.82 26.11 259.85 26.12 264.61 31.63 262.7 39.85Z"];
-const presModal=document.getElementById("presModal"), presScrim=document.getElementById("presScrim");
-function openPresDialog(){
-  const list=document.getElementById("presIssueList");
-  list.innerHTML = issuesCache.map(iss=>`
-    <label class="pres-issue-row">
-      <input type="checkbox" value="${iss.id}"${currentIssue && iss.id===currentIssue.id ? " checked" : ""}>
-      <span class="pin">${esc(iss.numero||"(sans nom)")}</span>
-      <span class="pid">${iss.bouclage?("bouclage "+frDate(iss.bouclage)):""}</span>
-    </label>`).join("");
-  presModal.classList.add("open"); presScrim.classList.add("open");
-}
-function closePresDialog(){ presModal.classList.remove("open"); presScrim.classList.remove("open"); }
-presScrim.addEventListener("click", closePresDialog);
-document.getElementById("closePres").addEventListener("click", closePresDialog);
-document.addEventListener("keydown", e=>{ if(e.key==="Escape" && presModal.classList.contains("open")) closePresDialog(); });
-document.getElementById("btnPresentation").addEventListener("click", ()=>{ closeMoreMenu(); openPresDialog(); });
-document.getElementById("presGenerate").addEventListener("click", async ()=>{
-  const ids=[...document.querySelectorAll("#presIssueList input:checked")].map(c=>c.value);
-  if(ids.length===0){ alert("Choisissez au moins un numéro à présenter."); return; }
-  closePresDialog();
-  await generatePresentation(ids);
-});
-
-async function generatePresentation(issueIds){
-  // Préserve l'ordre d'issuesCache (donc de la liste latérale), plutôt que
-  // l'ordre de coche dans le document.
-  const selected = issuesCache.filter(i=>issueIds.includes(i.id));
-  const entries=[];
-  for(const iss of selected){
-    // Le numéro déjà ouvert est en mémoire (state.pages) ; les autres se
-    // relisent en base, un par un, comme le fait duplicateIssue().
-    let pages;
-    if(currentIssue && iss.id===currentIssue.id){
-      pages = state.pages;
-    } else {
-      const { data, error } = await sb.from("pages").select("*").eq("issue_id", iss.id).order("n");
-      if(error){ alert(`Erreur de lecture des pages de « ${iss.numero||"ce numéro"} » : `+error.message); continue; }
-      pages = (data||[]).map(rowToPage);
-    }
-
-    // Seuls les dossiers qui portent déjà une rubrique ou un sujet ont
-    // quelque chose à présenter — une page entièrement vide n'est pas
-    // encore un « sujet pressenti ».
-    const dossiers = buildDossiersFrom(pages).filter(g=>g.rubrique || g.sujets.length);
-    for(const g of dossiers){
-      const journalistes = [...new Set(g.items.map(p=>p.journaliste).filter(Boolean))].join(", ");
-      // Plusieurs pages d'un même dossier portent en théorie le même brief ;
-      // au cas où elles divergent, on les montre toutes plutôt que d'en
-      // perdre une silencieusement.
-      const brief = [...new Set(g.items.map(p=>p.brief).filter(Boolean))].join("\n\n");
-      entries.push({
-        issueId: iss.id,
-        pagesCount: g.pages.length,
-        sigCount: Math.round(g.sig),
-        numero: iss.numero||"(sans nom)",
-        bouclage: frDateFull(iss.bouclage),
-        rubrique: g.rubrique,
-        thematique: g.thematique,
-        title: g.title,
-        brief,
-        journalistes,
-        pagesLabel: formatPages(g.pages),
-      });
-    }
-  }
-  if(entries.length===0){ alert("Aucun sujet renseigné (rubrique ou sujet) dans les numéros sélectionnés."); return; }
-  const html = buildPresentationDoc(selected, entries);
-  const blob = new Blob([html], {type:"text/html"});
-  window.open(URL.createObjectURL(blob), "_blank");
-}
-
-/* Gabarit des slides : reprend la charte Sacem du modèle PowerPoint 16:9
-   (Arial, orange accent3 #FF6016, dégradé orange/pêche, logo). Chaque slide
-   est un cadre 16:9 dont toutes les cotes sont en cqw (1 cqw = 1 % de la
-   largeur) : positions et corps de texte sont ceux du .pptx, convertis en
-   pourcentages de la largeur, et restent proportionnels à toute taille. */
+/* ---- Présentation du comité éditorial --------------------------------
+   Plein écran, DANS l'appli : les slides se recalculent à partir du chemin
+   de fer et des sujets envisagés, et tout ce qu'on y modifie (thème, titres,
+   angles, briefs, choix retenu / écarté) est enregistré aussitôt, avec les
+   mêmes effets que depuis le panneau de page. Mise en page : charte Sacem du
+   gabarit PowerPoint 16:9, cotes en cqw (1 % de la largeur du cadre). */
 function sacemLogoSVG(variant){
   const grad = variant==="color"
     ? `<defs><linearGradient id="sacemLg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="273" y2="0"><stop offset="0" stop-color="#DC1945"/><stop offset=".7" stop-color="#FF3956"/><stop offset="1" stop-color="#FF6211"/></linearGradient></defs>` : "";
   const fill = variant==="color" ? "url(#sacemLg)" : "#FFFFFF";
   return `<svg viewBox="${SACEM_LOGO_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" aria-label="Sacem" role="img">${grad}${SACEM_LOGO_PATHS.map(d=>`<path d="${d}" fill="${fill}"/>`).join("")}</svg>`;
 }
-const pad2 = n => String(n).padStart(2,"0");
+// Couleurs de la charte (accents du thème Sacem) attribuées aux rubriques dans
+// l'ordre du chemin de fer, puis leurs lavis au-delà de huit rubriques.
+const SACEM_CH = ["#FF6016","#FF4370","#522FBD","#4981D1","#FF915B","#FF2EA4","#FB0045","#FF3F4F"];
+const pvRange = (a,b) => Array.from({length:b-a+1},(_,i)=>a+i);
+const pvPages = ps => !ps.length ? "hors chemin de fer" : ps.length===1 ? `p. ${ps[0]}` : `p. ${formatPages(ps)}`;
+let presIdx = 0, presDirty = false;
 
-function presCoverHTML(selected, total){
-  const sub = selected.length<=3 ? selected.map(i=>i.numero||"(sans nom)").join(" · ") : `${selected.length} numéros à venir`;
-  return `
-  <section class="slide grad">
-    <div class="bg"></div>
-    <div class="cover-t">
-      <div class="t1">Sujets pressentis</div>
-      <div class="t2">${esc(sub)} · ${total} sujet${total>1?"s":""}</div>
-    </div>
-    <div class="logo logo-cover">${sacemLogoSVG("white")}</div>
-  </section>`;
-}
-function presSectionHTML(iss, idx, count){
-  const bits=[iss.bouclage?"Bouclage "+frDateFull(iss.bouclage):"", `${count} sujet${count>1?"s":""}`].filter(Boolean).map(esc).join("<br>");
-  return `
-  <section class="slide grad">
-    <div class="bg"></div>
-    <div class="sec-t"><div class="t1">${esc(iss.numero||"(sans nom)")}</div><div class="t2">${bits}</div></div>
-    <div class="sec-n">${pad2(idx)}</div>
-    <div class="sec-rule"></div>
-    <div class="logo logo-sec">${sacemLogoSVG("white")}</div>
-  </section>`;
-}
-function presTopicHTML(e, secIdx, topicIdx, pageNo){
-  const stat=(n,label,desc)=>`<div class="stat"><div class="n">${esc(n)}</div><div class="l">${esc(label)}</div>${desc?`<div class="d">${esc(desc)}</div>`:""}</div>`;
-  return `
-  <section class="slide content">
-    <div class="strip"></div>
-    <div class="num">${secIdx}.${topicIdx}</div>
-    <div class="num-rule"></div>
-    <div class="side">
-      <div class="side-t">${esc(e.rubrique||"Sans rubrique")}</div>
-      ${e.thematique?`<div class="side-s">${esc(e.thematique)}</div>`:""}
-      <div class="side-i">${esc(e.numero)}</div>
-    </div>
-    <div class="vrule"></div>
-    <div class="main">
-      <h2 class="sujet${e.title.length>110?" xl":e.title.length>60?" l":""}">${esc(e.title)}</h2>
-      <div class="row">
-        <div class="card${e.brief?"":" empty"}">
-          <div class="card-t">Proposition de brief</div>
-          <div class="card-b">${e.brief?esc(e.brief):"Brief à rédiger — à compléter dans Chemin de fer."}</div>
-        </div>
-        <div class="stats">
-          ${stat(String(e.pagesCount), e.pagesCount>1?"Pages":"Page", "p. "+e.pagesLabel)}
-          ${e.sigCount>0?stat(e.sigCount.toLocaleString("fr-FR"), "Signes", "calibrage prévu"):""}
-          ${e.journalistes?`<div class="stat"><div class="l">Journaliste</div><div class="d">${esc(e.journalistes)}</div></div>`:""}
-        </div>
-      </div>
-    </div>
-    <div class="logo logo-content">${sacemLogoSVG("color")}</div>
-    <div class="pno">${pageNo}</div>
-  </section>`;
-}
-function presEndHTML(){
-  return `
-  <section class="slide grad">
-    <div class="bg"></div>
-    <div class="end-rule"></div>
-    <div class="logo logo-end">${sacemLogoSVG("white")}</div>
-    <div class="end-t">Merci</div>
-  </section>`;
+function presModel(){
+  const order=[], seen=new Set();
+  state.pages.forEach(p=>{ if(p.rubrique && !seen.has(p.rubrique)){ seen.add(p.rubrique); order.push(p.rubrique); } });
+  props.forEach(x=>{ if(x.rubrique && !seen.has(x.rubrique)){ seen.add(x.rubrique); order.push(x.rubrique); } });
+  const color={}; order.forEach((r,i)=>color[r] = i<SACEM_CH.length ? SACEM_CH[i] : tint(SACEM_CH[i%SACEM_CH.length], .5));
+  const slots = order.map(rub=>{
+    const pages=rubPages(rub), pr=propsFor(rub);
+    const placed=new Set(pr.map(propPage).filter(Boolean).map(p=>p.n));
+    // Sujets déjà posés sur la page sans passer par une proposition : décidés.
+    const fixed=state.pages.filter(p=>p.rubrique===rub && p.sujet && !placed.has(p.n))
+      .map(p=>({page:p, titre:p.sujet, brief:p.brief, thematique:p.thematique, statut:"retenue"}));
+    const sig=state.pages.filter(p=>p.rubrique===rub).reduce((a,p)=>a+toSignes(p),0)
+           || Math.max(0, ...pr.map(x=>Number(x.calib)||0));
+    const active=[...fixed, ...pr.filter(x=>x.statut!=="ecartee")];
+    return {rub, pages, fixed, pr, active, out:pr.filter(x=>x.statut==="ecartee"), places:Math.max(rubPlaces(rub), fixed.length), sig, color:color[rub]};
+  });
+  return {slots, color, shown:slots.filter(s=>s.fixed.length || s.pr.length)};
 }
 
-function buildPresentationDoc(selected, entries){
-  // Un numéro coché mais sans aucun sujet renseigné n'a ni intercalaire ni
-  // place sur la couverture : il n'aurait rien à montrer.
-  selected = selected.filter(i=>entries.some(e=>e.issueId===i.id));
-  const slides=[presCoverHTML(selected, entries.length)];
-  let pageNo=1, secIdx=0;
-  for(const iss of selected){
-    const mine=entries.filter(e=>e.issueId===iss.id);
-    if(!mine.length) continue;
-    secIdx++; pageNo++;
-    slides.push(presSectionHTML(iss, secIdx, mine.length));
-    mine.forEach((e,k)=>{ pageNo++; slides.push(presTopicHTML(e, secIdx, k+1, pageNo)); });
+/* Morceaux de slide. `ro` = lecture seule (visiteur, ou copie exportée). */
+function pvEd(key, text, ph, ro, cls){
+  return ro ? `<span class="${cls||""}">${esc(text||"")}</span>`
+            : `<span class="ed ${cls||""}" contenteditable="true" spellcheck="true" data-k="${key}" data-ph="${esc(ph)}">${esc(text||"")}</span>`;
+}
+function pvField(it, f, ph, ro, cls){
+  if(it.page){ const map={titre:"sujet", brief:"brief", thematique:"thematique"}; return map[f] ? pvEd(`g:${it.page.n}:${map[f]}`, it[f], ph, ro, cls) : `<span class="${cls||""}">${esc(it[f]||"")}</span>`; }
+  return pvEd(`p:${it.id}:${f}`, it[f], ph, ro, cls);
+}
+function pvBadge(it){
+  if(it.page) return `<span class="pv-badge on">Placé · p. ${it.page.n}</span>`;
+  if(it.statut==="retenue"){ const p=propPage(it); return `<span class="pv-badge on">✓ Retenu${p?" · p. "+p.n:""}</span>`; }
+  if(it.statut==="ecartee") return `<span class="pv-badge">Écarté</span>`;
+  return "";
+}
+function pvActions(it, ro){
+  if(ro || it.page) return "";
+  const b=(a,l,on)=>`<button type="button" class="pv-btn${on?" on":""}" data-act="${a}" data-id="${it.id}">${l}</button>`;
+  if(it.statut==="pressentie") return `<div class="pv-act">${b("retain","Retenir",true)}${b("discard","Écarter")}</div>`;
+  if(it.statut==="retenue") return `<div class="pv-act">${b("unretain","Remettre en envisagé")}</div>`;
+  return `<div class="pv-act">${b("restore","Rétablir")}</div>`;
+}
+const pvChip = h => h ? `<span class="pv-chip">${h}</span>` : "";
+// Pastille éditable : invisible en lecture seule quand le champ est vide.
+const pvChipF = (it,f,ph,ro) => (ro && !it[f]) ? "" : pvChip(pvField(it,f,ph,ro));
+function pvStrip(pages){
+  const on=new Set(pages);
+  return `<div class="pv-strip">${pvRange(1,TOTAL).map(n=>`<i${on.has(n)?' class="on"':""}></i>`).join("")}</div>
+    <div class="pv-strip-l"><span>p. 1</span><b>${pages.length?pvPages(pages)+" dans le numéro":"pas encore de page dans le chemin de fer"}</b><span>p. ${TOTAL}</span></div>`;
+}
+const pvSide = (t,s,k,x) => `<div class="side-t">${t}</div>${s?`<div>${s}</div>`:""}${k?`<div class="side-k">${k}</div>`:""}${x?`<div class="side-x">${x}</div>`:""}`;
+const PV = {
+  cover:(t1,t2)=>`<div class="sl grad"><div class="bg"></div><div class="cover-t"><div class="t1">${t1}</div><div class="t2">${t2}</div></div><div class="logo logo-cover">${sacemLogoSVG()}</div></div>`,
+  section:(t1,t2,n)=>`<div class="sl grad"><div class="bg"></div><div class="sec-t"><div class="t1">${t1}</div><div class="t2">${t2}</div></div><div class="sec-n">${n}</div><div class="sec-rule"></div><div class="logo logo-sec">${sacemLogoSVG()}</div></div>`,
+  end:()=>`<div class="sl grad"><div class="bg"></div><div class="end-rule"></div><div class="logo logo-end">${sacemLogoSVG()}</div><div class="end-t">Merci</div></div>`,
+  content:(num, side, main, pno)=>`<div class="sl"><div class="strip"></div><div class="num">${num}</div><div class="num-rule"></div>
+    <div class="side">${side}</div><div class="vrule"></div><div class="main">${main}</div><div class="logo logo-content">${sacemLogoSVG("color")}</div><div class="pno">${pno}</div></div>`,
+};
+
+function presSlides(ro){
+  const M=presModel(), sl=[];
+  const iss=currentIssue||{};
+  const nAct=M.shown.reduce((n,s)=>n+s.active.length,0), nPlaces=M.shown.reduce((n,s)=>n+s.places,0);
+  const toDecide=M.shown.filter(s=>s.active.length>s.places);
+  const big=M.shown.filter(s=>s.pages.length>=3 || s.places>1);
+  const short=M.shown.filter(s=>!(s.pages.length>=3 || s.places>1));
+  const today=new Date().toISOString().slice(0,10);
+
+  sl.push(PV.cover(esc(iss.numero||"Numéro"), `Comité éditorial · sujets pressentis · ${frDateFull(today)}`));
+
+  sl.push(PV.content("1.1", pvSide("Le numéro","en un coup d'œil"), `
+    <div class="pv-abs" style="top:4%">
+      <div class="kick">Thème pressenti</div>
+      <div class="pv-theme">${pvEd("theme", iss.theme, "Le thème ou le fil rouge du numéro", ro)}</div>
+    </div>
+    <div class="pv-abs pv-rule" style="top:52%"></div>
+    <div class="pv-abs pv-stats" style="top:60%">
+      <div class="st"><div class="n" style="white-space:nowrap">${nAct} <span style="font-size:2.4cqw">pour</span> ${nPlaces}</div><div class="l">Propositions</div><div class="d">pour ${nPlaces} place${nPlaces>1?"s":""}, ${toDecide.length} rubrique${toDecide.length>1?"s":""} à trancher</div></div>
+      ${(()=>{ const g=M.shown.filter(s=>s.pages.length>=4 && s.places===1).length, r=M.slots.filter(s=>s.pages.length).length;
+        return `<div class="st"><div class="n">${g}</div><div class="l">Grand${g>1?"s":""} format${g>1?"s":""}</div><div class="d">4 pages et plus</div></div>
+      <div class="st"><div class="n">${r}</div><div class="l">Rubrique${r>1?"s":""}</div><div class="d">dans le chemin de fer</div></div>`; })()}
+      <div class="st"><div class="n">${TOTAL}</div><div class="l">Pages</div><div class="d">couverture comprise</div></div>
+    </div>`, sl.length+1));
+
+  // Chemin de fer + sommaire : la légende du chemin de fer est le sommaire.
+  const spreads=[[1]]; for(let n=2;n<TOTAL;n+=2) spreads.push([n,n+1]); spreads.push([TOTAL]);
+  const cell = n => { const p=state.pages[n-1], c=p.rubrique?M.color[p.rubrique]:null;
+    return `<div class="pv-pg" style="background:${c||"#F2ECE6"}"><span style="color:${c?"#fff":"#8d8c84"}">${n}</span></div>`; };
+  const legend=M.slots.filter(s=>s.pages.length).map(s=>{ const n=s.active.length;
+    return `<div class="pv-lg"><i style="background:${s.color}"></i><span class="pv-lg-n">${s.pages[0]}</span>
+      <span class="pv-lg-t"><b>${esc(s.rub)}</b><br><span>${s.pages.length} p.${n?` · ${n} sujet${n>1?"s":""}`:" · à pourvoir"}</span></span>
+      ${n>s.places?`<span class="pv-dec">${n} → ${s.places}</span>`:""}</div>`; }).join("");
+  sl.push(PV.content("1.2", pvSide("Le chemin de fer","et son sommaire", `${toDecide.length} rubrique${toDecide.length>1?"s":""} à trancher`, "le badge orange indique combien de propositions se disputent la place"), `
+    <div class="pv-abs pv-spreads" style="top:0">${spreads.map(s=>`<div class="pv-sp${s.length===1?(s[0]===1?" first":" last"):""}">${s.map(cell).join("")}</div>`).join("")}</div>
+    <div class="pv-abs pv-rule soft" style="top:44%"></div>
+    <div class="pv-abs pv-legend" style="top:48%;bottom:0">${legend||`<div class="pv-note">Donnez des rubriques aux pages pour construire le sommaire.</div>`}</div>`, sl.length+1));
+
+  if(M.shown.length) sl.push(PV.section("Rubrique par rubrique", `${M.shown.length} rubrique${M.shown.length>1?"s":""}<br>${nAct} proposition${nAct>1?"s":""}`, "02"));
+  const addBtn = s => ro ? "" : `<button type="button" class="pv-btn pv-add" data-act="add" data-rub="${esc(s.rub)}">+ Proposition</button>`;
+  const sideOf = s => pvSide(esc(s.rub), pvPages(s.pages),
+    s.active.length>s.places ? `${s.active.length} propositions · ${s.places} place${s.places>1?"s":""}` : `${s.active.length} proposition${s.active.length>1?"s":""}`,
+    `${s.pages.length} page${s.pages.length>1?"s":""}${s.sig?`<br>${fmt(s.sig)} signes`:""}`);
+  const items = s => [...s.fixed, ...s.pr.filter(x=>x.statut!=="ecartee"), ...s.out];
+  let num=0;
+  for(const s of big){
+    num++;
+    const its=items(s); let body;
+    const head=`<div class="pv-abs" style="top:0">${pvStrip(s.pages)}</div><div class="pv-abs pv-topbar" style="top:12.5%">
+      <span class="kick">${s.places>1?`${s.active.length} propositions pour ${s.places} places`:s.active.length>1?`${s.active.length} propositions pour 1 place · à trancher`:"Titre provisoire"}</span>${addBtn(s)}</div>`;
+    if(its.length===1 && s.places===1){
+      const it=its[0];
+      body=`${head}<div class="pv-abs pv-hero" style="top:20%;bottom:0">
+        <div class="pv-hero-t">${pvField(it,"titre","Titre provisoire",ro)} ${pvBadge(it)}</div>
+        <div class="pv-hero-b">${pvField(it,"brief","Brief : ce qu'on va chercher, pourquoi maintenant",ro)}</div>
+        <div class="pv-details">
+          ${[["Angle","angle","L'angle en une ligne"],["Répertoire","thematique","—"],["Format","format","—"]].map(([l,f,ph])=>`<div><div class="kick sm">${l}</div><div class="pv-dv">${pvField(it,f,ph,ro)}</div></div>`).join("")}
+          <div><div class="kick sm">Calibrage</div><div class="pv-dv">${s.sig?fmt(s.sig)+" signes":"—"}</div></div>
+        </div>${pvActions(it,ro)}</div>`;
+    } else if(s.places>1 || its.length>3){
+      body=`${head}<div class="pv-abs pv-grid" style="top:20%;bottom:0;grid-template-columns:repeat(${Math.min(3,Math.ceil(its.length/2))},1fr)">
+        ${its.map((it,i)=>`<div class="pv-mini${it.statut==="ecartee"?" out":""}">
+          <div class="pv-oval">${PROP_LETTERS[i]||"·"}</div>
+          <div class="pv-mini-c"><div class="pv-mini-t">${pvField(it,"titre","Titre provisoire",ro)}</div>
+            <div class="pv-mini-a">${pvField(it,"angle","Angle",ro)}</div>
+            <div class="pv-mini-b">${pvField(it,"brief","Brief",ro)}</div>
+            <div>${pvBadge(it)}${pvChipF(it,"thematique","Répertoire",ro)}</div>${pvActions(it,ro)}</div></div>`).join("")}
+      </div>`;
+    } else {
+      body=`${head}<div class="pv-abs pv-cards" style="top:20%;grid-template-columns:repeat(${its.length},1fr)">
+        ${its.map((it,i)=>`<div class="pv-card${it.statut==="ecartee"?" out":""}${it.statut==="retenue"?" won":""}">
+          <div class="pv-card-h"><span class="pv-letter">${PROP_LETTERS[i]||"·"}</span><span class="kick sm">Titre provisoire</span>${pvBadge(it)}</div>
+          <div class="pv-card-t">${pvField(it,"titre","Titre provisoire",ro)}</div>
+          <div class="pv-card-a">${pvField(it,"angle","Angle en une ligne",ro)}</div>
+          <div class="pv-card-b">${pvField(it,"brief","Brief : ce qu'on va chercher, pourquoi maintenant",ro)}</div>
+          <div class="pv-card-f">${pvChipF(it,"thematique","Répertoire",ro)}${pvChipF(it,"format","Format",ro)}${!it.page&&it.calib?pvChip(fmt(it.calib)+" signes"):""}</div>
+          ${pvActions(it,ro)}</div>`).join("")}
+      </div>`;
+    }
+    sl.push(PV.content(`2.${num}`, sideOf(s), body, sl.length+1));
   }
-  slides.push(presEndHTML());
-  const docTitle = selected.map(i=>i.numero||"(sans nom)").join(" · ");
+  // Rubriques courtes : trois par slide.
+  for(let g=0; g<short.length; g+=3){
+    num++;
+    const grp=short.slice(g,g+3), pages=grp.flatMap(s=>s.pages).sort((a,b)=>a-b);
+    sl.push(PV.content(`2.${num}`, pvSide("Les rendez-vous","rubriques courtes", pages.length?pvPages([pages[0],pages[pages.length-1]].filter((v,i,a)=>a.indexOf(v)===i)):"", `${grp.reduce((n,s)=>n+s.active.length,0)} propositions · ${grp.reduce((n,s)=>n+s.places,0)} places`), `
+      <div class="pv-abs" style="top:0">${pvStrip(pages)}</div>
+      <div class="pv-abs pv-cols" style="top:13%;bottom:0;grid-template-columns:repeat(${grp.length},1fr)">
+        ${grp.map(s=>`<div class="pv-col"><div class="pv-col-h"><b>${esc(s.rub)}</b><span>${pvPages(s.pages)}${s.sig?` · ${fmt(s.sig)} s.`:""}</span></div>
+          ${items(s).map((it,i)=>`<div class="pv-cc${items(s).length>1?" boxed":""}${it.statut==="ecartee"?" out":""}">
+            ${items(s).length>1?`<div class="pv-cc-l">Proposition ${PROP_LETTERS[i]} ${pvBadge(it)}</div>`:pvBadge(it)}
+            <div class="pv-cc-t">${pvField(it,"titre","Titre provisoire",ro)}</div>
+            <div class="pv-cc-a">${pvField(it,"angle","Angle",ro)}</div>
+            <div class="pv-cc-b">${pvField(it,"brief","Brief",ro)}</div>${pvActions(it,ro)}</div>`).join("")}
+          ${addBtn(s)}</div>`).join("")}
+      </div>`, sl.length+1));
+  }
+  // Grille de décision.
+  if(toDecide.length){
+    sl.push(PV.content("3.1", pvSide("À trancher","en séance", `${toDecide.length} rubrique${toDecide.length>1?"s":""}`, ro?"":"cochez pour retenir : la page du chemin de fer se remplit aussitôt"), `
+      <div class="pv-abs pv-decide" style="top:0;bottom:0">
+        ${toDecide.map(s=>`<div class="pv-dr"><div><b>${esc(s.rub)}</b><span>${pvPages(s.pages)}</span></div><div class="pv-dn">${s.active.length}→${s.places}</div>
+          <div class="pv-dl">${s.active.map((it,i)=>{ const won=it.statut==="retenue";
+            return `<${ro||it.page?"span":"button type=\"button\""} class="pv-dc${won?" won":""}"${ro||it.page?"":` data-act="${won?"unretain":"retain"}" data-id="${it.id}"`}><i>${won?"✓":""}</i><b>${PROP_LETTERS[i]}</b> ${esc(it.titre||"Sans titre")}</${ro||it.page?"span":"button"}>`; }).join("")}</div></div>`).join("")}
+        <div class="pv-note">Les rubriques à proposition unique sont considérées comme retenues, sauf avis contraire du comité.</div>
+      </div>`, sl.length+1));
+  }
+  sl.push(PV.end());
+  return sl;
+}
+
+const presOv=document.getElementById("presOverlay"), presFrame=document.getElementById("presFrame");
+function presRender(){
+  if(presOv.hidden) return;
+  const slides=presSlides(isVisitorMode);
+  presIdx=Math.max(0, Math.min(slides.length-1, presIdx));
+  presFrame.innerHTML=slides[presIdx];
+  document.getElementById("pvCount").textContent=`${presIdx+1} / ${slides.length}`;
+  document.getElementById("pvPrev").disabled=presIdx===0;
+  document.getElementById("pvNext").disabled=presIdx===slides.length-1;
+  presDirty=false;
+}
+// Ne jamais reconstruire la slide sous les doigts de quelqu'un qui écrit :
+// la mise à jour attend que le champ perde le focus.
+function presRefresh(){
+  if(presOv.hidden) return;
+  const ae=document.activeElement;
+  if(presFrame.contains(ae) && ae.classList.contains("ed")){ presDirty=true; return; }
+  presRender();
+}
+function presGo(d){ presIdx+=d; presRender(); }
+function openPresentation(){
+  if(!currentIssue) return;
+  document.documentElement.style.setProperty("--sacem-bg", `url(${SACEM_BG_JPEG})`);
+  presOv.hidden=false; document.body.style.overflow="hidden";
+  presRender();
+}
+function closePresentation(){
+  if(document.fullscreenElement) document.exitFullscreen();
+  presOv.hidden=true; document.body.style.overflow="";
+}
+presFrame.addEventListener("input", e=>{
+  const ed=e.target.closest(".ed"); if(!ed) return;
+  const val=ed.innerText.replace(/ /g," ").replace(/\n+$/,"");
+  const k=ed.dataset.k.split(":");
+  if(k[0]==="theme") setTheme(val);
+  else if(k[0]==="p"){ const x=props.find(y=>y.id===k[1]); if(x){ setPropField(x, k[2], val); renderPropsPeek(); } }
+  else if(k[0]==="g"){ const p=state.pages[Number(k[1])-1]; if(p) setPageFieldFromPres(p, k[2], val); }
+});
+presFrame.addEventListener("keydown", e=>{
+  const ed=e.target.closest(".ed"); if(!ed) return;
+  // Titres et angles tiennent sur une ligne : Entrée valide. Le brief accepte Maj+Entrée.
+  if(e.key==="Enter" && (!/:brief$/.test(ed.dataset.k) || !e.shiftKey)){ e.preventDefault(); ed.blur(); }
+  if(e.key==="Escape"){ e.preventDefault(); ed.blur(); }
+  e.stopPropagation();
+});
+presFrame.addEventListener("paste", e=>{ // coller du texte brut, pas la mise en forme d'origine
+  if(!e.target.closest(".ed")) return;
+  e.preventDefault(); document.execCommand("insertText", false, (e.clipboardData||window.clipboardData).getData("text/plain"));
+});
+presFrame.addEventListener("focusout", ()=>{ setTimeout(()=>{ if(presDirty && !presFrame.contains(document.activeElement)) presRender(); }, 0); });
+presFrame.addEventListener("click", async e=>{
+  const b=e.target.closest("[data-act]"); if(!b || isVisitorMode) return;
+  if(b.dataset.act==="add"){
+    const x=await addProposition(b.dataset.rub, {nb_pages: (propsFor(b.dataset.rub).find(y=>y.nb_pages)||{}).nb_pages || null});
+    if(x){ presRender(); const t=presFrame.querySelector(`.ed[data-k="p:${x.id}:titre"]`); if(t) t.focus(); }
+    return;
+  }
+  await propAction(b.dataset.act, props.find(y=>y.id===b.dataset.id));
+  presRender();
+});
+document.getElementById("pvPrev").addEventListener("click", ()=>presGo(-1));
+document.getElementById("pvNext").addEventListener("click", ()=>presGo(1));
+document.getElementById("pvClose").addEventListener("click", closePresentation);
+document.getElementById("pvFs").addEventListener("click", ()=>{ if(document.fullscreenElement) document.exitFullscreen(); else presOv.requestFullscreen(); });
+document.getElementById("pvExport").addEventListener("click", ()=>{
+  download(presDocument(), slug(currentIssue&&currentIssue.numero)+"-comite.html", "text/html");
+});
+document.addEventListener("keydown", e=>{
+  if(presOv.hidden) return;
+  if(e.target.closest && e.target.closest(".ed")) return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"){ e.preventDefault(); presGo(1); }
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){ e.preventDefault(); presGo(-1); }
+  else if(e.key==="Escape" && !document.fullscreenElement){ e.preventDefault(); closePresentation(); }
+  else if(e.key==="f"||e.key==="F"){ if(document.fullscreenElement) document.exitFullscreen(); else presOv.requestFullscreen(); }
+}, true);
+document.getElementById("btnPresentation").addEventListener("click", ()=>{ closeMoreMenu(); openPresentation(); });
+
+// Copie autonome de la présentation (lecture seule) : même charte, sans réseau.
+function presDocument(){
+  const slides=presSlides(true);
+  const css=document.getElementById("pvStyle").textContent;
   return `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sujets pressentis — ${esc(docTitle)}</title>
-<style>
-:root{color-scheme:light; --or:#FF6016}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#1b1b1b;font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;overflow:hidden}
+<title>${esc((currentIssue&&currentIssue.numero)||"Numéro")} — comité éditorial</title>
+<style>:root{--sacem-bg:url(${SACEM_BG_JPEG})}
+${css}
+html,body{margin:0;height:100%;background:#1b1b1b;overflow:hidden}
 .deck{position:fixed;inset:0;display:grid;place-items:center}
-.frame{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;container-type:inline-size;overflow:hidden;background:#fff}
-.slide{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .35s ease;background:#fff;color:#000;overflow:hidden}
-.slide.active{opacity:1;pointer-events:auto}
-.slide>*{position:absolute}
-/* Fond dégradé : même recadrage que le gabarit (fillRect l/r -1,23 %, t -30,5 %, b -51,7 %). */
-.grad{color:#fff}
-.grad .bg{left:-1.231%;right:-1.231%;top:-30.496%;bottom:-51.658%;background:url(${SACEM_BG_JPEG}) center/100% 100% no-repeat}
-.logo svg{display:block;width:100%;height:auto}
-.t1{font-size:5.14cqw;text-transform:uppercase;line-height:1.1}
-.t2{font-size:2.36cqw;text-transform:uppercase;margin-top:1.2cqw;line-height:1.25}
-.cover-t{left:6%;right:6%;top:23.3%;height:30.6%;display:flex;flex-direction:column;justify-content:center;text-align:center}
-.logo-cover{left:3.3%;top:84.5%;width:14.9%}
-/* Le bloc s'ancre au-dessus du filet et grandit vers le haut : un nom de numéro
-   long passe sur deux lignes sans jamais déborder sur le filet. */
-.sec-t{left:31.6%;width:39.8%;bottom:39.5%;max-height:58%;display:flex;flex-direction:column;justify-content:flex-end}
-.sec-t .t1{overflow-wrap:anywhere}
-.sec-n{left:71.4%;width:24.1%;top:32%;height:31%;font-size:16cqw;line-height:1;text-align:right;display:flex;align-items:center;justify-content:flex-end;font-weight:300}
-.sec-rule{left:31.6%;right:0;top:62.9%;border-top:.09cqw solid #fff}
-.logo-sec{left:2.3%;top:87.2%;width:10.5%}
-.end-rule{left:17.3%;top:5.3%;height:89.2%;border-left:.09cqw solid #fff}
-.logo-end{left:19.2%;top:36.7%;width:34.3%}
-.end-t{left:20.2%;top:57.2%;font-size:3.33cqw}
-/* Mise en page « contenu » : liseré dégradé à gauche, colonne de titre, filet vertical orange. */
-.strip{left:0;top:0;bottom:0;width:1.6%;background:linear-gradient(180deg,#FC4A2C 0%,#F9542F 32%,#FA8468 55%,#F5CBAA 76%,#F1EADA 100%)}
-.num{left:2.6%;top:2.9%;width:14.2%;height:7.9%;font-size:4.03cqw;color:var(--or);display:flex;align-items:center}
-.num-rule{left:2.6%;width:14.2%;top:15%;border-top:.09cqw solid var(--or)}
-.side{left:3.4%;width:13.4%;top:21.7%;color:var(--or);font-size:1.81cqw;line-height:1.3}
-.side-t{font-weight:700;overflow-wrap:anywhere}
-.side-i{margin-top:2.2cqw;font-size:1.25cqw;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
-.vrule{left:17.94%;top:2.9%;height:94.9%;border-left:.09cqw solid var(--or)}
-.logo-content{left:3.4%;top:92.9%;width:6.04%}
-.pno{right:4%;bottom:2.6%;font-size:1.81cqw;color:var(--or)}
-.main{left:24.4%;right:5%;top:9%;bottom:12%;display:flex;flex-direction:column;justify-content:center}
-/* Un titre long réduit son corps plutôt que d'être tronqué. */
-.sujet{margin:0 0 3.2cqw;font-size:3.6cqw;line-height:1.18;font-weight:700;color:#000;max-width:60cqw;padding-bottom:.2em;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-.sujet.l{font-size:2.9cqw}
-.sujet.xl{font-size:2.35cqw}
-.row{display:flex;gap:4.5cqw;align-items:flex-start}
-.card{flex:0 0 40cqw;background:var(--or);color:#fff;border-radius:.9cqw;padding:2.2cqw 2.4cqw}
-.card-t{font-size:1.81cqw;font-weight:700;margin-bottom:.9cqw}
-.card-b{font-size:1.6cqw;line-height:1.4;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:9;-webkit-box-orient:vertical;overflow:hidden}
-.card.empty{background:#FFF0E8;color:var(--or)}
-.card.empty .card-b{font-style:italic}
-.stats{flex:1;display:flex;flex-direction:column;gap:2.4cqw;min-width:0}
-.stat .n{font-size:5.7cqw;line-height:1;color:var(--or);font-weight:300}
-.stat .l{font-size:1.67cqw;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:.15em;margin-top:.6cqw}
-.stat .d{font-size:1.32cqw;letter-spacing:.08em;color:#000;margin-top:.3cqw;overflow-wrap:anywhere}
-/* Commandes centrées en bas (le coin droit porte le numéro de page de la
-   charte) et masquées tant que la souris ne bouge pas : rien ne parasite la
-   projection. */
-.nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;z-index:5;font:13px Arial,sans-serif;color:#fff;opacity:0;transition:opacity .25s}
-.nav.show,.nav:hover,.nav:focus-within{opacity:1}
-.nav button{border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:16px;color:#fff;line-height:1}
-.nav button:disabled{opacity:.3;cursor:default}
-#counter{text-shadow:0 1px 2px rgba(0,0,0,.6)}
-</style>
-</head><body>
-<div class="deck"><div class="frame">
-${slides.join("\n")}
-</div></div>
-<div class="nav">
-  <button id="prevBtn" title="Précédent (←)" aria-label="Slide précédente">‹</button>
-  <span id="counter"></span>
-  <button id="nextBtn" title="Suivant (→)" aria-label="Slide suivante">›</button>
-  <button id="fsBtn" title="Plein écran (F)" aria-label="Plein écran">⛶</button>
-</div>
+.deck .pv.frame{width:min(100vw,177.78vh)}
+.deck .sl{opacity:0;pointer-events:none;transition:opacity .3s}
+.deck .sl.active{opacity:1;pointer-events:auto}
+.nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:13px Arial,sans-serif;color:#fff;opacity:.4}
+.nav:hover{opacity:1}.nav button{border:1px solid #555;background:#2a2a2a;color:#fff;border-radius:99px;width:34px;height:34px;cursor:pointer}
+</style></head><body>
+<div class="deck"><div class="pv frame">${slides.join("\n")}</div></div>
+<div class="nav"><button id="p">‹</button><span id="c"></span><button id="n">›</button></div>
 <script>
-(function(){
-  var slides=[].slice.call(document.querySelectorAll(".slide"));
-  var i=0;
-  var counter=document.getElementById("counter");
-  var prevBtn=document.getElementById("prevBtn"), nextBtn=document.getElementById("nextBtn");
-  function show(n){
-    i=Math.max(0,Math.min(slides.length-1,n));
-    slides.forEach(function(s,idx){ s.classList.toggle("active", idx===i); });
-    counter.textContent=(i+1)+" / "+slides.length;
-    prevBtn.disabled=i===0; nextBtn.disabled=i===slides.length-1;
-  }
-  function fs(){ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }
-  prevBtn.addEventListener("click",function(){ show(i-1); });
-  nextBtn.addEventListener("click",function(){ show(i+1); });
-  document.getElementById("fsBtn").addEventListener("click",fs);
-  window.addEventListener("keydown",function(e){
-    if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ e.preventDefault(); show(i+1); }
-    else if(e.key==="ArrowLeft"||e.key==="PageUp"){ e.preventDefault(); show(i-1); }
-    else if(e.key==="Home") show(0);
-    else if(e.key==="End") show(slides.length-1);
-    else if(e.key==="f"||e.key==="F") fs();
-  });
-  var nav=document.querySelector(".nav"), hideT=null;
-  function wake(){ nav.classList.add("show"); clearTimeout(hideT); hideT=setTimeout(function(){ nav.classList.remove("show"); },2200); }
-  window.addEventListener("mousemove",wake); window.addEventListener("touchstart",wake);
-  show(0); wake();
-})();
-<\/script>
-</body></html>`;
+(function(){var s=[].slice.call(document.querySelectorAll(".sl")),i=0,c=document.getElementById("c");
+function show(k){i=Math.max(0,Math.min(s.length-1,k));s.forEach(function(x,j){x.classList.toggle("active",j===i)});c.textContent=(i+1)+" / "+s.length;}
+document.getElementById("p").onclick=function(){show(i-1)};document.getElementById("n").onclick=function(){show(i+1)};
+addEventListener("keydown",function(e){if(e.key==="ArrowRight"||e.key===" ")show(i+1);if(e.key==="ArrowLeft")show(i-1);});show(0);})();
+<\/script></body></html>`;
 }
 
 issueSelect.addEventListener("change", e=>selectIssue(e.target.value));
@@ -3311,7 +3765,8 @@ document.getElementById("btnCsv").addEventListener("click",()=>{
 });
 document.getElementById("btnJson").addEventListener("click",()=>{
   const out = { numero: currentIssue&&currentIssue.numero, bouclage: currentIssue&&currentIssue.bouclage,
-                rythme: rythme(), pages: state.pages };
+                rythme: rythme(), theme: (currentIssue&&currentIssue.theme)||"", pages: state.pages,
+                propositions: props.map(({id, issue_id, created_at, ...r})=>r) };
   download(JSON.stringify(out,null,2), slug(currentIssue&&currentIssue.numero)+".json","application/json");
 });
 document.getElementById("btnImport").addEventListener("click",()=>document.getElementById("fileInput").click());
@@ -3356,6 +3811,11 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   if(error){ alert("Erreur : "+error.message); return; }
   await sb.from("color_customizations").delete().eq("issue_id", currentIssue.id);
   colorCustomizations={};
+  // Les pages se vident : un sujet retenu n'a plus de page, il redevient envisagé.
+  if(!propsUnavailable && props.some(x=>x.statut==="retenue")){
+    await sb.from("propositions").update({statut:"pressentie", page_n:null}).eq("issue_id", currentIssue.id).eq("statut","retenue");
+    props.forEach(x=>{ if(x.statut==="retenue"){ x.statut="pressentie"; x.page_n=null; } });
+  }
   state.pages = updates.map(rowToPage);
   undoStack.length=0; updateUndoButton(); // la réinitialisation vide l'historique d'annulation
   logActivity("a réinitialisé le numéro", null);

@@ -142,6 +142,33 @@ create table if not exists public.color_customizations (
 -- supprimer demanderait un « drop table » explicite, qui détruirait les
 -- commentaires déjà saisis.
 
+-- ---- Sujets envisagés (propositions) ---------------------------------
+-- Une page du chemin de fer ne porte qu'un sujet ; une rubrique peut en
+-- attendre plusieurs pendant le comité éditorial. Les propositions sont donc
+-- rattachées à une RUBRIQUE du numéro (ses pages viennent du chemin de fer),
+-- pas à une page. Une proposition retenue est recopiée sur une page libre de
+-- sa rubrique (page_n) ; une écartée est conservée pour un numéro suivant.
+create table if not exists public.propositions (
+  id uuid primary key default gen_random_uuid(),
+  issue_id uuid not null references public.issues(id) on delete cascade,
+  rubrique text not null default '',
+  titre text not null default '',
+  angle text not null default '',
+  brief text not null default '',
+  thematique text not null default '',
+  format text not null default '',
+  nb_pages smallint,               -- pages souhaitées ; NULL = toute la rubrique
+  calib numeric,
+  statut text not null default 'pressentie' check (statut in ('pressentie','retenue','ecartee')),
+  page_n int,                      -- page qui l'accueille une fois retenue
+  ordre int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists propositions_issue_idx on public.propositions(issue_id, rubrique, ordre);
+
+-- Thème pressenti du numéro (ouvre la présentation du comité éditorial).
+alter table public.issues add column if not exists theme text not null default '';
+
 -- Journal d'activité (traçabilité append-only des modifications d'un numéro)
 create table if not exists public.activity_log (
   id uuid primary key default gen_random_uuid(),
@@ -234,6 +261,14 @@ drop policy if exists "anon read activity" on public.activity_log;
 create policy "anon read activity" on public.activity_log
   for select to anon using (true);
 
+alter table public.propositions enable row level security;
+drop policy if exists "authenticated all propositions" on public.propositions;
+create policy "authenticated all propositions" on public.propositions
+  for all to authenticated using (true) with check (true);
+drop policy if exists "anon read propositions" on public.propositions;
+create policy "anon read propositions" on public.propositions
+  for select to anon using (true);
+
 -- ---- Realtime ---------------------------------------------------------
 -- Permet à Supabase Realtime de diffuser les changements de ces trois tables.
 -- (vérifie d'abord si la table est déjà dans la publication, pour pouvoir
@@ -252,5 +287,8 @@ begin
   end if;
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='activity_log') then
     alter publication supabase_realtime add table public.activity_log;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='propositions') then
+    alter publication supabase_realtime add table public.propositions;
   end if;
 end $$;
