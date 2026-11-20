@@ -931,14 +931,28 @@
 .pv .pv-card-b{font-size:1.5cqw; line-height:1.42; margin-top:1cqw; flex:1}
 .pv .pv-card-f{margin-top:1.4cqw}
 /* Plusieurs places (portraits) */
-.pv .pv-grid{display:grid; grid-auto-rows:1fr; gap:1.6cqw 2cqw}
-.pv .pv-mini{display:flex; gap:1.2cqw; align-items:flex-start; min-width:0}
-.pv .pv-oval{width:5cqw; height:6.2cqw; border-radius:50%; background:#FFEDE3; display:grid; place-items:center; flex:none; color:#FF6016; font-size:2.4cqw; font-weight:300}
-.pv .pv-mini-c{min-width:0}
-.pv .pv-mini-t{font-size:1.7cqw; font-weight:700; line-height:1.15}
-.pv .pv-mini-a{font-size:1.1cqw; font-weight:700; color:#FF6016; margin:.3cqw 0 .4cqw}
-.pv .pv-mini-b{font-size:1.05cqw; line-height:1.38; margin-bottom:.4cqw}
-.pv .pv-mini .pv-act{margin-top:.5cqw}
+.pv .pv-grid{display:grid; grid-auto-rows:minmax(0,1fr); gap:2.2cqw 2.6cqw}
+.pv .pv-mini{display:flex; gap:1.4cqw; align-items:flex-start; min-width:0; min-height:0; overflow:hidden}
+/* Un vrai rond : largeur = hauteur, quelle que soit la place disponible. */
+.pv .pv-oval{width:4.4cqw; height:4.4cqw; aspect-ratio:1/1; border-radius:50%; background:#FFEDE3; display:grid; place-items:center; flex:none; color:#FF6016; font-size:2.1cqw; font-weight:300; line-height:1}
+.pv .pv-mini-c{min-width:0; flex:1; align-self:stretch; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:.55cqw; padding-top:.2cqw}
+.pv .pv-mini-t{font-size:1.7cqw; font-weight:700; line-height:1.15; flex:none}
+.pv .pv-mini-a{font-size:1.1cqw; font-weight:700; color:#FF6016; line-height:1.3; flex:none}
+.pv .pv-mini-b{font-size:1.05cqw; line-height:1.4; flex:0 1 auto; min-height:0}
+/* Textes longs : coupés proprement en fin de ligne (« … »), jamais par-dessus
+   les pastilles et les boutons ; le texte entier réapparaît à l'édition. */
+.pv .pv-mini-t:not(:focus-within), .pv .pv-mini-a:not(:focus-within), .pv .pv-mini-b:not(:focus-within){display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden}
+.pv .pv-mini-t:not(:focus-within){-webkit-line-clamp:3}
+.pv .pv-mini-a:not(:focus-within){-webkit-line-clamp:2}
+.pv .pv-mini-b:not(:focus-within){-webkit-line-clamp:4}
+.pv .pv-grid.dense .pv-mini-t:not(:focus-within){-webkit-line-clamp:2}
+.pv .pv-grid.dense .pv-mini-a:not(:focus-within){-webkit-line-clamp:1}
+.pv .pv-grid.dense .pv-mini-b:not(:focus-within){-webkit-line-clamp:2}
+.pv .pv-mini .pv-meta, .pv .pv-mini .pv-act{flex:none}
+.pv .pv-meta{display:flex; flex-wrap:wrap; align-items:center; gap:.6cqw; margin-top:.15cqw}
+.pv .pv-meta .pv-chip{margin:0}
+.pv .pv-meta:empty{display:none}
+.pv .pv-mini .pv-act{margin-top:.3cqw}
 /* Rubriques courtes */
 .pv .pv-cols{display:grid; gap:2.2cqw}
 .pv .pv-col{display:flex; flex-direction:column; gap:1cqw; min-width:0}
@@ -1332,8 +1346,60 @@ const COVER = {1:"C1",2:"C2",55:"C3",56:"C4"};
 // Le sélecteur de couleur des tags propose les mêmes 12 teintes que
 // l'attribution automatique — une seule palette « Encre & lumière » dans
 // toute l'application, pas une variante élargie réservée au picker.
-const COLOR_PICKER_PALETTE = TAG_PALETTE;
+// Six teintes de plus, réservées aux rubriques : un numéro en compte souvent
+// plus de 12. Plus soutenues que les 12 premières, pour s'en distinguer
+// nettement ; contraste du texte ≥ 6:1 sur leur fond.
+const RUB_EXTRA = [
+  {bg:"#E6D8A8", fg:"#4F3F06"}, // ocre
+  {bg:"#B9DCEB", fg:"#0F4A63"}, // ciel
+  {bg:"#F5CDBE", fg:"#7E2E12"}, // corail
+  {bg:"#D5C4EC", fg:"#43226E"}, // lavande
+  {bg:"#BFE3C9", fg:"#17522C"}, // menthe
+  {bg:"#F5C9DA", fg:"#7A1F45"}, // rose
+];
+const RUB_PALETTE = TAG_PALETTE.concat(RUB_EXTRA);
+const COLOR_PICKER_PALETTE = RUB_PALETTE;
 
+function tagHash(text){
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) { hash = ((hash << 5) - hash) + text.charCodeAt(i); hash = hash & hash; }
+  return Math.abs(hash) % TAG_PALETTE.length;
+}
+// Couleurs automatiques des rubriques du numéro ouvert. Tirée du seul nom,
+// une couleur pouvait échoir à deux rubriques (12 teintes pour souvent plus
+// de 12 noms) : Décryptage et Carte blanche se confondaient. On garde la
+// couleur « naturelle » de chaque rubrique quand elle est libre — les
+// couleurs connues ne bougent pas — et on donne à une rubrique en collision
+// la teinte libre la plus proche. Au-delà de 12 rubriques, on évite au moins
+// la couleur des rubriques voisines dans le chemin de fer.
+let _rubColors = { sig:"", map:new Map() };
+function rubColorMap(){
+  const order=[], seen=new Set(), near=new Map();
+  const touch=(a,b)=>{ if(!a||!b||a===b) return; (near.get(a)||near.set(a,new Set()).get(a)).add(b); (near.get(b)||near.set(b,new Set()).get(b)).add(a); };
+  state.pages.forEach((p,i)=>{ const r=p.rubrique; if(r && !seen.has(r)){ seen.add(r); order.push(r); } if(i) touch(state.pages[i-1].rubrique, r); });
+  for(const x of props){ const r=x.rubrique; if(r && !seen.has(r)){ seen.add(r); order.push(r); } }
+  const custom = order.filter(r=>colorCustomizations["rubrique:"+r]);
+  const sig = order.join("\u0001")+"|"+custom.map(r=>r+colorCustomizations["rubrique:"+r].bg).join("\u0001")+"|"+[...near].map(([k,v])=>k+[...v].join()).join();
+  if(sig===_rubColors.sig) return _rubColors.map;
+  const N=RUB_PALETTE.length, used=new Array(N).fill(0), map=new Map();
+  // Les couleurs choisies à la main sont prises en premier.
+  custom.forEach(r=>{ const c=colorCustomizations["rubrique:"+r]; const i=RUB_PALETTE.findIndex(t=>t.bg.toLowerCase()===String(c.bg).toLowerCase()); if(i>=0) used[i]++; });
+  // Premier passage : chaque rubrique garde sa couleur habituelle si elle est libre.
+  const pending=[];
+  order.forEach(r=>{ if(custom.includes(r)) return; const h=tagHash(r); if(!used[h]){ used[h]++; map.set(r,h); } else pending.push(r); });
+  // Second passage : les rubriques en collision prennent une teinte libre ; s'il
+  // n'y en a plus (plus de 18 rubriques), la moins utilisée parmi celles que
+  // n'ont pas les rubriques qui la touchent dans le chemin de fer.
+  pending.forEach(r=>{
+    const ban=new Set([...(near.get(r)||[])].map(x=>colorCustomizations["rubrique:"+x] ? RUB_PALETTE.findIndex(t=>t.bg.toLowerCase()===String(colorCustomizations["rubrique:"+x].bg).toLowerCase()) : map.get(x)).filter(x=>x!=null && x>=0));
+    let best=-1;
+    for(let d=0; d<N; d++){ const i=(TAG_PALETTE.length+d)%N; if(ban.has(i)) continue; if(best<0 || used[i]<used[best]) best=i; if(!used[i]) break; }
+    if(best<0) best=tagHash(r);
+    used[best]++; map.set(r,best);
+  });
+  _rubColors={sig, map};
+  return map;
+}
 function getTagColor(text, fieldType) {
   if (!text) return TAG_PALETTE[0];
   // Check for custom color
@@ -1342,13 +1408,9 @@ function getTagColor(text, fieldType) {
   // Fallback to default colors
   if (fieldType === "statut" && STATUTS[text]) return STATUTS[text];
   if (fieldType === "lot" && LOTS[text]) return LOTS[text];
-  // Hash-based color for rubriques/thématiques
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = ((hash << 5) - hash) + text.charCodeAt(i);
-    hash = hash & hash;
-  }
-  return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
+  if (!fieldType || fieldType === "rubrique"){ const i=rubColorMap().get(text); if(i!=null) return RUB_PALETTE[i]; }
+  // Hash-based color for thématiques (et rubriques hors du numéro ouvert)
+  return TAG_PALETTE[tagHash(text)];
 }
 // Mélange un hex avec du blanc à une opacité donnée — pour le lavis de fond
 // des cartes de la Grille, dérivé de la couleur de rubrique mais dilué : le
@@ -4050,13 +4112,13 @@ function presSlides(ro){
           <div><div class="kick sm">Calibrage</div><div class="pv-dv">${s.sig?fmt(s.sig)+" signes":"—"}</div></div>
         </div>${pvActions(it,ro)}</div>`;
     } else if(s.places>1 || its.length>3){
-      body=`${head}<div class="pv-abs pv-grid" style="top:20%;bottom:0;grid-template-columns:repeat(${Math.min(3,Math.ceil(its.length/2))},1fr)">
+      body=`${head}<div class="pv-abs pv-grid${its.length>6?" dense":""}" style="top:20%;bottom:0;grid-template-columns:repeat(${Math.min(3,Math.ceil(its.length/2))},1fr)">
         ${its.map((it,i)=>`<div class="pv-mini${it.statut==="ecartee"?" out":""}">
           <div class="pv-oval">${PROP_LETTERS[i]||"·"}</div>
           <div class="pv-mini-c"><div class="pv-mini-t">${pvField(it,"titre","Titre provisoire",ro)}</div>
             <div class="pv-mini-a">${pvField(it,"angle","Angle",ro)}</div>
             <div class="pv-mini-b">${pvField(it,"brief","Brief",ro)}</div>
-            <div>${pvBadge(it)}${pvChipF(it,"thematique","Répertoire",ro)}</div>${pvActions(it,ro)}</div></div>`).join("")}
+            <div class="pv-meta">${pvBadge(it)}${pvChipF(it,"thematique","Répertoire",ro)}</div>${pvActions(it,ro)}</div></div>`).join("")}
       </div>`;
     } else {
       body=`${head}<div class="pv-abs pv-cards" style="top:20%;grid-template-columns:repeat(${its.length},1fr)">
