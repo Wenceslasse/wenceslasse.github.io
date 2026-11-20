@@ -497,6 +497,23 @@
   .modal-h .spacer{flex:1}
   .modal-b{padding:16px 18px 18px}
   .modal-i{font-size:12.5px; color:var(--muted); line-height:1.55; margin:0 0 14px}
+  /* ---- Sauvegardes ---- */
+  .modal.wide{width:min(680px, calc(100vw - 32px)); max-height:calc(100vh - 40px); display:flex; flex-direction:column}
+  .modal.wide .modal-b{overflow:auto}
+  .sv-acts{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px}
+  .sv-h{font-size:11.5px; font-weight:650; text-transform:uppercase; letter-spacing:.05em; color:var(--faint); margin:16px 0 6px}
+  .sv-row{display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--border); font-size:13px; flex-wrap:wrap}
+  .sv-row:last-child{border-bottom:none}
+  .sv-d{font-weight:600; min-width:150px; font-variant-numeric:tabular-nums}
+  .sv-s{flex:1; color:var(--muted); min-width:160px}
+  .sv-k{display:inline-block; font-size:11px; font-weight:650; padding:1px 7px; border-radius:99px; background:var(--hover); color:var(--muted); margin-left:4px}
+  .sv-k.auto{background:#E5F0E8; color:#2C5E3E} .sv-k.corbeille{background:#FBE4E1; color:var(--danger)}
+  .sv-conf{background:#FFF8F7; border:1px solid #E9B7AF; border-radius:8px; padding:9px 11px; margin:4px 0 8px; font-size:13px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .sv-conf span{flex:1; min-width:200px}
+  .sv-empty{color:var(--faint); font-size:13px; padding:6px 2px}
+  .sv-mail{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .sv-mail input{flex:1 1 240px; border:1px solid var(--border-strong); border-radius:7px; padding:6px 10px; font-size:13.5px; background:var(--canvas)}
+  .sv-warn{background:#FEF0C7; color:#5C3A00; border-radius:8px; padding:10px 12px; font-size:13px; line-height:1.5; margin-bottom:12px}
   .rythme-grid{display:grid; grid-template-columns:1fr auto; gap:10px 14px; align-items:center; font-size:13.5px}
   .rythme-grid label{color:var(--text)}
   .rythme-note{display:block; font-size:11.5px; color:var(--faint)}
@@ -710,6 +727,52 @@
   .visitor-transition.playing .visitor-anim-text{animation:visitor-zoom-fade 0.6s cubic-bezier(0.16,1,0.3,1) forwards, visitor-text-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  /* ---- Vue Tableau de bord ---- */
+  #viewDash, #viewEche{padding:2px 0 40px}
+  .db-kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:18px}
+  .db-kpi{border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:var(--canvas)}
+  .db-kpi b{display:block; font-size:26px; font-weight:700; letter-spacing:-.02em; line-height:1.15; font-variant-numeric:tabular-nums}
+  .db-kpi b small{font-size:15px; color:var(--faint); font-weight:600}
+  .db-kpi span{font-size:12.5px; color:var(--muted)}
+  .db-kpi .d{font-size:12px; margin-top:3px; color:var(--faint)}
+  .db-kpi.bad b, .db-kpi.bad .d{color:var(--danger)}
+  .db-kpi.warn b, .db-kpi.warn .d{color:#B54708}
+  .db-row{display:flex; gap:16px; flex-wrap:wrap}
+  .db-chart{border:1px solid var(--border); border-radius:10px; padding:14px 16px; background:var(--canvas); flex:1 1 300px; min-width:0}
+  .db-chart h4{margin:0 0 2px; font-size:14px; font-weight:650}
+  .db-chart .sub{font-size:12.5px; color:var(--muted); margin-bottom:12px}
+  .db-hb{display:grid; grid-template-columns:minmax(80px,130px) 1fr auto; align-items:center; gap:7px 10px; font-size:13px}
+  .db-hb .lab{color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .db-trk{height:10px; background:var(--hover); border-radius:3px; position:relative; border:none; padding:0; cursor:default; width:100%}
+  .db-trk[data-q]{cursor:pointer}
+  .db-trk::before{content:""; position:absolute; left:0; right:0; top:-6px; bottom:-6px}
+  .db-fil{position:absolute; left:0; top:0; bottom:0; background:var(--accent); border-radius:0 4px 4px 0; min-width:2px}
+  .db-trk:hover .db-fil, .db-trk:focus-visible .db-fil{background:#1A6FC4}
+  .db-trk:focus-visible{outline:none; box-shadow:var(--ring)}
+  .db-hb .val{font-variant-numeric:tabular-nums; font-weight:600; text-align:right; white-space:nowrap}
+  .db-empty{color:var(--faint); font-size:13px}
+  .db-tip{position:fixed; z-index:80; pointer-events:none; background:#191918; color:#fff; font-size:12px; padding:5px 8px; border-radius:6px; opacity:0; transition:opacity .1s; max-width:260px}
+  /* ---- Vue Échéances ---- */
+  .ec-bar{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:12px; font-size:13px}
+  .ec-bar .sp{flex:1}
+  .ec-seg{display:inline-flex; border:1px solid var(--border); border-radius:7px; overflow:hidden}
+  .ec-seg button{border:none; background:var(--canvas); padding:5px 11px; cursor:pointer; font-size:13px; color:var(--muted)}
+  .ec-seg button.on{background:var(--hover); color:var(--text); font-weight:600}
+  .ec-wrap{border:1px solid var(--border); border-radius:10px; background:var(--canvas); overflow-x:auto}
+  table.ec{width:100%; border-collapse:collapse; font-size:13.5px; min-width:640px}
+  table.ec th{text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--faint); font-weight:650; padding:8px 12px; border-bottom:1px solid var(--border)}
+  table.ec td{padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:middle}
+  table.ec tr:last-child td{border-bottom:none}
+  table.ec tr.grp td{background:var(--body); font-weight:650; font-size:12.5px; color:var(--muted); padding:7px 12px}
+  table.ec tr.grp.late td{color:var(--danger)}
+  table.ec tr.it{cursor:pointer} table.ec tr.it:hover td{background:#FAFAF9}
+  .ec-t{font-weight:600} .ec-r{font-size:12px; color:var(--faint)}
+  .ec-who{display:flex; align-items:center; gap:7px; white-space:nowrap}
+  .ec-late{display:inline-block; font-size:12px; font-weight:650; padding:1px 8px; border-radius:99px; background:#FBE4E1; color:var(--danger); white-space:nowrap}
+  .ec-done{font-size:12px; color:#2C5E3E; white-space:nowrap}
+  .ec-btn{border:1px solid var(--border); background:var(--canvas); border-radius:7px; padding:4px 9px; cursor:pointer; font-size:12.5px; white-space:nowrap}
+  .ec-btn:hover{background:var(--hover)}
+  .ec-note{font-size:12.5px; color:var(--faint); margin:10px 2px 0}
   /* ---- Vue Chemin de fer : le numéro entier sur une planche ----------
      Même lecture que la diapositive « Le chemin de fer et son sommaire » de
      la présentation, mais aux couleurs de l'appli : chaque page est une
@@ -1002,6 +1065,8 @@
       <button class="tbtn" id="btnViewPlanche" data-view="planche" title="Vue Chemin de fer : tout le numéro d'un coup d'œil, avec son sommaire">▦ Chemin de fer</button>
       <button class="tbtn" id="btnViewMatrix" data-view="matrix" title="Vue Matrice">▤ Matrice</button>
       <button class="tbtn" id="btnViewGantt" data-view="gantt" title="Vue Gantt">📊 Gantt</button>
+      <button class="tbtn" id="btnViewDash" data-view="tdb" title="Tableau de bord : l'état du numéro en chiffres">📈 Tableau de bord</button>
+      <button class="tbtn" id="btnViewEche" data-view="eche" title="Échéances : qui doit rendre quoi, et relances">⏰ Échéances</button>
       <button class="tbtn" id="btnUndo" title="Annuler la dernière action (Ctrl+Z)" disabled>↶ Annuler</button>
       <span class="spacer"></span>
       <div class="more-menu-wrap" id="moreMenuWrap">
@@ -1010,8 +1075,9 @@
           <button class="more-menu-item" id="btnActivity">🕑 Journal d'activité</button>
           <button class="more-menu-item" id="btnRythme">⏱ Rythme du numéro</button>
           <button class="more-menu-item" id="btnCsv">Exporter CSV</button>
-          <button class="more-menu-item" id="btnJson">Sauvegarde</button>
-          <button class="more-menu-item" id="btnImport">Importer</button>
+          <button class="more-menu-item" id="btnSaves">💾 Sauvegardes et corbeille</button>
+          <button class="more-menu-item" id="btnJson">Exporter JSON</button>
+          <button class="more-menu-item" id="btnImport">Importer JSON</button>
           <button class="more-menu-item" id="btnPrint">Imprimer</button>
           <button class="more-menu-item" id="btnPresentation">🎬 Présenter au comité</button>
           <button class="more-menu-item" id="btnReset">Réinitialiser</button>
@@ -1028,6 +1094,8 @@
   <div class="wrap">
     <div class="rail" id="rail"></div>
     <div id="viewPlanche" style="display:none;"></div>
+    <div id="viewDash" style="display:none;"></div>
+    <div id="viewEche" style="display:none;"></div>
     <div id="viewMatrix" style="display:none;"></div>
     <div id="viewGantt" style="display:none;"></div>
   </div>
@@ -1121,6 +1189,12 @@
     </div>
     <p class="modal-i" id="rythmeTotal"></p>
   </div>
+</div>
+
+<div class="scrim" id="saveScrim"></div>
+<div class="modal wide" id="saveModal" role="dialog" aria-modal="true" aria-labelledby="saveTitle">
+  <div class="modal-h"><span id="saveTitle">Sauvegardes</span><span class="spacer"></span><button class="ghostbtn" id="closeSaves" title="Fermer">✕</button></div>
+  <div class="modal-b" id="saveBody"></div>
 </div>
 
 <div class="pv-ov" id="presOverlay" hidden role="dialog" aria-modal="true" aria-label="Présentation du comité éditorial">
@@ -2536,7 +2610,18 @@ function render(){
   document.getElementById("viewMatrix").style.display="none";
   document.getElementById("viewGantt").style.display="none";
   document.getElementById("viewPlanche").style.display="none";
+  document.getElementById("viewDash").style.display="none";
+  document.getElementById("viewEche").style.display="none";
   rail.style.display="block";
+
+  if(currentView==="tdb" || currentView==="eche"){
+    rail.style.display="none";
+    const box=document.getElementById(currentView==="tdb"?"viewDash":"viewEche");
+    box.style.display="block";
+    if(currentView==="tdb") renderDashView(); else renderEcheView();
+    renderStats(); renderDatalist();
+    return;
+  }
 
   if(currentView==="planche"){
     rail.style.display="none";
@@ -2610,6 +2695,143 @@ function render(){
   renderStats(); renderDatalist();
   applyExtPreview();
 }
+/* ---- Vue Tableau de bord ------------------------------------------- */
+// Tout est calculé à partir du chemin de fer ouvert : rien à saisir, rien
+// en base. Une seule teinte pour toutes les barres (ce sont des quantités,
+// pas des catégories à distinguer) ; un clic filtre le chemin de fer.
+function dashBars(rows, unit, max){
+  if(!rows.length) return `<div class="db-empty">Rien à afficher pour l'instant.</div>`;
+  const m = max || Math.max(1, ...rows.map(r=>r.v));
+  return `<div class="db-hb">${rows.map(r=>`<span class="lab" title="${esc(r.l)}">${esc(r.l)}</span>
+    <button type="button" class="db-trk" ${r.q!=null?`data-q="${esc(r.q)}"`:""} data-t="${esc(r.t || `${r.l} : ${r.v.toLocaleString("fr-FR")} ${unit}`)}" aria-label="${esc(r.t || `${r.l} : ${r.v} ${unit}`)}"><span class="db-fil" style="width:${r.v ? Math.max(1, r.v/m*100) : 0}%"></span></button>
+    <span class="val">${r.v.toLocaleString("fr-FR")}</span>`).join("")}</div>`;
+}
+function renderDashView(){
+  const box=document.getElementById("viewDash"), P=state.pages, iss=currentIssue||{};
+  const today=todayISO();
+  const days = iss.bouclage ? Math.round((new Date(iss.bouclage+"T00:00:00") - new Date(today+"T00:00:00"))/864e5) : null;
+  const calees=P.filter(p=>p.sujet).length, sig=P.reduce((a,p)=>a+toSignes(p),0);
+  const late=P.filter(isLate), lateD=buildDossiers().filter(g=>g.items.some(isLate)).length;
+  const M=presModel(), toDecide=M.slots.filter(s=>s.pages.length && s.active.length>s.places);
+  const nEnv=toDecide.reduce((a,s)=>a+s.active.length,0);
+  const boucle=P.filter(p=>p.statut==="boucle").length;
+  const kpi=(v,l,d,cls)=>`<div class="db-kpi${cls?" "+cls:""}"><b>${v}</b><span>${l}</span>${d?`<div class="d">${d}</div>`:""}</div>`;
+  const jal = MILESTONES.map((m,i)=>({l:m.label, v:P.filter(p=>stepOf(p)>i).length, t:`${m.label} : ${P.filter(p=>stepOf(p)>i).length} page(s) sur ${TOTAL}`}));
+  const by=(key, val)=>{ const o={}; P.forEach(p=>{ const k=key(p); if(k==null) return; o[k]=(o[k]||0)+val(p); }); return o; };
+  let rep=Object.entries(by(p=>p.rubrique ? (p.thematique||"Non renseigné") : null, toSignes)).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(rep.length>7){ const rest=rep.slice(6).reduce((a,[,v])=>a+v,0); rep=rep.slice(0,6).concat([["Autres", rest]]); }
+  const repRows=rep.map(([l,v])=>({l, v, q:(l==="Autres"||l==="Non renseigné")?null:l}));
+  const jr=by(p=>p.rubrique ? (p.journaliste||"Non attribué") : null, ()=>1), js=by(p=>p.rubrique ? (p.journaliste||"Non attribué") : null, toSignes);
+  const jouRows=Object.entries(jr).sort((a,b)=>b[1]-a[1]).map(([l,v])=>({l, v, q:l==="Non attribué"?null:l, t:`${l} : ${v} page${v>1?"s":""}${js[l]?` · ${fmt(js[l])} signes`:""}`}));
+  box.innerHTML = `<div class="db-kpis">
+      ${kpi(days==null?"—":days>=0?days:`+${-days}`, days==null?"date de bouclage à saisir":days>=0?`jour${days>1?"s":""} avant le bouclage`:"jours après le bouclage", iss.bouclage?frDateFull(iss.bouclage):"", days!=null&&days<0?"bad":"")}
+      ${kpi(`${calees}<small>/${TOTAL}</small>`, "pages calées", `${TOTAL-calees} sans sujet`)}
+      ${kpi(sig?fmt(sig):"0", "signes commandés", sig?`≈ ${fmt(Math.round(sig/1500))} feuillets`:"aucun calibrage saisi")}
+      ${kpi(late.length, `page${late.length>1?"s":""} en retard`, late.length?`⚠ ${lateD} dossier${lateD>1?"s":""}`:"aucun retard", late.length?"bad":"")}
+      ${kpi(toDecide.length, `rubrique${toDecide.length>1?"s":""} à trancher`, toDecide.length?`${nEnv} sujets envisagés`:"rien à trancher", toDecide.length?"warn":"")}
+      ${kpi(`${Math.round(boucle/TOTAL*100)}<small>%</small>`, "bouclé", `${boucle}/${TOTAL} pages`)}
+    </div>
+    <div class="db-row">
+      <div class="db-chart"><h4>Avancement par jalon</h4><div class="sub">Pages ayant franchi chaque jalon, sur ${TOTAL}</div>${dashBars(jal,"pages",TOTAL)}</div>
+      <div class="db-chart"><h4>Répartition par répertoire</h4><div class="sub">Signes commandés · cliquez pour filtrer</div>${dashBars(repRows,"signes")}</div>
+      <div class="db-chart"><h4>Charge par journaliste</h4><div class="sub">Pages attribuées · cliquez pour filtrer</div>${dashBars(jouRows,"pages")}</div>
+    </div>`;
+}
+(function wireDash(){
+  const box=document.getElementById("viewDash"); if(!box) return;
+  const tip=document.createElement("div"); tip.className="db-tip"; tip.setAttribute("role","status"); document.body.appendChild(tip);
+  const show=(t,x,y)=>{ tip.textContent=t; tip.style.opacity=1; tip.style.left=Math.min(x+12, innerWidth-tip.offsetWidth-8)+"px"; tip.style.top=(y-34)+"px"; };
+  box.addEventListener("mousemove", e=>{ const t=e.target.closest(".db-trk"); if(!t){ tip.style.opacity=0; return; } show(t.dataset.t, e.clientX, e.clientY); });
+  box.addEventListener("mouseleave", ()=>tip.style.opacity=0);
+  box.addEventListener("focusin", e=>{ const t=e.target.closest(".db-trk"); if(t){ const r=t.getBoundingClientRect(); show(t.dataset.t, r.left+r.width/2, r.top); } });
+  box.addEventListener("focusout", ()=>tip.style.opacity=0);
+  box.addEventListener("click", e=>{ const t=e.target.closest(".db-trk[data-q]"); if(!t) return;
+    tip.style.opacity=0; filter.q=t.dataset.q; document.getElementById("search").value=t.dataset.q; setView("planche"); });
+})();
+
+/* ---- Vue Échéances ------------------------------------------------- */
+// Un dossier = une ligne, avec son prochain jalon (le plus urgent de ses
+// pages). « Relancer » ouvre un email pré-rempli dans la messagerie ; la
+// relance est notée dans le journal du numéro, et rappelée sur la ligne.
+let echeGroup = "date";            // date | journaliste
+let relances = {};                 // première page du dossier → date ISO de la dernière relance
+let relancesIssue = null;
+async function loadRelances(){
+  if(!currentIssue || isVisitorMode) return;
+  const id=currentIssue.id;
+  const { data, error } = await sb.from("activity_log").select("page_n,summary,created_at").eq("issue_id", id).order("created_at",{ascending:false}).limit(400);
+  if(error || !currentIssue || currentIssue.id!==id) return;
+  relances={}; relancesIssue=id;
+  (data||[]).filter(a=>/^a relancé/.test(a.summary||"") && a.page_n).forEach(a=>{ if(!relances[a.page_n] || a.created_at>relances[a.page_n]) relances[a.page_n]=a.created_at; });
+  if(currentView==="eche") renderEcheView();
+}
+function isoAdd(iso, d){ const x=new Date(iso+"T00:00:00Z"); x.setUTCDate(x.getUTCDate()+d); return x.toISOString().slice(0,10); }
+function echeRows(){
+  const today=todayISO();
+  return buildDossiers().filter(g=>(g.rubrique || g.sujets.length) && g.items.some(matches)).map(g=>{
+    let best=null;
+    for(const p of g.items){ if(p.statut==="boucle") continue; const nx=nextMilestone(p); if(nx && (!best || nx.date<best.date)) best=nx; }
+    const jous=[...new Set(g.items.map(p=>p.journaliste).filter(Boolean))];
+    return best ? {g, m:best, date:best.date, late:best.date<today, jous, first:g.pages[0]} : {g, m:null, date:"", jous, first:g.pages[0], bouclé:g.items.every(p=>p.statut==="boucle")};
+  });
+}
+function relanceMail(r){
+  const iss=currentIssue||{}, g=r.g, m=r.m, who=r.jous.join(", ");
+  const isJ = m.who==="Journaliste";
+  const prenom = isJ && r.jous.length===1 ? r.jous[0].split(/\s+/)[0] : "";
+  const [quoi, attendu] = ({v1:["la première version (V1)","est attendue"], v2:["la version 2","est attendue"], retours:["les retours de la rédaction","sont attendus"], sr:["la sortie de SR","est prévue"], agence:["la mise en page","est prévue"]})[m.key] || [m.label.toLowerCase(),"est prévu(e)"];
+  const sig = g.sig ? `Pour mémoire : environ ${fmt(g.sig)} signes sur ${g.pages.length} page${g.pages.length>1?"s":""}.` : `Pour mémoire : ${g.pages.length} page${g.pages.length>1?"s":""}.`;
+  const subject = `${iss.numero||"Chemin de fer"} · ${g.title} (${m.short} ${frDate(m.date)})`;
+  const body = `Bonjour${prenom?" "+prenom:""},\n\nJe reviens vers vous au sujet de « ${g.title} » (${iss.numero||""}, ${pvPages(g.pages)}).\n`
+    + (r.late ? `Nous attendions ${quoi} le ${frDateFull(m.date)} : pourriez-vous me dire où vous en êtes ?\n` : `Pour rappel, ${quoi} ${attendu} le ${frDateFull(m.date)}.\n`)
+    + `\n${sig}\n\nMerci beaucoup, et belle journée,\n`;
+  return { href:`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, who, subject };
+}
+function renderEcheView(){
+  const box=document.getElementById("viewEche");
+  if(currentIssue && relancesIssue!==currentIssue.id && !isVisitorMode){ relancesIssue=currentIssue.id; relances={}; loadRelances(); }
+  const today=todayISO(), dow=(new Date(today+"T00:00:00Z").getUTCDay()+6)%7;
+  const endWeek=isoAdd(today, 6-dow), endNext=isoAdd(endWeek, 7);
+  const rows=echeRows(), dated=rows.filter(r=>r.m).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.first-b.first);
+  const undated=rows.filter(r=>!r.m && !r.bouclé);
+  const line=r=>{ const ed=r.m, rel=relances[r.first];
+    const av=r.jous.length ? r.jous.map(j=>`<span class="ec-who">${journalisteAvatar(j)}${esc(j)}</span>`).join("") : `<span class="ec-r">Non attribué</span>`;
+    const lateTxt = r.late ? `<span class="ec-late">${frDate(ed.date)} · ${Math.round((new Date(today)-new Date(ed.date))/864e5)} j de retard</span>` : esc(frDate(ed.date));
+    return `<tr class="it" data-n="${r.first}"><td class="ec-r">${esc(pvPages(r.g.pages))}</td>
+      <td><div class="ec-t">${esc(r.g.title)}</div>${r.g.rubrique && r.g.rubrique!==r.g.title?`<div class="ec-r">${esc(r.g.rubrique)}</div>`:""}</td>
+      <td>${av}</td><td title="${esc(ed.who)}">${esc(ed.label)}${ed.auto?` <span class="ec-r" title="Date calculée par le rythme du numéro">calc.</span>`:""}</td><td>${lateTxt}</td>
+      <td style="text-align:right">${isVisitorMode?"":rel?`<span class="ec-done" title="Dernière relance">✓ relancé le ${esc(frDate(rel.slice(0,10)))}</span> <button type="button" class="ec-btn" data-rel="${r.first}">✉</button>`:`<button type="button" class="ec-btn" data-rel="${r.first}">✉ Relancer</button>`}</td></tr>`; };
+  let groups;
+  if(echeGroup==="date"){
+    groups=[["En retard", dated.filter(r=>r.late), "late"], ["Cette semaine", dated.filter(r=>!r.late && r.date<=endWeek)], ["Semaine prochaine", dated.filter(r=>r.date>endWeek && r.date<=endNext)], ["Plus tard", dated.filter(r=>r.date>endNext)]];
+  } else {
+    const by={}; dated.forEach(r=>{ const k=r.jous.length?r.jous.join(", "):"Non attribué"; (by[k]=by[k]||[]).push(r); });
+    groups=Object.entries(by).sort((a,b)=>(b[1].some(r=>r.late)-a[1].some(r=>r.late)) || (a[1][0].date<b[1][0].date?-1:1)).map(([k,l])=>[k, l, l.some(r=>r.late)?"late":""]);
+  }
+  const body = groups.filter(g=>g[1].length).map(([t,l,c])=>`<tr class="grp${c?" "+c:""}"><td colspan="6">${esc(t)} · ${l.length}</td></tr>${l.map(line).join("")}`).join("");
+  box.innerHTML = `<div class="ec-bar"><div class="ec-seg" role="group" aria-label="Regrouper"><button type="button" data-g="date" class="${echeGroup==="date"?"on":""}">Par date</button><button type="button" data-g="journaliste" class="${echeGroup==="journaliste"?"on":""}">Par journaliste</button></div>
+      <span class="sp"></span><span class="ec-r">Semaine du ${frDate(isoAdd(today,-dow))} au ${frDate(endWeek)}</span></div>
+    <div class="ec-wrap">${body ? `<table class="ec"><thead><tr><th>Pages</th><th>Sujet</th><th>Journaliste</th><th>Prochain jalon</th><th>Date</th><th></th></tr></thead><tbody>${body}</tbody></table>`
+      : `<div class="db-empty" style="padding:16px">Aucune échéance : saisissez une date de livraison dans le circuit d'une page (panneau de page), les autres s'en déduisent.</div>`}</div>
+    ${undated.length?`<p class="ec-note">${undated.length} dossier${undated.length>1?"s":""} sans date : ${undated.slice(0,6).map(r=>esc(r.g.title)).join(", ")}${undated.length>6?"…":""}.</p>`:""}
+    ${isVisitorMode?"":`<p class="ec-note">« Relancer » ouvre un email pré-rempli dans votre messagerie ; vous choisissez le destinataire et le relisez avant l'envoi.</p>`}`;
+}
+(function wireEche(){
+  const box=document.getElementById("viewEche"); if(!box) return;
+  box.addEventListener("click", e=>{
+    const g=e.target.closest("[data-g]"); if(g){ echeGroup=g.dataset.g; renderEcheView(); return; }
+    const b=e.target.closest("[data-rel]");
+    if(b){ e.stopPropagation(); if(isVisitorMode) return;
+      const r=echeRows().find(x=>x.first===Number(b.dataset.rel)); if(!r || !r.m) return;
+      const mail=relanceMail(r);
+      window.location.href = mail.href;
+      logActivity(`a relancé ${mail.who||"le dossier"} pour « ${r.g.title} » (${r.m.label} du ${frDate(r.m.date)})`, r.first);
+      relances[r.first]=new Date().toISOString(); renderEcheView(); flashSaved("✓ Relance notée dans le journal");
+      return; }
+    const tr=e.target.closest("tr.it"); if(tr) openPeek(Number(tr.dataset.n));
+  });
+})();
+
 /* ---- Vue Chemin de fer --------------------------------------------- */
 function renderPlancheView(){
   const box=document.getElementById("viewPlanche");
@@ -4047,7 +4269,7 @@ function download(text,name,type){ const b=new Blob([text],{type}),u=URL.createO
 /* ---- View switcher ---- */
 // Une seule fonction pour les quatre vues ; la dernière vue choisie est
 // mémorisée dans ce navigateur.
-const VIEWS = ["grid","planche","matrix","gantt"];
+const VIEWS = ["grid","planche","matrix","gantt","tdb","eche"];
 function setView(v){
   if(!VIEWS.includes(v)) v="grid";
   currentView=v;
@@ -4099,6 +4321,15 @@ document.getElementById("fileInput").addEventListener("change",e=>{
   r.onload=async ()=>{
     let s;
     try{ s=JSON.parse(r.result); }catch(_){ s=null; }
+    // Fichier de sauvegarde automatique (pièce jointe de l'email, ou
+    // téléchargé depuis « Sauvegardes ») : même contenu, autre forme.
+    if(s && s.format==="chemin-de-fer/sauvegarde" && s.issue && Array.isArray(s.pages)){
+      const iss=s.issue, byN={}; s.pages.forEach(p=>{ if(p && p.n>=1 && p.n<=TOTAL) byN[p.n]=p; });
+      s = { numero:iss.numero, bouclage:iss.bouclage||"", theme:iss.theme||"",
+            rythme:Object.fromEntries(Object.keys(RYTHME_DEFAUT).map(k=>[k, iss[k]])),
+            pages:Array.from({length:TOTAL},(_,i)=>byN[i+1]||blankPage(i+1)),
+            propositions:(s.propositions||[]).map(({id, issue_id, created_at, ...x})=>x) };
+    }
     if(!s || !Array.isArray(s.pages) || s.pages.length!==TOTAL || !currentIssue){ alert("Fichier illisible ou nombre de pages différent de 56."); return; }
     if(!confirm(`Remplacer le contenu de « ${currentIssue.numero||"ce numéro"} » par celui du fichier ?\n\nLes 56 pages${Array.isArray(s.propositions)?", les sujets envisagés":""} et le thème seront remplacés.`)) return;
     const str=v=>(v==null?"":String(v)), dt=v=>(/^\d{4}-\d{2}-\d{2}$/.test(v||"")?v:null);
@@ -4114,6 +4345,7 @@ document.getElementById("fileInput").addEventListener("change",e=>{
       // La sauvegarde capture aussi l'avancement de la Matrice : l'omettre le remettrait à zéro.
       etapes:(p.etapes && typeof p.etapes==="object" && !Array.isArray(p.etapes)) ? p.etapes : {}
     }));
+    await serverBackup("import"); // l'état d'avant reste restaurable
     const withId=rows.filter(x=>x.id), fresh=rows.filter(x=>!x.id).map(({id,...x})=>x);
     const { error } = await upsertPages(withId);
     if(error){ flashError("Import", error); return; }
@@ -4151,6 +4383,7 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   // Une page vierge passée par pageToRow : tout champ ajouté plus tard sera
   // vidé lui aussi (l'ancienne liste écrite à la main oubliait thématique,
   // dates figées et étapes, qui réapparaissaient au rechargement).
+  await serverBackup("avant_reinitialisation");
   const updates = state.pages.map((p,i)=>pageToRow({...blankPage(i+1), id:p.id}));
   const { error } = await upsertPages(updates);
   if(error){ alert("Erreur : "+error.message); return; }
@@ -4174,7 +4407,10 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
 document.getElementById("btnDeleteIssue").addEventListener("click", async ()=>{
   if(!currentIssue) return;
   const nom = currentIssue.numero || "ce numéro";
-  if(!confirm(`Supprimer définitivement « ${nom} » ?\n\nLe numéro lui-même disparaîtra, avec ses 56 pages, ses couleurs personnalisées et son journal d'activité. Contrairement à « Réinitialiser », cette action ne laisse rien derrière elle et ne peut pas être annulée.\n\nExporte une sauvegarde avant si besoin.`)) return;
+  const trashOn = savesUnavailable===false;
+  if(!confirm(trashOn
+    ? `Supprimer « ${nom} » ?\n\nLe numéro part à la corbeille avec ses 56 pages, ses sujets envisagés et ses couleurs. Il reste restaurable pendant 30 jours (menu ⋯ → Sauvegardes et corbeille). Le journal d'activité, lui, est effacé.`
+    : `Supprimer définitivement « ${nom} » ?\n\nLe numéro lui-même disparaîtra, avec ses 56 pages, ses couleurs personnalisées et son journal d'activité. Contrairement à « Réinitialiser », cette action ne laisse rien derrière elle et ne peut pas être annulée.\n\nExporte une sauvegarde avant si besoin.`)) return;
   const id = currentIssue.id;
   const { error } = await sb.from("issues").delete().eq("id", id);
   if(error){ alert("Erreur de suppression : "+error.message); return; }
@@ -4187,6 +4423,102 @@ document.getElementById("btnDeleteIssue").addEventListener("click", async ()=>{
 });
 
 document.getElementById("btnUndo").addEventListener("click", undoLast);
+
+/* ---- Sauvegardes et corbeille ---------------------------------------
+   Les copies sont faites par Supabase (supabase/lot1-sauvegardes.sql) :
+   chaque nuit pour les numéros modifiés, avant une restauration, un import
+   ou une réinitialisation, et avant toute suppression (corbeille, 30 jours).
+   Restaurer est fait côté serveur, en une seule transaction. */
+const SAVE_KINDS = { auto:"Nuit", manuelle:"Manuelle", avant_restauration:"Avant restauration", avant_reinitialisation:"Avant réinitialisation", import:"Avant import", corbeille:"Corbeille" };
+let saves = [], savesUnavailable = null, saveConfirm = null;
+const frDateTime = iso => { const d=new Date(iso); return d.toLocaleDateString("fr-FR",{weekday:"short", day:"numeric", month:"short"})+", "+d.toLocaleTimeString("fr-FR",{hour:"2-digit", minute:"2-digit"}); };
+const fmtSize = n => n>=1048576 ? (n/1048576).toLocaleString("fr-FR",{maximumFractionDigits:1})+" Mo" : Math.max(1,Math.round((n||0)/1024))+" Ko";
+// Copie de sécurité côté serveur avant une opération lourde ; sans le script
+// du lot 1, on continue sans (rien ne change par rapport à avant).
+async function serverBackup(kind){
+  if(!currentIssue || isVisitorMode || savesUnavailable) return null;
+  try{ const { data, error } = await sb.rpc("cdf_sauvegarder", { p_issue: currentIssue.id, p_kind: kind });
+    if(error){ if(/function|does not exist|schema cache/i.test(error.message)) savesUnavailable=true; return null; }
+    return data; }catch(_){ return null; }
+}
+async function loadSaves(){
+  const { data, error } = await sb.from("sauvegardes").select("id,issue_id,numero,kind,taille,auteur,created_at").order("created_at",{ascending:false}).limit(400);
+  if(error){ savesUnavailable = true; saves = []; return; }
+  savesUnavailable = false;
+  saves = (data||[]).slice().sort((a,b)=>a.created_at<b.created_at?1:-1);
+}
+async function openSaves(){
+  if(isVisitorMode) return;
+  document.getElementById("saveModal").classList.add("open"); document.getElementById("saveScrim").classList.add("open");
+  document.getElementById("saveTitle").textContent = "Sauvegardes · " + ((currentIssue&&currentIssue.numero)||"");
+  document.getElementById("saveBody").innerHTML = `<div class="sv-empty">Chargement…</div>`;
+  saveConfirm = null;
+  await loadSaves();
+  let mail = "";
+  if(!savesUnavailable){ const { data } = await sb.from("reglages").select("valeur").eq("cle","sauvegarde_email"); mail = (data&&data[0]&&data[0].valeur)||""; }
+  renderSaves(mail);
+}
+function closeSaves(){ document.getElementById("saveModal").classList.remove("open"); document.getElementById("saveScrim").classList.remove("open"); }
+function renderSaves(mail){
+  const box=document.getElementById("saveBody");
+  if(mail===undefined){ const i=document.getElementById("svMail"); mail = i ? i.value : ""; }
+  const acts = `<div class="sv-acts">
+      ${savesUnavailable?"":`<button class="ghostbtn primary" type="button" data-sv="now">💾 Sauvegarder maintenant</button>`}
+      <button class="ghostbtn" type="button" data-sv="export">⤓ Télécharger l'état actuel</button>
+      <button class="ghostbtn" type="button" data-sv="import">⤒ Importer un fichier…</button></div>`;
+  if(savesUnavailable){
+    box.innerHTML = `<div class="sv-warn"><b>Sauvegardes automatiques pas encore activées.</b> Exécutez <code>supabase/lot1-sauvegardes.sql</code> dans Supabase (SQL Editor) : copie chaque nuit, corbeille de 30 jours et envoi par email. En attendant, téléchargez régulièrement l'état actuel.</div>${acts}`;
+    return;
+  }
+  const row = s => {
+    const conf = saveConfirm===s.id ? `<div class="sv-conf"><span>${s.kind==="corbeille"?`Restaurer le numéro « ${esc(s.numero)} » ?`:`Revenir à l'état du ${esc(frDateTime(s.created_at))} ? L'état actuel est d'abord sauvegardé : vous pourrez y revenir.`}</span>
+        <button class="ghostbtn" type="button" data-sv="cancel">Annuler</button><button class="ghostbtn primary" type="button" data-sv="restore" data-id="${s.id}">Restaurer</button></div>` : "";
+    return `<div class="sv-row"><span class="sv-d">${esc(frDateTime(s.created_at))}</span>
+      <span class="sv-s">${s.kind==="corbeille"?`<b style="color:var(--text)">${esc(s.numero||"(sans nom)")}</b> · supprimé · effacé définitivement dans ${Math.min(30, Math.max(0, 30-Math.floor((Date.now()-new Date(s.created_at))/864e5)))} j`:`${fmtSize(s.taille)}${s.auteur&&s.kind!=="auto"?` · ${esc(shortName(s.auteur))}`:""}`}<span class="sv-k ${s.kind}">${SAVE_KINDS[s.kind]||esc(s.kind)}</span></span>
+      <button class="ghostbtn" type="button" data-sv="dl" data-id="${s.id}" title="Télécharger cette sauvegarde">⤓</button>
+      <button class="ghostbtn" type="button" data-sv="ask" data-id="${s.id}">Restaurer</button></div>${conf}`;
+  };
+  const mine = saves.filter(s=>currentIssue && s.issue_id===currentIssue.id && s.kind!=="corbeille");
+  const trash = saves.filter(s=>s.kind==="corbeille" && !issuesCache.some(i=>i.id===s.issue_id));
+  box.innerHTML = `<p class="modal-i">Une copie de chaque numéro modifié est faite chaque nuit, gardée 30 jours, puis une par mois pendant un an. Une copie est aussi faite avant chaque restauration, import ou réinitialisation.</p>
+    ${acts}
+    <div class="sv-h">Ce numéro · ${mine.length} sauvegarde${mine.length>1?"s":""}</div>
+    ${mine.map(row).join("") || `<div class="sv-empty">Aucune sauvegarde pour l'instant : la première sera faite cette nuit, ou maintenant avec le bouton ci-dessus.</div>`}
+    <div class="sv-h">🗑 Corbeille · numéros supprimés</div>
+    ${trash.map(row).join("") || `<div class="sv-empty">La corbeille est vide.</div>`}
+    <div class="sv-h">Envoi par email</div>
+    <p class="modal-i" style="margin-bottom:8px">Chaque nuit où au moins un numéro a changé, ses sauvegardes partent à cette adresse, en pièces jointes réimportables. L'envoi demande aussi la clé du service d'envoi, rangée dans Supabase.</p>
+    <div class="sv-mail"><input id="svMail" type="email" placeholder="adresse@exemple.fr" value="${esc(mail)}" aria-label="Adresse qui reçoit les sauvegardes"><button class="ghostbtn" type="button" data-sv="mail">Enregistrer</button></div>`;
+}
+document.getElementById("btnSaves").addEventListener("click", ()=>{ closeMoreMenu(); openSaves(); });
+document.getElementById("closeSaves").addEventListener("click", closeSaves);
+document.getElementById("saveScrim").addEventListener("click", closeSaves);
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && document.getElementById("saveModal").classList.contains("open")) closeSaves(); });
+document.getElementById("saveBody").addEventListener("click", async e=>{
+  const b=e.target.closest("[data-sv]"); if(!b || isVisitorMode) return;
+  const act=b.dataset.sv, id=b.dataset.id;
+  if(act==="ask"){ saveConfirm=id; renderSaves(); return; }
+  if(act==="cancel"){ saveConfirm=null; renderSaves(); return; }
+  if(act==="export"){ document.getElementById("btnJson").click(); return; }
+  if(act==="import"){ closeSaves(); document.getElementById("fileInput").click(); return; }
+  if(act==="now"){ b.disabled=true; const r=await serverBackup("manuelle"); if(r){ flashSaved("✓ Sauvegarde faite"); await loadSaves(); renderSaves(); } else { b.disabled=false; flashError("Sauvegarde", {message: savesUnavailable?"fonction absente":"échec"}); } return; }
+  if(act==="mail"){ const v=document.getElementById("svMail").value.trim();
+    if(v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ flashError("Adresse email", {message:"adresse invalide"}); return; }
+    const { error } = await sb.from("reglages").upsert({ cle:"sauvegarde_email", valeur:v });
+    if(error) flashError("Adresse d'envoi", error); else flashSaved(v?"✓ Adresse enregistrée":"✓ Envoi par email désactivé"); return; }
+  if(act==="dl"){ const { data, error } = await sb.from("sauvegardes").select("data,numero,created_at").eq("id", id).single();
+    if(error || !data){ flashError("Téléchargement", error||{message:"introuvable"}); return; }
+    download(JSON.stringify(data.data,null,1), `${slug(data.numero)}-${String(data.created_at).slice(0,10)}.json`, "application/json"); return; }
+  if(act==="restore"){
+    b.disabled=true;
+    const { data:iid, error } = await sb.rpc("cdf_restaurer", { p_id:id });
+    if(error){ b.disabled=false; flashError("Restauration", error); return; }
+    issuesCache = await loadIssues(); populateIssueSelect();
+    await selectIssue(iid || currentIssue.id, false);
+    flashSaved("✓ Sauvegarde restaurée");
+    await loadSaves(); saveConfirm=null; renderSaves();
+  }
+});
 
 
 
@@ -4343,6 +4675,9 @@ async function showApp(session){
   currentUserEmail = isVisitorMode ? "" : (session.user.email||"");
   document.getElementById("pUser").textContent = isVisitorMode ? "👁 Mode Équipe (lecture seule)" : currentUserEmail;
   if(isVisitorMode) disableEditingUI(); else enableEditingUI();
+  // Les sauvegardes serveur (lot 1) sont-elles installées ? Sert au message
+  // de suppression (corbeille ou suppression définitive).
+  if(!isVisitorMode && savesUnavailable===null) sb.from("sauvegardes").select("id").limit(1).then(({error})=>{ savesUnavailable=!!error; });
   if(appInited) return;
   appInited=true;
   subscribeIssues();
@@ -4543,7 +4878,7 @@ function exitVisitorMode() {
 
 const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
-  "#btnImport", "#btnPrint", "#btnPresentation", "#btnReset", "#btnDeleteIssue", "#dtitle", "#numero", "#bouclage",
+  "#btnImport", "#btnSaves", "#btnPrint", "#btnPresentation", "#btnReset", "#btnDeleteIssue", "#dtitle", "#numero", "#bouclage",
   "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes", "#fBrief",
   // Circuit de production : dates, pastilles de jalon et réglage du SR
   ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence",
