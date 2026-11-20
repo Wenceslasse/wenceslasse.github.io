@@ -1347,7 +1347,7 @@ async function reorderPages(draggedPageNums, targetPageNum){
   const updates=remaining.filter(p=>p.id).map(p=>({id:p.id, issue_id:currentIssue.id, n:p.n}));
   if(updates.length===0) return;
 
-  const {error}=await sb.from("pages").upsert(updates);
+  const {error}=await upsertPages(updates);
   if(error){
     console.error("Erreur réordonnage:",error.message);
     alert("Erreur lors du réordonnancement des pages :\n"+error.message+"\n\nLa vue va être resynchronisée.");
@@ -1404,7 +1404,7 @@ async function undoLast(){
   // Persiste les lignes restaurées
   const rows=entry.prev.filter(p=>p.id).map(pageToRow);
   if(rows.length){
-    const {error}=await sb.from("pages").upsert(rows);
+    const {error}=await upsertPages(rows);
     if(error){
       flashError("Annulation", error);
       if(currentIssue) await selectIssue(currentIssue.id, false);
@@ -1756,7 +1756,10 @@ function flashError(what, error){
   console.error(what+" :", msg);
   if(!el) return;
   const rls=/row-level security|permission denied|violates row-level/i.test(msg);
-  el.textContent = "⚠ "+what+" — "+(rls ? "votre compte n'a pas le droit de modifier ce numéro." : "non enregistré, vérifiez la connexion puis réessayez.");
+  const cols=/colonnes absentes|Could not find the '/i.test(msg);
+  el.textContent = "⚠ "+what+" — "+(rls ? "votre compte n'a pas le droit de modifier ce numéro."
+    : cols ? msg.replace(/^.*Could not find the '([^']+)' column.*$/,"colonne absente : $1")+". Le reste est enregistré ; relancez supabase/schema.sql dans Supabase."
+    : "non enregistré, vérifiez la connexion puis réessayez.");
   el.classList.add("show","err");
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove("show","err"), 6000);
@@ -2748,7 +2751,7 @@ async function applyBulkEdit(){
     if(lot) p.lot = (lot==="__clear__" ? "" : lot);
     updates.push(pageToRow(p));
   }
-  const {error}=await sb.from("pages").upsert(updates);
+  const {error}=await upsertPages(updates);
   if(error){ alert("Erreur : "+error.message); return; }
   flashSaved(`✓ ${updates.length} page${updates.length>1?"s":""} modifiée${updates.length>1?"s":""}`);
   { const ns=Array.from(selectedPages).sort((a,b)=>a-b); logActivity(`a modifié en lot ${ns.length} pages (${formatPages(ns)})`, ns[0]); }
@@ -3241,19 +3244,33 @@ async function createIssue(){
 // en cause, on retire celle que PostgREST vient de signaler et on réessaie :
 // tout le reste du contenu est ainsi copié quand même, et on prévient
 // l'utilisateur de ce qui a dû être laissé de côté.
-async function insertResilient(table, rows){
-  let payload = rows.map(r=>({...r}));
+// Colonnes que la base a déclarées inconnues : retirées d'office des
+// écritures suivantes, pour ne pas échouer puis réessayer à chaque fois.
+const missingCols = {};
+let missingColsWarned = false;
+async function writeResilient(table, op, rows){
+  const miss = missingCols[table] = missingCols[table] || new Set();
+  const strip = r => { const o={...r}; miss.forEach(c=>delete o[c]); return o; };
+  let payload = Array.isArray(rows) ? rows.map(strip) : strip(rows);
   const dropped=[];
   for(let attempt=0; attempt<10; attempt++){
-    const { error } = await sb.from(table).insert(payload);
-    if(!error) return { error:null, dropped };
+    const { error } = await sb.from(table)[op](payload);
+    if(!error){
+      if(dropped.length && !missingColsWarned){
+        missingColsWarned = true;
+        flashError("Base de données incomplète", {message:`colonnes absentes : ${[...miss].join(", ")}`});
+      }
+      return { error:null, dropped };
+    }
     const m = /Could not find the '([^']+)' column/.exec(error.message||"");
-    if(!m) return { error, dropped };
-    dropped.push(m[1]);
-    payload = payload.map(row=>{ const { [m[1]]:_, ...rest }=row; return rest; });
+    if(!m || miss.has(m[1])) return { error, dropped };
+    miss.add(m[1]); dropped.push(m[1]);
+    payload = Array.isArray(payload) ? payload.map(strip) : strip(payload);
   }
   return { error:{message:"Trop de colonnes absentes du cache de schéma — relancez la migration supabase/schema.sql."}, dropped };
 }
+const insertResilient = (table, rows) => writeResilient(table, "insert", rows);
+const upsertPages = rows => writeResilient("pages", "upsert", rows);
 async function duplicateIssue(id){
   if(isVisitorMode) return; // lecture seule
   const src = issuesCache.find(i=>i.id===id);
@@ -3379,7 +3396,7 @@ async function applyExtent(){
   const {rub, ns, change}=t;
   pushUndo(`Rubrique « ${rub} » p. ${formatPages(ns)}`, snapshotPages(change));
   change.forEach(n=>{ state.pages[n-1].rubrique=rub; });
-  const { error } = await sb.from("pages").upsert(change.map(n=>pageToRow(state.pages[n-1])));
+  const { error } = await upsertPages(change.map(n=>pageToRow(state.pages[n-1])));
   if(error){ alert("Erreur d'enregistrement : "+error.message); if(currentIssue) await selectIssue(currentIssue.id, false); return; }
   flashSaved(`✓ « ${rub} » sur ${change.length} page${change.length>1?"s":""}`);
   logActivity(`a étendu la rubrique « ${rub} » aux pages ${formatPages(ns)}`, ns[0]);
@@ -3397,7 +3414,7 @@ async function applyDossierFill(){
     if(vals.journaliste) p.journaliste=vals.journaliste;
     if(vals.thematique) p.thematique=vals.thematique;
     if(vals.lot) p.lot = vals.lot==="__clear__" ? "" : vals.lot; });
-  const { error } = await sb.from("pages").upsert(ns.map(n=>pageToRow(state.pages[n-1])));
+  const { error } = await upsertPages(ns.map(n=>pageToRow(state.pages[n-1])));
   if(error){ alert("Erreur d'enregistrement : "+error.message); return; }
   const what={journaliste:"le journaliste", thematique:"la thématique", lot:"le lot"};
   flashSaved(`✓ Dossier complété (${ns.length} pages)`);
@@ -3534,7 +3551,7 @@ async function updatePropStatus(x, patch){
 }
 async function persistPageRow(p){
   if(!p.id) return true;
-  const { error } = await sb.from("pages").upsert(pageToRow(p));
+  const { error } = await upsertPages(pageToRow(p));
   if(error){ alert("Erreur d'écriture de la page : "+error.message); return false; }
   return true;
 }
@@ -4098,7 +4115,7 @@ document.getElementById("fileInput").addEventListener("change",e=>{
       etapes:(p.etapes && typeof p.etapes==="object" && !Array.isArray(p.etapes)) ? p.etapes : {}
     }));
     const withId=rows.filter(x=>x.id), fresh=rows.filter(x=>!x.id).map(({id,...x})=>x);
-    const { error } = await sb.from("pages").upsert(withId);
+    const { error } = await upsertPages(withId);
     if(error){ flashError("Import", error); return; }
     if(fresh.length){ const { error:e2 } = await sb.from("pages").insert(fresh); if(e2){ flashError("Import", e2); return; } }
     const patch={};
@@ -4135,7 +4152,7 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   // vidé lui aussi (l'ancienne liste écrite à la main oubliait thématique,
   // dates figées et étapes, qui réapparaissaient au rechargement).
   const updates = state.pages.map((p,i)=>pageToRow({...blankPage(i+1), id:p.id}));
-  const { error } = await sb.from("pages").upsert(updates);
+  const { error } = await upsertPages(updates);
   if(error){ alert("Erreur : "+error.message); return; }
   await sb.from("color_customizations").delete().eq("issue_id", currentIssue.id);
   colorCustomizations={};
