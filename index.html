@@ -101,17 +101,6 @@
   .save-toast{position:fixed; bottom:20px; right:22px; z-index:300; background:#2C5E3E; color:#fff; font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.18); display:flex; align-items:center; gap:7px; opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .2s ease, transform .2s ease}
   .save-toast.show{opacity:1; transform:translateY(0)}
   .save-toast.err{background:var(--danger); pointer-events:auto; cursor:pointer; max-width:min(440px, calc(100vw - 44px))}
-  /* Mode compact : cartes plus denses */
-  #app.compact .page{min-height:118px; padding:10px 12px 0}
-  #app.compact .sujet{font-size:14px}
-  #app.compact .rubrow{margin-bottom:5px}
-  #app.compact .cardmeta{padding-top:6px}
-  /* Le bandeau bave sur les côtés de la carte (bleed) pour rejoindre ses
-     bords ; sa marge négative doit donc suivre le padding réduit du mode
-     compact (12px), sinon il déborde de 12px de chaque côté de la carte. */
-  #app.compact .pageband{margin-left:-12px; margin-right:-12px; padding:6px 12px}
-  #app.compact .spreadlabel{margin-bottom:3px}
-  #app.compact .rail{gap:12px}
   /* Barre de progression du bouclage */
   .boucle-wrap{display:flex; align-items:center; gap:8px}
   .boucle-bar{width:64px; height:6px; border-radius:3px; background:var(--border); overflow:hidden; flex:none}
@@ -721,6 +710,62 @@
   .visitor-transition.playing .visitor-anim-text{animation:visitor-zoom-fade 0.6s cubic-bezier(0.16,1,0.3,1) forwards, visitor-text-invert 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  /* ---- Vue Chemin de fer : le numéro entier sur une planche ----------
+     Même lecture que la diapositive « Le chemin de fer et son sommaire » de
+     la présentation, mais aux couleurs de l'appli : chaque page est une
+     vignette au format magazine, teintée de sa rubrique ; le sommaire en
+     dessous en est la légende. */
+  #viewPlanche{padding:2px 0 40px}
+  .pl-head{display:flex; align-items:baseline; gap:8px 18px; flex-wrap:wrap; margin:0 0 14px; font-size:13px; color:var(--muted)}
+  .pl-head b{color:var(--text); font-weight:650; font-variant-numeric:tabular-nums}
+  .pl-head .pl-dec{color:#B54708}
+  .pl-board{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px 14px}
+  .pl-spl{font-size:10.5px; color:var(--faint); text-align:center; margin-bottom:3px; font-variant-numeric:tabular-nums; letter-spacing:.02em}
+  .pl-sp{display:flex; gap:2px}
+  .pl-sp.first{justify-content:flex-end}
+  .pl-sp.first .pl-pg, .pl-sp.last .pl-pg{flex:0 0 calc(50% - 1px)}
+  .pl-pg{flex:1 1 0; min-width:0; aspect-ratio:21/29.7; background:var(--canvas); border:1px solid var(--border); position:relative;
+    padding:6px 6px 5px; display:flex; flex-direction:column; gap:3px; cursor:pointer; overflow:hidden; line-height:1.25;
+    transition:box-shadow .12s ease, opacity .12s ease, transform .12s ease}
+  .pl-pg.l{border-radius:5px 1px 1px 5px} .pl-pg.r{border-radius:1px 5px 5px 1px}
+  .pl-sp.first .pl-pg{border-radius:1px 5px 5px 1px} .pl-sp.last .pl-pg{border-radius:5px 1px 1px 5px}
+  .pl-pg.empty{background:repeating-linear-gradient(135deg, var(--canvas) 0 6px, var(--body) 6px 12px)}
+  .pl-pg:hover{box-shadow:0 0 0 2px var(--text); z-index:2}
+  .pl-pg:focus-visible{outline:none; box-shadow:0 0 0 3px var(--accent); z-index:2}
+  .pl-pg.dim{opacity:.25}
+  .pl-pg.sel{box-shadow:0 0 0 2px var(--accent); z-index:2}
+  .pl-pg.hl{box-shadow:0 0 0 2px var(--text); transform:translateY(-2px); z-index:2}
+  .pl-pg.drop{box-shadow:-4px 0 0 var(--accent); z-index:3}
+  .pl-pg.ext-pv{box-shadow:0 0 0 2px var(--accent); z-index:4}
+  .pl-pg.ext-cf{box-shadow:0 0 0 2px var(--danger); z-index:4}
+  .pl-top{display:flex; align-items:center; gap:4px; min-height:14px}
+  .pl-n{font-size:10.5px; font-weight:700; font-variant-numeric:tabular-nums; opacity:.75}
+  .pl-cv{font-size:9px; font-weight:700; letter-spacing:.04em; opacity:.6}
+  .pl-st{width:7px; height:7px; border-radius:50%; margin-left:auto; flex:none; box-shadow:0 0 0 1.5px rgba(255,255,255,.85)}
+  .pl-late{position:absolute; top:0; right:0; width:0; height:0; border-style:solid; border-width:0 11px 11px 0; border-color:transparent var(--danger) transparent transparent}
+  .pl-r{font-size:9.5px; font-weight:750; text-transform:uppercase; letter-spacing:.035em; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere}
+  .pl-s{font-size:11.5px; font-weight:600; color:var(--text); display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere}
+  .pl-s.none{color:var(--faint); font-weight:500; font-style:italic}
+  .pl-foot{margin-top:auto; display:flex; align-items:center; gap:4px; min-width:0}
+  .pl-j{font-size:10px; color:var(--muted); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0}
+  .pl-env{font-size:9.5px; font-weight:700; color:#B54708; background:#FEF0C7; border-radius:99px; padding:0 5px; white-space:nowrap}
+  .pl-toc-h{font-size:12px; font-weight:650; text-transform:uppercase; letter-spacing:.05em; color:var(--faint); margin:30px 0 10px; padding-top:18px; border-top:1px solid var(--border)}
+  .pl-toc{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:4px 22px}
+  .pl-it{display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:7px; cursor:pointer; border:none; background:transparent; text-align:left; width:100%}
+  .pl-it:hover, .pl-it:focus-visible{background:var(--hover); outline:none}
+  .pl-sw{width:14px; height:14px; border-radius:4px; flex:none}
+  .pl-it-n{font-size:13px; font-weight:700; width:22px; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); flex:none}
+  .pl-it-t{min-width:0; flex:1; line-height:1.3}
+  .pl-it-t b{display:block; font-size:13.5px; font-weight:650; overflow:hidden; white-space:nowrap; text-overflow:ellipsis}
+  .pl-it-t span{font-size:12px; color:var(--muted)}
+  .pl-dec-b{font-size:11.5px; font-weight:700; color:#B54708; background:#FEF0C7; border-radius:99px; padding:1px 8px; white-space:nowrap; flex:none}
+  .pl-empty{color:var(--faint); font-size:13px; padding:8px}
+  @media (max-width:560px){ .pl-board{grid-template-columns:repeat(2,1fr); gap:14px 10px} .pl-s{-webkit-line-clamp:4} }
+  @media print{
+    .pl-board{grid-template-columns:repeat(6,1fr); gap:10px 8px}
+    .pl-pg{break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+    .pl-it{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  }
   @media print{
     .toolbar,.legend,.scrim,.peek,.prop-inline input{display:none!important}
     header{position:static}
@@ -953,10 +998,10 @@
         <option value="">Tous les statuts</option>
       </select>
       <div style="border-left:1px solid var(--border);margin:0 8px;height:20px;"></div>
-      <button class="tbtn" id="btnViewGrid" title="Vue Grille">⊞ Grille</button>
-      <button class="tbtn" id="btnViewMatrix" title="Vue Matrice">▤ Matrice</button>
-      <button class="tbtn" id="btnViewGantt" title="Vue Gantt">📊 Gantt</button>
-      <button class="tbtn" id="btnCompact" title="Affichage compact / confortable">⊟ Compact</button>
+      <button class="tbtn" id="btnViewGrid" data-view="grid" title="Vue Grille : une carte détaillée par page">⊞ Grille</button>
+      <button class="tbtn" id="btnViewPlanche" data-view="planche" title="Vue Chemin de fer : tout le numéro d'un coup d'œil, avec son sommaire">▦ Chemin de fer</button>
+      <button class="tbtn" id="btnViewMatrix" data-view="matrix" title="Vue Matrice">▤ Matrice</button>
+      <button class="tbtn" id="btnViewGantt" data-view="gantt" title="Vue Gantt">📊 Gantt</button>
       <button class="tbtn" id="btnUndo" title="Annuler la dernière action (Ctrl+Z)" disabled>↶ Annuler</button>
       <span class="spacer"></span>
       <div class="more-menu-wrap" id="moreMenuWrap">
@@ -982,6 +1027,7 @@
 <main>
   <div class="wrap">
     <div class="rail" id="rail"></div>
+    <div id="viewPlanche" style="display:none;"></div>
     <div id="viewMatrix" style="display:none;"></div>
     <div id="viewGantt" style="display:none;"></div>
   </div>
@@ -2486,7 +2532,17 @@ function render(){
   rail.innerHTML="";
   document.getElementById("viewMatrix").style.display="none";
   document.getElementById("viewGantt").style.display="none";
+  document.getElementById("viewPlanche").style.display="none";
   rail.style.display="block";
+
+  if(currentView==="planche"){
+    rail.style.display="none";
+    document.getElementById("viewPlanche").style.display="block";
+    renderPlancheView();
+    renderStats(); renderDatalist();
+    applyExtPreview();
+    return;
+  }
 
   if(currentView==="matrix"){
     rail.style.display="none";
@@ -2551,6 +2607,79 @@ function render(){
   renderStats(); renderDatalist();
   applyExtPreview();
 }
+/* ---- Vue Chemin de fer --------------------------------------------- */
+function renderPlancheView(){
+  const box=document.getElementById("viewPlanche");
+  const P=state.pages, M=presModel();
+  const slotOf={}; M.slots.forEach(s=>slotOf[s.rub]=s);
+  const filtering = !!(filter.q || filter.statut);
+  const tile=(p, side)=>{
+    const rt=p.rubrique ? getTagColor(p.rubrique,"rubrique") : null;
+    const prev=P[p.n-2], first = p.rubrique && (!prev || prev.rubrique!==p.rubrique);
+    const st=STATUTS[p.statut]||STATUTS.a_caler;
+    const sl = first ? slotOf[p.rubrique] : null;
+    const nEnv = sl ? sl.pr.filter(x=>x.statut==="pressentie").length : 0;
+    const cls=["pl-pg", side, rt?"":"empty", (filtering && !matches(p))?"dim":"", selectedPages.has(p.n)?"sel":""].filter(Boolean).join(" ");
+    const sujet = p.sujet ? `<div class="pl-s">${esc(p.sujet)}</div>`
+      : nEnv ? `<div class="pl-s none">${nEnv} envisagé${nEnv>1?"s":""}</div>`
+      : (p.rubrique && first) ? `<div class="pl-s none">Sujet à définir</div>` : "";
+    const label = `Page ${p.n}${p.rubrique?" — "+p.rubrique:""}${p.sujet?" — "+p.sujet:""} (${st.label})`;
+    return `<div class="${cls}" data-page-n="${p.n}" role="button" tabindex="0" ${isVisitorMode?"":`draggable="true"`} aria-label="${esc(label)}" title="${esc(label)}"
+      style="${rt?`background:${rt.bg};color:${rt.fg};border-color:${rt.bg}`:""}">
+      ${isLate(p)?`<span class="pl-late" title="En retard"></span>`:""}
+      <div class="pl-top"><span class="pl-n">${p.n}</span>${COVER[p.n]?`<span class="pl-cv">${esc(COVER[p.n])}</span>`:""}<span class="pl-st" style="background:${st.dot||"#9B9A97"}" title="${esc(st.label)}"></span></div>
+      ${first?`<div class="pl-r">${esc(p.rubrique)}</div>`:""}
+      ${sujet}
+      <div class="pl-foot">${p.journaliste?`<span class="pl-j">${esc(p.journaliste)}</span>`:""}${nEnv?`<span class="pl-env" title="Sujets envisagés pour cette rubrique">✦ ${nEnv}</span>`:""}</div>
+    </div>`;
+  };
+  const spreads=[[1]]; for(let n=2;n<TOTAL;n+=2) spreads.push([n,n+1]); spreads.push([TOTAL]);
+  const board=spreads.map(sp=>{
+    const one=sp.length===1, lbl = one ? (sp[0]===1?"Couverture":"Dos") : `${sp[0]}–${sp[1]}`;
+    return `<div><div class="pl-spl">${lbl}</div><div class="pl-sp${one?(sp[0]===1?" first":" last"):""}">${
+      one ? tile(P[sp[0]-1], sp[0]===1?"r":"l") : tile(P[sp[0]-1],"l")+tile(P[sp[1]-1],"r")}</div></div>`;
+  }).join("");
+  const inCdf=M.slots.filter(s=>s.pages.length);
+  const toDecide=inCdf.filter(s=>s.active.length>s.places);
+  const assigned=P.filter(p=>p.rubrique).length, withSubject=P.filter(p=>p.sujet).length;
+  const toc=inCdf.map(s=>{ const rt=getTagColor(s.rub,"rubrique"), n=s.active.length;
+    return `<button type="button" class="pl-it" data-rub="${esc(s.rub)}" data-first="${s.pages[0]}">
+      <span class="pl-it-n">${s.pages[0]}</span><span class="pl-sw" style="background:${rt.bg};box-shadow:inset 0 0 0 1px ${rt.fg}33"></span>
+      <span class="pl-it-t"><b>${esc(s.rub)}</b><span>${pvPages(s.pages)} · ${s.pages.length} page${s.pages.length>1?"s":""}${n?` · ${n} sujet${n>1?"s":""}`:" · à pourvoir"}</span></span>
+      ${n>s.places?`<span class="pl-dec-b" title="${n} propositions pour ${s.places} place${s.places>1?"s":""}">${n} → ${s.places}</span>`:""}
+    </button>`; }).join("");
+  box.innerHTML = `
+    <div class="pl-head"><span><b>${assigned}/${TOTAL}</b> pages attribuées</span><span><b>${withSubject}/${TOTAL}</b> sujets calés</span>
+      <span><b>${inCdf.length}</b> rubrique${inCdf.length>1?"s":""}</span>${toDecide.length?`<span class="pl-dec"><b style="color:inherit">${toDecide.length}</b> à trancher</span>`:""}</div>
+    <div class="pl-board">${board}</div>
+    <div class="pl-toc-h">Sommaire</div>
+    <div class="pl-toc">${toc || `<div class="pl-empty">Donnez des rubriques aux pages pour construire le sommaire.</div>`}</div>`;
+}
+(function wirePlanche(){
+  const box=document.getElementById("viewPlanche"); if(!box) return;
+  const tileOf=e=>e.target.closest(".pl-pg");
+  box.addEventListener("click", e=>{
+    const t=tileOf(e); if(t){ openPeek(Number(t.dataset.pageN)); return; }
+    const it=e.target.closest(".pl-it"); if(it) openPeek(Number(it.dataset.first));
+  });
+  box.addEventListener("keydown", e=>{ const t=tileOf(e); if(t && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); openPeek(Number(t.dataset.pageN)); } });
+  // Survol d'une ligne du sommaire : ses pages ressortent sur la planche.
+  const hl=rub=>box.querySelectorAll(".pl-pg").forEach(el=>{ const p=state.pages[Number(el.dataset.pageN)-1]; el.classList.toggle("hl", !!rub && p.rubrique===rub); });
+  box.addEventListener("mouseover", e=>{ const it=e.target.closest(".pl-it"); hl(it?it.dataset.rub:null); });
+  box.addEventListener("mouseleave", ()=>hl(null));
+  box.addEventListener("focusin", e=>{ const it=e.target.closest(".pl-it"); hl(it?it.dataset.rub:null); });
+  // Glisser-déposer : même règle que la grille (la page se place avant la cible).
+  box.addEventListener("dragstart", e=>{ const t=tileOf(e); if(!t || isVisitorMode){ e.preventDefault(); return; }
+    const n=Number(t.dataset.pageN); draggedPages = selectedPages.has(n) ? [...selectedPages].sort((a,b)=>a-b) : [n];
+    e.dataTransfer.effectAllowed="move"; try{ e.dataTransfer.setData("text/plain", String(n)); }catch(_){} });
+  box.addEventListener("dragover", e=>{ const t=tileOf(e); if(!t || !draggedPages) return; e.preventDefault();
+    box.querySelectorAll(".pl-pg.drop").forEach(x=>{ if(x!==t) x.classList.remove("drop"); }); t.classList.add("drop"); });
+  box.addEventListener("dragleave", e=>{ const t=tileOf(e); if(t && !t.contains(e.relatedTarget)) t.classList.remove("drop"); });
+  box.addEventListener("drop", async e=>{ const t=tileOf(e); if(!t || !draggedPages) return; e.preventDefault();
+    const n=Number(t.dataset.pageN), d=draggedPages; draggedPages=null; t.classList.remove("drop");
+    if(!d.includes(n)) await reorderPages(d, n); });
+  box.addEventListener("dragend", ()=>{ draggedPages=null; box.querySelectorAll(".pl-pg.drop").forEach(x=>x.classList.remove("drop")); });
+})();
 function row(label,a,b){
   const w=document.createElement("div");
   const l=document.createElement("div"); l.className="spreadlabel"; l.textContent=label; w.appendChild(l);
@@ -3201,10 +3330,10 @@ function extTargets(){
 }
 // Aperçu sur la grille : cases encadrées (et en rouge si elles changent de rubrique).
 function applyExtPreview(){
-  document.querySelectorAll(".page.ext-pv, .page.ext-cf").forEach(el=>el.classList.remove("ext-pv","ext-cf"));
+  document.querySelectorAll(".ext-pv, .ext-cf").forEach(el=>el.classList.remove("ext-pv","ext-cf"));
   const t = isVisitorMode ? null : extTargets(); if(!t || t.ns.length<2) return;
   const cf=new Set(t.conflicts);
-  t.ns.forEach(n=>{ const el=document.querySelector(`.page[data-page-n="${n}"]`); if(el) el.classList.add(cf.has(n)?"ext-cf":"ext-pv"); });
+  t.ns.forEach(n=>{ const el=document.querySelector(`.page[data-page-n="${n}"], .pl-pg[data-page-n="${n}"]`); if(el) el.classList.add(cf.has(n)?"ext-cf":"ext-pv"); });
 }
 function renderExtent(force){
   const box=document.getElementById("extentBox"); if(!box) return;
@@ -3899,27 +4028,20 @@ function download(text,name,type){ const b=new Blob([text],{type}),u=URL.createO
   const a=document.createElement("a"); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
 
 /* ---- View switcher ---- */
-document.getElementById("btnViewGrid").addEventListener("click",()=>{
-  currentView="grid";
-  document.getElementById("btnViewGrid").style.opacity="1";
-  document.getElementById("btnViewMatrix").style.opacity="0.5";
-  document.getElementById("btnViewGantt").style.opacity="0.5";
+// Une seule fonction pour les quatre vues ; la dernière vue choisie est
+// mémorisée dans ce navigateur.
+const VIEWS = ["grid","planche","matrix","gantt"];
+function setView(v){
+  if(!VIEWS.includes(v)) v="grid";
+  currentView=v;
+  document.querySelectorAll("[data-view]").forEach(b=>{ const on=b.dataset.view===v; b.style.opacity=on?"1":"0.5"; b.setAttribute("aria-pressed", on?"true":"false"); });
+  try{ localStorage.setItem("cdf_view", v); }catch(_){}
   render();
-});
-document.getElementById("btnViewMatrix").addEventListener("click",()=>{
-  currentView="matrix";
-  document.getElementById("btnViewGrid").style.opacity="0.5";
-  document.getElementById("btnViewMatrix").style.opacity="1";
-  document.getElementById("btnViewGantt").style.opacity="0.5";
-  render();
-});
-document.getElementById("btnViewGantt").addEventListener("click",()=>{
-  currentView="gantt";
-  document.getElementById("btnViewGrid").style.opacity="0.5";
-  document.getElementById("btnViewMatrix").style.opacity="0.5";
-  document.getElementById("btnViewGantt").style.opacity="1";
-  render();
-});
+}
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click", ()=>setView(b.dataset.view)));
+try{ const v=localStorage.getItem("cdf_view"); if(VIEWS.includes(v)) currentView=v; }catch(_){}
+document.querySelectorAll("[data-view]").forEach(b=>{ b.style.opacity = b.dataset.view===currentView ? "1" : "0.5"; });
+try{ localStorage.removeItem("cdf_compact"); }catch(_){} // ancien mode compact, retiré
 
 const moreMenu=document.getElementById("moreMenu"), btnMoreActions=document.getElementById("btnMoreActions");
 function closeMoreMenu(){ moreMenu.classList.remove("open"); btnMoreActions.setAttribute("aria-expanded","false"); }
@@ -4049,17 +4171,7 @@ document.getElementById("btnDeleteIssue").addEventListener("click", async ()=>{
 
 document.getElementById("btnUndo").addEventListener("click", undoLast);
 
-// Affichage compact / confortable (préférence mémorisée)
-function applyCompact(on){
-  document.getElementById("app").classList.toggle("compact", on);
-  const btn=document.getElementById("btnCompact");
-  btn.textContent = on ? "⊞ Confortable" : "⊟ Compact";
-  localStorage.setItem("cdf_compact", on?"1":"0");
-}
-document.getElementById("btnCompact").addEventListener("click",()=>{
-  applyCompact(!document.getElementById("app").classList.contains("compact"));
-});
-if(localStorage.getItem("cdf_compact")==="1") applyCompact(true);
+
 
 document.addEventListener("keydown", e=>{
   if((e.ctrlKey||e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase()==="z"){
