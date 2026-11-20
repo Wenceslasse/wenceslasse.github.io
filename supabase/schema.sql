@@ -38,6 +38,11 @@ alter table public.pages add column if not exists thematique text not null defau
 -- Ajouter le champ "lot" (Lot 1 à 4) sans affecter les données existantes
 alter table public.pages add column if not exists lot text not null default '';
 
+-- Proposition de brief : le pitch éditorial du sujet (angle, pourquoi
+-- maintenant, ce qu'on va chercher), distinct des "notes" de production.
+-- Alimente la présentation des sujets pressentis (cf. btnPresentation).
+alter table public.pages add column if not exists brief text not null default '';
+
 -- ---- Circuit de production éditoriale --------------------------------
 -- Cinq jalons par page : livraison V1 (colonne "rendu" existante, dont le sens
 -- ne change pas : c'est la date à laquelle le journaliste rend son texte), puis

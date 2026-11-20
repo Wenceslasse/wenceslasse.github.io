@@ -512,6 +512,13 @@
   .rythme-in span{color:var(--faint); font-size:12.5px}
   #rythmeTotal{margin:16px 0 0; padding-top:12px; border-top:1px solid var(--border)}
 
+  .pres-issue-list{display:flex; flex-direction:column; gap:2px; max-height:280px; overflow-y:auto; margin:-4px -6px 4px}
+  .pres-issue-row{display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:6px; cursor:pointer; font-size:13.5px}
+  .pres-issue-row:hover{background:var(--hover)}
+  .pres-issue-row input{flex:none}
+  .pres-issue-row .pin{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pres-issue-row .pid{color:var(--faint); font-size:12px; flex:none}
+
   .peek-foot{display:flex; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid var(--border)}
   .ghostbtn{border:none; background:transparent; border-radius:5px; padding:6px 10px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; gap:6px}
   .ghostbtn:hover{background:var(--hover); color:var(--text)}
@@ -754,6 +761,7 @@
           <button class="more-menu-item" id="btnJson">Sauvegarde</button>
           <button class="more-menu-item" id="btnImport">Importer</button>
           <button class="more-menu-item" id="btnPrint">Imprimer</button>
+          <button class="more-menu-item" id="btnPresentation">🎬 Sujets pressentis</button>
           <button class="more-menu-item" id="btnReset">Réinitialiser</button>
           <div class="more-menu-sep"></div>
           <button class="more-menu-item danger" id="btnDeleteIssue">🗑 Supprimer ce numéro</button>
@@ -789,6 +797,10 @@
       <div class="prow">
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16M4 12h16M4 20h12"/></svg>Thématique</div>
         <div class="pval"><input id="fThematique" placeholder="Vide"></div>
+      </div>
+      <div class="prow">
+        <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.2-6.3-4.5L5.7 20.8 8 13.6l-6-4.4h7.6z"/></svg>Brief</div>
+        <div class="pval"><textarea id="fBrief" placeholder="Angle, pourquoi maintenant, ce qu'on va chercher…"></textarea></div>
       </div>
       <div class="prow">
         <div class="plabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Calibrage</div>
@@ -852,6 +864,19 @@
       <div class="rythme-in"><input id="rAgence" type="number" min="0" max="60" step="1"><span>j ouvrés</span></div>
     </div>
     <p class="modal-i" id="rythmeTotal"></p>
+  </div>
+</div>
+
+<div class="scrim" id="presScrim"></div>
+<div class="modal" id="presModal" role="dialog" aria-modal="true" aria-labelledby="presTitle">
+  <div class="modal-h"><span id="presTitle">Sujets pressentis</span><span class="spacer"></span><button class="ghostbtn" id="closePres" title="Fermer">✕</button></div>
+  <div class="modal-b">
+    <p class="modal-i">Choisissez les numéros à présenter : une slide par dossier (rubrique + sujet), avec sa proposition de brief. Les pages sans rubrique ni sujet n'apparaissent pas.</p>
+    <div class="pres-issue-list" id="presIssueList"></div>
+    <div class="peek-foot" style="padding:14px 0 0; border-top:none">
+      <span class="spacer"></span>
+      <button class="ghostbtn primary" id="presGenerate">Générer la présentation →</button>
+    </div>
   </div>
 </div>
 
@@ -994,6 +1019,24 @@ function getTagColor(text, fieldType) {
   }
   return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
 }
+// Même logique que getTagColor, mais paramétrée par une table de couleurs
+// personnalisées au lieu du global `colorCustomizations` — qui ne reflète que
+// le numéro actuellement ouvert. Nécessaire pour la présentation des sujets
+// pressentis, qui peut regrouper plusieurs numéros à la fois, chacun avec ses
+// propres couleurs personnalisées.
+function resolveTagColor(text, fieldType, customMap){
+  if (!text) return TAG_PALETTE[0];
+  const key = fieldType ? `${fieldType}:${text}` : `rubrique:${text}`;
+  if (customMap && customMap[key]) return customMap[key];
+  if (fieldType === "statut" && STATUTS[text]) return STATUTS[text];
+  if (fieldType === "lot" && LOTS[text]) return LOTS[text];
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
+}
 // Mélange un hex avec du blanc à une opacité donnée — pour le lavis de fond
 // des cartes de la Grille, dérivé de la couleur de rubrique mais dilué : le
 // couple fg/bg de TAG_PALETTE est vérifié AAA contre le blanc ET contre son
@@ -1010,9 +1053,9 @@ const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", d_retours:"", d_v2:"", d_sr:"", d_agence:"", sr_duree:null, statut:"a_caler", journaliste:"", lot:"", notes:"", etapes:{}}; }
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", d_retours:"", d_v2:"", d_sr:"", d_agence:"", sr_duree:null, statut:"a_caler", journaliste:"", lot:"", notes:"", brief:"", etapes:{}}; }
 function rowToPage(r){
-  const p = {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", d_retours:r.d_retours||"", d_v2:r.d_v2||"", d_sr:r.d_sr||"", d_agence:r.d_agence||"", sr_duree:(r.sr_duree==null?null:Number(r.sr_duree)), statut:STATUT_ALIAS[r.statut]||r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||"", etapes:(r.etapes && typeof r.etapes==="object") ? {...r.etapes} : {}};
+  const p = {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", d_retours:r.d_retours||"", d_v2:r.d_v2||"", d_sr:r.d_sr||"", d_agence:r.d_agence||"", sr_duree:(r.sr_duree==null?null:Number(r.sr_duree)), statut:STATUT_ALIAS[r.statut]||r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||"", brief:r.brief||"", etapes:(r.etapes && typeof r.etapes==="object") ? {...r.etapes} : {}};
   // Les étapes font foi : si le statut stocké les contredit — par exemple parce
   // qu'un découpage jalon/étapes a changé depuis la dernière écriture — on le
   // réaligne EN MÉMOIRE, pour que la Grille, le Gantt et la Matrice montrent la
@@ -1094,7 +1137,7 @@ function pageToRow(p){
     id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique,
     rubrique:p.rubrique, calib:(p.calib===""||p.calib==null?null:Number(p.calib)),
     unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste,
-    lot:p.lot, notes:p.notes,
+    lot:p.lot, notes:p.notes, brief:p.brief,
     d_retours:p.d_retours||null, d_v2:p.d_v2||null, d_sr:p.d_sr||null, d_agence:p.d_agence||null,
     sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null
   };
@@ -1338,6 +1381,10 @@ function toSignes(p){ const v=parseFloat(p.calib)||0; if(p.unite==="feuillets") 
 function fmt(n){ return Math.round(n).toLocaleString("fr-FR"); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}`; }
+// Date complète (jour mois année) : frDate() omet l'année pour rester compact
+// dans l'interface, mais une présentation vue hors contexte a besoin de la
+// date entière pour ne pas être ambiguë.
+function frDateFull(iso){ if(!iso) return ""; return new Date(iso+"T00:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}); }
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 /* ---- Chaîne de dates ------------------------------------------------
@@ -1747,9 +1794,12 @@ function worstStatut(items){
   for(const s of STATUT_ORDER) if(items.some(p=>p.statut===s)) return s;
   return "a_caler";
 }
-function buildDossiers(){
+// Généralisée pour pouvoir grouper les pages d'UN AUTRE numéro que celui
+// actuellement ouvert (cf. la présentation des sujets pressentis, qui doit
+// pouvoir regrouper plusieurs chemins de fer sans les sélectionner un par un).
+function buildDossiersFrom(pages){
   const out=[]; let cur=null;
-  for(const p of state.pages){
+  for(const p of pages){
     const rub=p.rubrique||"";
     const contiguous = cur && p.n === cur.pages[cur.pages.length-1]+1;
     const sameRub = cur && rub === cur.rubrique;
@@ -1769,6 +1819,7 @@ function buildDossiers(){
     return {...g, title:g.sujets[0]||g.rubrique||"—", statut, chain:dossierChain(g.items), step:STATUT_STEP[statut]||0};
   });
 }
+function buildDossiers(){ return buildDossiersFrom(state.pages); }
 /* Circuit d'un dossier : pour chaque jalon, la date la plus tardive de ses
    pages — un dossier n'est à l'étape suivante que quand sa page la plus en
    retard y est arrivée. */
@@ -2370,15 +2421,15 @@ const peek=document.getElementById("peek"), scrim=document.getElementById("scrim
 let current=null;
 const F={rub:document.getElementById("fRubrique"),thematique:document.getElementById("fThematique"),calib:document.getElementById("fCalib"),
   unite:document.getElementById("fUnite"),
-  journaliste:document.getElementById("fJournaliste"),notes:document.getElementById("fNotes")};
+  journaliste:document.getElementById("fJournaliste"),notes:document.getElementById("fNotes"),brief:document.getElementById("fBrief")};
 const dtitle=document.getElementById("dtitle");
 
 function autoGrow(t){ t.style.height="auto"; t.style.height=t.scrollHeight+"px"; }
 function openPeek(n){
   current=n; const p=state.pages[n-1];
   document.getElementById("dnum").textContent = "Page "+n+(COVER[n]?"  ·  "+COVER[n]:"");
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
-  renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes; F.brief.value=p.brief;
+  renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes); autoGrow(F.brief);
   peek.classList.add("open"); scrim.classList.add("open");
   document.getElementById("prevPage").style.visibility=n>1?"visible":"hidden";
   document.getElementById("nextPage").style.visibility=n<TOTAL?"visible":"hidden";
@@ -2616,11 +2667,12 @@ F.calib.addEventListener("input",e=>commit("calib",e.target.value));
 F.unite.addEventListener("change",e=>commit("unite",e.target.value));
 F.journaliste.addEventListener("input",e=>commit("journaliste",e.target.value));
 F.notes.addEventListener("input",e=>{ autoGrow(e.target); commit("notes",e.target.value); });
+F.brief.addEventListener("input",e=>{ autoGrow(e.target); commit("brief",e.target.value); });
 
 // Annulation des champs texte : instantané avant édition (focus) → poussé si modifié (blur)
-const FIELD_LABELS={sujet:"le sujet",rubrique:"la rubrique",thematique:"la thématique",calib:"le calibrage",unite:"l'unité",journaliste:"le journaliste",notes:"les notes"};
+const FIELD_LABELS={sujet:"le sujet",rubrique:"la rubrique",thematique:"la thématique",calib:"le calibrage",unite:"l'unité",journaliste:"le journaliste",notes:"les notes",brief:"le brief"};
 let _fieldEditSnap=null, _fieldEditPageN=null;
-[dtitle,F.rub,F.thematique,F.calib,F.journaliste,F.notes].forEach(el=>{
+[dtitle,F.rub,F.thematique,F.calib,F.journaliste,F.notes,F.brief].forEach(el=>{
   el.addEventListener("focus",()=>{ if(current!=null){ _fieldEditSnap={...state.pages[current-1]}; _fieldEditPageN=current; } });
   el.addEventListener("blur",()=>{
     if(_fieldEditSnap==null||_fieldEditPageN==null){ _fieldEditSnap=null; return; }
@@ -2645,8 +2697,8 @@ function refreshPeekIfIdle(n){
   if(current!==n || !peek.classList.contains("open")) return;
   if(peek.contains(document.activeElement)) return; // ne pas couper la frappe en cours
   const p=state.pages[n-1];
-  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes;
-  renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes);
+  dtitle.value=p.sujet; F.rub.value=p.rubrique; F.thematique.value=p.thematique; F.calib.value=p.calib; F.unite.value=p.unite; F.journaliste.value=p.journaliste; F.notes.value=p.notes; F.brief.value=p.brief;
+  renderCircuit(); renderLotChips(p.lot); updateHint(); autoGrow(dtitle); autoGrow(F.notes); autoGrow(F.brief);
 }
 
 /* ---- header fields (numero / bouclage of the current issue) ---- */
@@ -2868,7 +2920,7 @@ async function duplicateIssue(id){
       // L'avancement des 12 étapes de la Matrice suit la page dupliquée, comme
       // tout le reste — l'oublier ici la ramènerait silencieusement à zéro.
       etapes:(s.etapes && typeof s.etapes==="object") ? s.etapes : {},
-      journaliste:s.journaliste||"", lot:s.lot||"", notes:s.notes||"" }; });
+      journaliste:s.journaliste||"", lot:s.lot||"", notes:s.notes||"", brief:s.brief||"" }; });
   const { error:e2, dropped } = await insertResilient("pages", pages);
   if(e2){ alert("Erreur de copie des pages : "+e2.message); return; }
   if(dropped.length){
@@ -2883,6 +2935,201 @@ async function duplicateIssue(id){
   populateIssueSelect();
   await selectIssue(newIss.id);
 }
+
+/* ---- Présentation des sujets pressentis ------------------------------
+   Une slide par dossier (rubrique + sujet regroupant ses pages, cf.
+   buildDossiersFrom) sur les numéros choisis, avec sa proposition de brief.
+   Le document généré est un fichier HTML autonome (pas de dépendance
+   réseau) ouvert dans un nouvel onglet — pas une page publiée par Claude :
+   il vit entièrement dans le navigateur de l'utilisateur. */
+const presModal=document.getElementById("presModal"), presScrim=document.getElementById("presScrim");
+function openPresDialog(){
+  const list=document.getElementById("presIssueList");
+  list.innerHTML = issuesCache.map(iss=>`
+    <label class="pres-issue-row">
+      <input type="checkbox" value="${iss.id}"${currentIssue && iss.id===currentIssue.id ? " checked" : ""}>
+      <span class="pin">${esc(iss.numero||"(sans nom)")}</span>
+      <span class="pid">${iss.bouclage?("bouclage "+frDate(iss.bouclage)):""}</span>
+    </label>`).join("");
+  presModal.classList.add("open"); presScrim.classList.add("open");
+}
+function closePresDialog(){ presModal.classList.remove("open"); presScrim.classList.remove("open"); }
+presScrim.addEventListener("click", closePresDialog);
+document.getElementById("closePres").addEventListener("click", closePresDialog);
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && presModal.classList.contains("open")) closePresDialog(); });
+document.getElementById("btnPresentation").addEventListener("click", ()=>{ closeMoreMenu(); openPresDialog(); });
+document.getElementById("presGenerate").addEventListener("click", async ()=>{
+  const ids=[...document.querySelectorAll("#presIssueList input:checked")].map(c=>c.value);
+  if(ids.length===0){ alert("Choisissez au moins un numéro à présenter."); return; }
+  closePresDialog();
+  await generatePresentation(ids);
+});
+
+async function generatePresentation(issueIds){
+  // Préserve l'ordre d'issuesCache (donc de la liste latérale), plutôt que
+  // l'ordre de coche dans le document.
+  const selected = issuesCache.filter(i=>issueIds.includes(i.id));
+  const entries=[];
+  for(const iss of selected){
+    // Le numéro déjà ouvert est en mémoire (state.pages) ; les autres se
+    // relisent en base, un par un, comme le fait duplicateIssue().
+    let pages;
+    if(currentIssue && iss.id===currentIssue.id){
+      pages = state.pages;
+    } else {
+      const { data, error } = await sb.from("pages").select("*").eq("issue_id", iss.id).order("n");
+      if(error){ alert(`Erreur de lecture des pages de « ${iss.numero||"ce numéro"} » : `+error.message); continue; }
+      pages = (data||[]).map(rowToPage);
+    }
+    const { data: colorRows, error:ecol } = await sb.from("color_customizations").select("*").eq("issue_id", iss.id);
+    const colorMap={};
+    if(ecol) console.error("Erreur chargement couleurs :", ecol.message);
+    else (colorRows||[]).forEach(r=>{ colorMap[`${r.field_type}:${r.tag_name}`] = {bg:r.bg_color, fg:r.fg_color}; });
+
+    // Seuls les dossiers qui portent déjà une rubrique ou un sujet ont
+    // quelque chose à présenter — une page entièrement vide n'est pas
+    // encore un « sujet pressenti ».
+    const dossiers = buildDossiersFrom(pages).filter(g=>g.rubrique || g.sujets.length);
+    for(const g of dossiers){
+      const rubColor = resolveTagColor(g.rubrique, "rubrique", colorMap);
+      const journalistes = [...new Set(g.items.map(p=>p.journaliste).filter(Boolean))].join(", ");
+      // Plusieurs pages d'un même dossier portent en théorie le même brief ;
+      // au cas où elles divergent, on les montre toutes plutôt que d'en
+      // perdre une silencieusement.
+      const brief = [...new Set(g.items.map(p=>p.brief).filter(Boolean))].join("\n\n");
+      entries.push({
+        numero: iss.numero||"(sans nom)",
+        bouclage: frDateFull(iss.bouclage),
+        rubrique: g.rubrique, rubColor,
+        thematique: g.thematique,
+        title: g.title,
+        brief,
+        journalistes,
+        pagesLabel: formatPages(g.pages),
+        signsLabel: g.sig>0 ? Math.round(g.sig).toLocaleString("fr-FR")+" signes" : "",
+      });
+    }
+  }
+  if(entries.length===0){ alert("Aucun sujet renseigné (rubrique ou sujet) dans les numéros sélectionnés."); return; }
+  const issuesLabel = selected.length<=3
+    ? selected.map(i=>i.numero||"(sans nom)").join(" · ")
+    : `${selected.length} numéros à venir`;
+  const html = buildPresentationDoc(entries, issuesLabel);
+  const blob = new Blob([html], {type:"text/html"});
+  window.open(URL.createObjectURL(blob), "_blank");
+}
+
+function presSlideHTML(e, idx){
+  const onLeft = idx%2===0;
+  return `
+  <section class="slide">
+    <div class="blob" style="width:46vw;height:46vw;${onLeft?"left":"right"}:-14vw;bottom:-18vw;background:${e.rubColor.bg}"></div>
+    <div class="inner">
+      <div class="eyebrow">
+        ${e.rubrique?`<span class="pill" style="background:${e.rubColor.bg};color:${e.rubColor.fg}">${esc(e.rubrique)}</span>`:""}
+        ${e.thematique?`<span class="thematique-tag">${esc(e.thematique)}</span>`:""}
+        <span class="issue-tag">${esc(e.numero)}${e.bouclage?" · bouclage "+esc(e.bouclage):""}</span>
+      </div>
+      <h1 class="sujet">${esc(e.title)}</h1>
+      <div class="brief-card">
+        <div class="brief-label">Proposition de brief</div>
+        <div class="brief-text${e.brief?"":" empty"}">${e.brief?esc(e.brief):"Brief à rédiger — à compléter dans Chemin de fer."}</div>
+      </div>
+      <div class="meta-row">
+        ${e.journalistes?`<div class="meta-item"><b>Journaliste</b>${esc(e.journalistes)}</div>`:""}
+        <div class="meta-item"><b>Pages</b>${esc(e.pagesLabel)}</div>
+        ${e.signsLabel?`<div class="meta-item"><b>Calibrage</b>${esc(e.signsLabel)}</div>`:""}
+      </div>
+    </div>
+  </section>`;
+}
+
+function buildPresentationDoc(entries, issuesLabel){
+  const genDate=new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
+  const titleSlide=`
+  <section class="slide active title-slide">
+    <div class="blob" style="width:58vw;height:58vw;left:-20vw;top:-20vw;background:#EFE1DC"></div>
+    <div class="inner">
+      <div class="thematique-tag" style="margin-bottom:18px">Sujets pressentis</div>
+      <h1>${esc(issuesLabel)}</h1>
+      <p>${entries.length} sujet${entries.length>1?"s":""} · généré le ${genDate}</p>
+    </div>
+  </section>`;
+  const body=entries.map((e,idx)=>presSlideHTML(e,idx)).join("\n");
+  return `<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(issuesLabel)} — Sujets pressentis</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;background:#f7f5f1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c1b19;overflow:hidden}
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(28px,6vw,96px);opacity:0;pointer-events:none;transform:translateY(14px);transition:opacity .35s ease,transform .35s ease;overflow:hidden}
+.slide.active{opacity:1;pointer-events:auto;transform:translateY(0)}
+.blob{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55;z-index:0}
+.inner{position:relative;z-index:1;max-width:980px}
+.eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:28px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:.02em}
+.thematique-tag{font-size:12.5px;text-transform:uppercase;letter-spacing:.09em;color:#6b6a63;font-weight:600}
+.issue-tag{margin-left:auto;font-size:12.5px;color:#8d8c84}
+h1.sujet{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;font-size:clamp(26px,4.2vw,54px);line-height:1.14;margin:0 0 26px;max-width:17ch}
+.title-slide h1{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;font-size:clamp(32px,6vw,68px);margin:0 0 16px;max-width:18ch}
+.title-slide p{font-size:15px;color:#6b6a63}
+.brief-card{background:rgba(255,255,255,.72);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;margin-bottom:26px;max-width:640px}
+.brief-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8d8c84;font-weight:700;margin-bottom:8px}
+.brief-text{font-size:15.5px;line-height:1.6;white-space:pre-wrap}
+.brief-text.empty{color:#9a9890;font-style:italic}
+.meta-row{display:flex;gap:28px;flex-wrap:wrap;font-size:13px;color:#555349}
+.meta-item b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#9a9890;font-weight:700;margin-bottom:3px}
+.nav{position:fixed;bottom:22px;right:26px;display:flex;align-items:center;gap:10px;z-index:5;font-size:13px;color:#6b6a63}
+.nav button{border:1px solid rgba(0,0,0,.14);background:rgba(255,255,255,.85);border-radius:999px;width:36px;height:36px;cursor:pointer;font-size:16px;color:#1c1b19;line-height:1}
+.nav button:hover:not(:disabled){background:#fff}
+.nav button:disabled{opacity:.3;cursor:default}
+.progress{position:fixed;top:0;left:0;height:3px;background:#1c1b19;z-index:6;transition:width .3s ease;width:0}
+@media (max-width:640px){ .meta-row{gap:16px} .nav{right:14px;bottom:14px} }
+</style>
+</head><body>
+<div class="progress" id="progress"></div>
+<div class="deck">
+${titleSlide}
+${body}
+</div>
+<div class="nav">
+  <button id="prevBtn" title="Précédent (←)">‹</button>
+  <span id="counter"></span>
+  <button id="nextBtn" title="Suivant (→)">›</button>
+  <button id="fsBtn" title="Plein écran">⛶</button>
+</div>
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll(".slide"));
+  var i=0;
+  var counter=document.getElementById("counter"), progress=document.getElementById("progress");
+  var prevBtn=document.getElementById("prevBtn"), nextBtn=document.getElementById("nextBtn");
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach(function(s,idx){ s.classList.toggle("active", idx===i); });
+    counter.textContent=(i+1)+" / "+slides.length;
+    progress.style.width=((i+1)/slides.length*100)+"%";
+    prevBtn.disabled=i===0; nextBtn.disabled=i===slides.length-1;
+  }
+  prevBtn.addEventListener("click",function(){ show(i-1); });
+  nextBtn.addEventListener("click",function(){ show(i+1); });
+  document.getElementById("fsBtn").addEventListener("click",function(){
+    if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+  });
+  window.addEventListener("keydown",function(e){
+    if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ e.preventDefault(); show(i+1); }
+    else if(e.key==="ArrowLeft"||e.key==="PageUp"){ e.preventDefault(); show(i-1); }
+    else if(e.key==="Home") show(0);
+    else if(e.key==="End") show(slides.length-1);
+  });
+  show(0);
+})();
+<\/script>
+</body></html>`;
+}
+
 issueSelect.addEventListener("change", e=>selectIssue(e.target.value));
 document.getElementById("btnNewIssue").addEventListener("click", createIssue);
 document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{ document.getElementById("app").classList.toggle("sb-hidden"); });
@@ -3009,7 +3256,7 @@ document.getElementById("fileInput").addEventListener("change",e=>{
         rubrique:p.rubrique||"", sujet:p.sujet||"",
         calib:(p.calib===""||p.calib==null)?null:Number(p.calib),
         unite:p.unite||"signes", rendu:p.rendu||null, statut:STATUT_ALIAS[p.statut]||p.statut||"a_caler",
-        journaliste:p.journaliste||"", lot:p.lot||"", notes:p.notes||"",
+        journaliste:p.journaliste||"", lot:p.lot||"", notes:p.notes||"", brief:p.brief||"",
         d_retours:p.d_retours||null, d_v2:p.d_v2||null, d_sr:p.d_sr||null, d_agence:p.d_agence||null,
         sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null,
         // La sauvegarde capture l'avancement de la Matrice (state.pages complet) ;
@@ -3030,10 +3277,10 @@ document.getElementById("btnPrint").addEventListener("click",()=>window.print())
 document.getElementById("btnReset").addEventListener("click", async ()=>{
   if(!currentIssue) return;
   const nom = currentIssue.numero || "ce numéro";
-  if(!confirm(`Réinitialiser « ${nom} » ?\n\nLes 56 pages seront vidées : rubriques, sujets, calibrages, dates de rendu, statuts, lots, journalistes et notes seront définitivement supprimés. Cette action est irréversible.\n\nExporte une sauvegarde avant si besoin.`)) return;
+  if(!confirm(`Réinitialiser « ${nom} » ?\n\nLes 56 pages seront vidées : rubriques, sujets, calibrages, dates de rendu, statuts, lots, journalistes, briefs et notes seront définitivement supprimés. Cette action est irréversible.\n\nExporte une sauvegarde avant si besoin.`)) return;
   const updates = Array.from({length:TOTAL},(_,i)=>({
     id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
-    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", lot:"", notes:""
+    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", lot:"", notes:"", brief:""
   }));
   const { error } = await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
@@ -3375,8 +3622,8 @@ function exitVisitorMode() {
 
 const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
-  "#btnImport", "#btnPrint", "#btnReset", "#btnDeleteIssue", "#dtitle", "#numero",
-  "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes",
+  "#btnImport", "#btnPrint", "#btnPresentation", "#btnReset", "#btnDeleteIssue", "#dtitle", "#numero",
+  "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes", "#fBrief",
   // Circuit de production : dates, pastilles de jalon et réglage du SR
   ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence",
   // Vue Matrice : pastilles d'étape. La vue se reconstruit à chaque rendu et
