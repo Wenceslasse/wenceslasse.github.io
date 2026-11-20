@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Politique de sécurité : scripts de la page et du CDN Supabase seulement,
+     connexions vers le seul projet Supabase, aucun formulaire ni plugin. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://aedgayenmptowhornxcv.supabase.co wss://aedgayenmptowhornxcv.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>SacemMag - Chemin de fer</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="preconnect" href="https://aedgayenmptowhornxcv.supabase.co" crossorigin>
@@ -96,6 +100,7 @@
   /* Toast de confirmation d'enregistrement */
   .save-toast{position:fixed; bottom:20px; right:22px; z-index:300; background:#2C5E3E; color:#fff; font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.18); display:flex; align-items:center; gap:7px; opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .2s ease, transform .2s ease}
   .save-toast.show{opacity:1; transform:translateY(0)}
+  .save-toast.err{background:var(--danger); pointer-events:auto; cursor:pointer; max-width:min(440px, calc(100vw - 44px))}
   /* Mode compact : cartes plus denses */
   #app.compact .page{min-height:118px; padding:10px 12px 0}
   #app.compact .sujet{font-size:14px}
@@ -1087,7 +1092,8 @@
 
 <div class="save-toast" id="saveToast" aria-live="polite">✓ Enregistré</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js"></script>
+<!-- integrity : le navigateur refuse le fichier si le CDN le sert modifié. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
 <script>
 "use strict";
 const TOTAL = 56;
@@ -1273,6 +1279,7 @@ let currentUserEmail = "";
 let activityChannel = null;
 
 async function reorderPages(draggedPageNums, targetPageNum){
+  if(isVisitorMode) return; // lecture seule
   pushUndo("Déplacement de pages", state.pages.map(p=>({...p})));
   const pages=[...state.pages];
   const draggedPgs=draggedPageNums.map(n=>pages[n-1]).filter(Boolean);
@@ -1325,12 +1332,13 @@ function updateUndoButton(){
 }
 function pageToRow(p){
   return {
-    id:p.id, issue_id:currentIssue.id, n:p.n, sujet:p.sujet, thematique:p.thematique,
+    id:p.id, issue_id:currentIssue ? currentIssue.id : null, n:p.n, sujet:p.sujet, thematique:p.thematique,
     rubrique:p.rubrique, calib:(p.calib===""||p.calib==null?null:Number(p.calib)),
     unite:p.unite, rendu:p.rendu||null, statut:p.statut, journaliste:p.journaliste,
     lot:p.lot, notes:p.notes, brief:p.brief,
     d_retours:p.d_retours||null, d_v2:p.d_v2||null, d_sr:p.d_sr||null, d_agence:p.d_agence||null,
-    sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null
+    sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null,
+    etapes:(p.etapes && typeof p.etapes==="object") ? p.etapes : {}
   };
 }
 async function undoLast(){
@@ -1352,7 +1360,7 @@ async function undoLast(){
   if(rows.length){
     const {error}=await sb.from("pages").upsert(rows);
     if(error){
-      console.error("Erreur d'annulation :", error.message);
+      flashError("Annulation", error);
       if(currentIssue) await selectIssue(currentIssue.id, false);
     } else flashSaved("↶ Action annulée");
   } else flashSaved("↶ Action annulée");
@@ -1362,7 +1370,9 @@ async function loadColorCustomizations(issueId) {
   const { data, error } = await sb.from("color_customizations").select("*").eq("issue_id", issueId);
   if (error) { console.error("Erreur chargement couleurs :", error.message); return; }
   colorCustomizations = {};
+  const HEX=/^#[0-9a-f]{6}$/i; // une couleur est injectée dans des attributs style : rien d'autre ne passe
   (data || []).forEach(row => {
+    if(!HEX.test(row.bg_color||"") || !HEX.test(row.fg_color||"")) return;
     const key = `${row.field_type}:${row.tag_name}`;
     colorCustomizations[key] = { bg: row.bg_color, fg: row.fg_color };
   });
@@ -1476,7 +1486,7 @@ async function saveColorCustomization(fieldType, tagName, bgColor, fgColor) {
     fg_color: fgColor,
     updated_at: new Date().toISOString()
   }, { onConflict: "issue_id,field_type,tag_name" });
-  if (error) { console.error("Erreur sauvegarde couleur :", error.message); return; }
+  if (error) { flashError("Couleur", error); return; }
   const key = `${fieldType}:${tagName}`;
   colorCustomizations[key] = { bg: bgColor, fg: fgColor };
   flashSaved("✓ Couleur enregistrée");
@@ -1576,7 +1586,7 @@ function frDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `
 // dans l'interface, mais une présentation vue hors contexte a besoin de la
 // date entière pour ne pas être ambiguë.
 function frDateFull(iso){ if(!iso) return ""; return new Date(iso+"T00:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}); }
-function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
 /* ---- Chaîne de dates ------------------------------------------------
    Seules les dates saisies à la main sont stockées ; les autres découlent du
@@ -1661,8 +1671,6 @@ function elementsState(p){
   const ready = done === act.length;
   return {done, total:act.length, ready, known:hasEtapes(p), late: hasEtapes(p) && !ready && stepOf(p) >= 2};
 }
-// Date d'échéance d'une page : le dernier jalon du circuit (la mise en page).
-function echeance(p){ const c = chainDates(p); return c[c.length-1].date; }
 // Prochain jalon attendu, ou null si la page est bouclée / sans aucune date.
 function nextMilestone(p){
   const c = chainDates(p), k = stepOf(p);
@@ -1685,10 +1693,27 @@ let _toastTimer=null;
 function flashSaved(text){
   const el=document.getElementById("saveToast");
   if(!el || isVisitorMode) return;
+  if(el.classList.contains("err") && el.classList.contains("show")) return; // une erreur reste lisible
+  el.classList.remove("err");
   el.textContent = text || "✓ Enregistré";
   el.classList.add("show");
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove("show"), 1400);
+}
+// Échec d'écriture : jusqu'ici seule la console le savait, et l'on pouvait
+// croire enregistré ce qui ne l'était pas. Le bandeau rouge reste 6 s (un clic
+// le ferme) et dit quoi faire ; les droits refusés sont traduits en clair.
+document.getElementById("saveToast").addEventListener("click", e=>e.currentTarget.classList.remove("show","err"));
+function flashError(what, error){
+  const el=document.getElementById("saveToast");
+  const msg=(error && error.message) || String(error||"");
+  console.error(what+" :", msg);
+  if(!el) return;
+  const rls=/row-level security|permission denied|violates row-level/i.test(msg);
+  el.textContent = "⚠ "+what+" — "+(rls ? "votre compte n'a pas le droit de modifier ce numéro." : "non enregistré, vérifiez la connexion puis réessayez.");
+  el.classList.add("show","err");
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove("show","err"), 6000);
 }
 
 let filter={q:"",statut:""};
@@ -2035,17 +2060,6 @@ function dossierChain(items){
 function visibleDossiers(){
   return buildDossiers().filter(g=>g.chain[0].date && g.items.some(matches));
 }
-// Pastille de statut, ou mini-jauge quand le dossier mélange plusieurs statuts.
-function dossierStatusHTML(g){
-  const uniq=[...new Set(g.items.map(p=>p.statut))];
-  if(uniq.length<=1){
-    const s=getTagColor(g.statut,"statut");
-    return `<span style="width:9px;height:9px;border-radius:50%;background:${s.bg};flex:none;margin-left:auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)"></span>`;
-  }
-  const bars=g.items.map(p=>`<i style="display:block;width:4px;height:9px;border-radius:1px;background:${(STATUTS[p.statut]||{}).dot||'#9B9A97'}"></i>`).join("");
-  return `<span title="${g.items.filter(p=>p.statut==='boucle').length}/${g.items.length} bouclées" style="display:flex;gap:1.5px;align-items:center;flex:none;margin-left:auto">${bars}</span>`;
-}
-
 /* ---- Vue Matrice ----------------------------------------------------
    Une ligne par dossier, une colonne par étape, les colonnes regroupées sous
    les cinq jalons du circuit — d'où les en-têtes colorés, qui répondent aux
@@ -2579,6 +2593,7 @@ function updateSelection(){
 }
 
 async function applyBulkEdit(){
+  if(isVisitorMode) return; // lecture seule
   if(selectedPages.size===0) return;
   const sujet=document.getElementById("bulkSujet").value;
   const thematique=document.getElementById("bulkThematique").value;
@@ -2807,7 +2822,7 @@ function updateHint(){
 /* ---- persistence to Supabase (per-page, per-field) ---- */
 const writeTimers = {};
 function commit(field,val){
-  if(current==null) return;
+  if(current==null || isVisitorMode) return;
   const p = state.pages[current-1];
   p[field]=val;
   if(["calib","unite"].includes(field)) updateHint();
@@ -2820,13 +2835,13 @@ function commit(field,val){
 }
 const DATE_FIELDS = new Set(MILESTONES.map(m=>m.field));
 async function persistField(p, field){
-  if(!p.id) return;
+  if(!p.id || isVisitorMode) return;
   let val = p[field];
   if(field==="calib") val = (val===""||val==null) ? null : Number(val);
   if(field==="sr_duree") val = (val===1||val===2) ? val : null;
   if(DATE_FIELDS.has(field) && val==="") val=null;
   const { error } = await sb.from("pages").update({ [field]: val }).eq("id", p.id);
-  if(error) console.error("Erreur de sauvegarde de la page :", error.message);
+  if(error) flashError("Modification de la page "+p.n, error);
   else flashSaved();
 }
 
@@ -2841,12 +2856,13 @@ async function persistEtapes(pages){
     sb.from("pages").update({ etapes: p.etapes, statut: p.statut }).eq("id", p.id)
   ));
   const err = results.find(r=>r.error);
-  if(err) console.error("Erreur de sauvegarde des étapes :", err.error.message);
+  if(err) flashError("Avancement des étapes", err.error);
   else flashSaved();
 }
 /* Applique une valeur d'étape à un ensemble de pages (une page seule, ou
    toutes celles d'un dossier), recalcule le statut, persiste et re-rend. */
 function setEtape(pages, key, val, label){
+  if(isVisitorMode) return; // lecture seule
   const before = pages.map(p=>({...p, etapes:{...p.etapes}}));
   for(const p of pages){
     // Première écriture sur une page héritée : on matérialise l'état de départ
@@ -2904,13 +2920,16 @@ function refreshPeekIfIdle(n){
 
 /* ---- header fields (numero / bouclage of the current issue) ---- */
 const numero=document.getElementById("numero"), bouclage=document.getElementById("bouclage");
-let issueWriteTimer=null;
+// Un minuteur PAR champ : avec un seul, modifier la date de bouclage dans les
+// 400 ms qui suivaient une saisie du nom annulait l'écriture du nom.
+const issueWriteTimers={};
 function debounceIssueWrite(field, val){
-  clearTimeout(issueWriteTimer);
-  issueWriteTimer=setTimeout(async ()=>{
+  if(isVisitorMode) return;
+  clearTimeout(issueWriteTimers[field]);
+  issueWriteTimers[field]=setTimeout(async ()=>{
     if(!currentIssue) return;
     const { error } = await sb.from("issues").update({[field]: val}).eq("id", currentIssue.id);
-    if(error){ console.error(error.message); return; }
+    if(error){ flashError(field==="numero"?"Nom du numéro":"Date de bouclage", error); return; }
     const idx=issuesCache.findIndex(i=>i.id===currentIssue.id);
     if(idx>=0) issuesCache[idx][field]=val;
     if(field==="numero") populateIssueSelect();
@@ -3009,19 +3028,21 @@ function renderIssueList(){
     const dup=document.createElement("button"); dup.type="button"; dup.className="sb-item-dup"; dup.title="Dupliquer ce chemin de fer";
     dup.textContent="⧉";
     dup.addEventListener("click",(e)=>{ e.stopPropagation(); duplicateIssue(iss.id); });
-    item.appendChild(name); item.appendChild(dup);
+    item.appendChild(name); if(!isVisitorMode) item.appendChild(dup);
     list.appendChild(item);
   }
 }
-async function loadIssues(){
+async function loadIssues(quiet){
   const { data, error } = await sb.from("issues").select("id,numero,bouclage,created_at").order("created_at",{ascending:true});
-  if(error){ alert("Erreur de chargement des numéros : "+error.message); return []; }
+  if(error){ if(!quiet) alert("Erreur de chargement des numéros : "+error.message); return []; }
   return data||[];
 }
+let selectSeq = 0; // la dernière sélection gagne, même si une précédente répond après elle
 async function selectIssue(id, pushUrl){
   if(pushUrl===undefined) pushUrl=true;
   const iss = issuesCache.find(i=>i.id===id);
   if(!iss) return;
+  const seq = ++selectSeq;
   currentIssue = iss;
   undoStack.length=0; updateUndoButton(); // l'historique d'annulation est propre à un numéro
   joinPresence(id);
@@ -3037,6 +3058,7 @@ async function selectIssue(id, pushUrl){
     if(pushUrl) history.pushState({issue:id}, "", url); else history.replaceState({issue:id}, "", url);
   }
   const { data, error } = await sb.from("pages").select("*").eq("issue_id", id).order("n",{ascending:true});
+  if(seq!==selectSeq) return;
   if(error){ alert("Erreur de chargement des pages : "+error.message); return; }
   state.pages = Array.from({length:TOTAL},(_,i)=>{
     const r = (data||[]).find(x=>x.n===i+1);
@@ -3048,6 +3070,7 @@ async function selectIssue(id, pushUrl){
   // qui ne charge que l'essentiel ; une colonne pas encore migrée est ignorée.
   { const { data:t, error:te } = await sb.from("issues").select("theme").eq("id", id).single();
     iss.theme = (!te && t && t.theme) || ""; }
+  if(seq!==selectSeq) return;
 
   // Si le mois courant n'a aucun rendu, caler le Gantt sur le premier rendu
   // connu plutôt que sur un tableau vide autour d'aujourd'hui.
@@ -3067,14 +3090,15 @@ async function selectIssue(id, pushUrl){
   presRefresh();
 }
 async function createIssue(){
+  if(isVisitorMode) return; // lecture seule
   const name = prompt("Nom du nouveau chemin de fer :", "");
   if(name==null) return;
   // Le rythme du numéro précédent est repris : si vos durées sont stables,
   // vous ne les ressaisissez jamais.
   const { data, error } = await sb.from("issues").insert({ numero: name || "Nouveau numéro", ...rythme() }).select().single();
   if(error){ alert("Erreur de création du numéro : "+error.message); return; }
-  const pages = Array.from({length:TOTAL},(_,i)=>({ issue_id:data.id, n:i+1, rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", lot:"", notes:"" }));
-  const { error:e2 } = await sb.from("pages").insert(pages);
+  const pages = Array.from({length:TOTAL},(_,i)=>{ const { id, ...row } = pageToRow({...blankPage(i+1)}); return { ...row, issue_id:data.id }; });
+  const { error:e2 } = await insertResilient("pages", pages);
   if(e2){ alert("Erreur de création des pages : "+e2.message); return; }
   if(!issuesCache.find(i=>i.id===data.id)) issuesCache.push(data);
   populateIssueSelect();
@@ -3102,6 +3126,7 @@ async function insertResilient(table, rows){
   return { error:{message:"Trop de colonnes absentes du cache de schéma — relancez la migration supabase/schema.sql."}, dropped };
 }
 async function duplicateIssue(id){
+  if(isVisitorMode) return; // lecture seule
   const src = issuesCache.find(i=>i.id===id);
   if(!src) return;
   if(!confirm(`Dupliquer « ${src.numero||"ce numéro"} » ?\n\nUn nouveau chemin de fer sera créé avec une copie de toutes les pages.`)) return;
@@ -3335,7 +3360,7 @@ function setPropField(x, field, val){
   propTimers[key]=setTimeout(async ()=>{
     delete propTimers[key];
     const { error } = await sb.from("propositions").update({[field]: x[field]}).eq("id", x.id);
-    if(error) console.error("Erreur de sauvegarde de la proposition :", error.message); else flashSaved();
+    if(error) flashError("Sujet envisagé", error); else flashSaved();
   }, 450);
   // Retenue : la page qui l'accueille suit (titre → sujet, angle + brief → brief…).
   const p = propPage(x);
@@ -3376,7 +3401,7 @@ async function addProposition(rub, fields){
 async function updatePropStatus(x, patch){
   Object.assign(x, patch);
   const { error } = await sb.from("propositions").update(patch).eq("id", x.id);
-  if(error) console.error("Erreur de sauvegarde de la proposition :", error.message); else flashSaved();
+  if(error) flashError("Sujet envisagé", error); else flashSaved();
 }
 async function persistPageRow(p){
   if(!p.id) return true;
@@ -3446,7 +3471,7 @@ function setTheme(val){
   propTimers.theme = setTimeout(async ()=>{
     delete propTimers.theme;
     const { error } = await sb.from("issues").update({theme: currentIssue.theme}).eq("id", currentIssue.id);
-    if(error) console.error("Erreur de sauvegarde du thème :", error.message); else flashSaved();
+    if(error) flashError("Thème du numéro", error); else flashSaved();
   }, 450);
 }
 
@@ -3908,16 +3933,18 @@ document.addEventListener("click", e=>{ if(!document.getElementById("moreMenuWra
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeMoreMenu(); });
 
 document.getElementById("btnCsv").addEventListener("click",()=>{
-  const head=["Page","Couv","Rubrique","Sujet","Calibrage","Unité","Signes (norm.)",
-    ...MILESTONES.map(m=>m.label),"Durée SR (j)","Statut","Journaliste",
-    ...ALL_STEPS.map(stepLabel),"Avancement","Notes"];
+  const head=["Page","Couv","Rubrique","Sujet","Thématique","Calibrage","Unité","Signes (norm.)",
+    ...MILESTONES.map(m=>m.label),"Durée SR (j)","Statut","Journaliste","Lot",
+    ...ALL_STEPS.map(stepLabel),"Avancement","Brief","Notes"];
   const rows=state.pages.map(p=>{ const sig=toSignes(p); const c=chainDates(p); const pr=etapeProgress(p);
-    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.calib,p.unite,Math.round(sig),
-      ...c.map(m=>m.date), srDuree(p), STATUTS[p.statut].label,p.journaliste,
+    return [p.n,COVER[p.n]||"",p.rubrique,p.sujet,p.thematique,p.calib,p.unite,Math.round(sig),
+      ...c.map(m=>m.date), srDuree(p), (STATUTS[p.statut]||STATUTS.a_caler).label,p.journaliste,(LOTS[p.lot]||{}).label||"",
       ...ALL_STEPS.map(k=>ETAPES[stepVal(p,k)].label),
       pr.total?`${pr.done}/${pr.total}`:"",
-      (p.notes||"").replace(/\n/g," ")]; });
-  const q=v=>{ v=(v==null?"":String(v)); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+      (p.brief||"").replace(/\n/g," "), (p.notes||"").replace(/\n/g," ")]; });
+  // Une cellule qui commence par = + - @ serait exécutée comme formule par
+  // Excel : on la neutralise d'une apostrophe (injection CSV).
+  const q=v=>{ v=(v==null?"":String(v)); if(/^[=+\-@\t\r]/.test(v) && isNaN(Number(v))) v="'"+v; return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
   const csv=[head,...rows].map(r=>r.map(q).join(";")).join("\r\n");
   download("﻿"+csv, slug(currentIssue&&currentIssue.numero)+".csv","text/csv;charset=utf-8");
 });
@@ -3931,28 +3958,49 @@ document.getElementById("btnImport").addEventListener("click",()=>document.getEl
 document.getElementById("fileInput").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
   r.onload=async ()=>{
-    try{
-      const s=JSON.parse(r.result); if(!s.pages||s.pages.length!==TOTAL) throw 0;
-      if(!currentIssue) throw 0;
-      const updates = s.pages.map((p,i)=>({
-        id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
-        rubrique:p.rubrique||"", sujet:p.sujet||"",
-        calib:(p.calib===""||p.calib==null)?null:Number(p.calib),
-        unite:p.unite||"signes", rendu:p.rendu||null, statut:STATUT_ALIAS[p.statut]||p.statut||"a_caler",
-        journaliste:p.journaliste||"", lot:p.lot||"", notes:p.notes||"", brief:p.brief||"",
-        d_retours:p.d_retours||null, d_v2:p.d_v2||null, d_sr:p.d_sr||null, d_agence:p.d_agence||null,
-        sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null,
-        // La sauvegarde capture l'avancement de la Matrice (state.pages complet) ;
-        // l'omettre ici la restaurerait à vide alors que le fichier l'a bien.
-        etapes:(p.etapes && typeof p.etapes==="object") ? p.etapes : {}
-      }));
-      const { error } = await sb.from("pages").upsert(updates);
-      if(error) throw error;
-      if(s.numero!=null){ numero.value=s.numero; currentIssue.numero=s.numero; await sb.from("issues").update({numero:s.numero}).eq("id",currentIssue.id); }
-      if(s.bouclage!=null){ bouclage.value=s.bouclage||""; currentIssue.bouclage=s.bouclage||null; await sb.from("issues").update({bouclage:s.bouclage||null}).eq("id",currentIssue.id); }
-      state.pages = updates.map(rowToPage);
-      render();
-    }catch(err){ alert("Fichier illisible ou nombre de pages différent de 56."); }
+    let s;
+    try{ s=JSON.parse(r.result); }catch(_){ s=null; }
+    if(!s || !Array.isArray(s.pages) || s.pages.length!==TOTAL || !currentIssue){ alert("Fichier illisible ou nombre de pages différent de 56."); return; }
+    if(!confirm(`Remplacer le contenu de « ${currentIssue.numero||"ce numéro"} » par celui du fichier ?\n\nLes 56 pages${Array.isArray(s.propositions)?", les sujets envisagés":""} et le thème seront remplacés.`)) return;
+    const str=v=>(v==null?"":String(v)), dt=v=>(/^\d{4}-\d{2}-\d{2}$/.test(v||"")?v:null);
+    const rows = s.pages.map((p,i)=>({
+      id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
+      rubrique:str(p.rubrique), sujet:str(p.sujet), thematique:str(p.thematique),
+      calib:(p.calib===""||p.calib==null||isNaN(Number(p.calib)))?null:Number(p.calib),
+      unite:["signes","feuillets","mots"].includes(p.unite)?p.unite:"signes", rendu:dt(p.rendu),
+      statut:STATUTS[STATUT_ALIAS[p.statut]||p.statut] ? (STATUT_ALIAS[p.statut]||p.statut) : "a_caler",
+      journaliste:str(p.journaliste), lot:LOTS[p.lot]?String(p.lot):"", notes:str(p.notes), brief:str(p.brief),
+      d_retours:dt(p.d_retours), d_v2:dt(p.d_v2), d_sr:dt(p.d_sr), d_agence:dt(p.d_agence),
+      sr_duree:(p.sr_duree===1||p.sr_duree===2)?p.sr_duree:null,
+      // La sauvegarde capture aussi l'avancement de la Matrice : l'omettre le remettrait à zéro.
+      etapes:(p.etapes && typeof p.etapes==="object" && !Array.isArray(p.etapes)) ? p.etapes : {}
+    }));
+    const withId=rows.filter(x=>x.id), fresh=rows.filter(x=>!x.id).map(({id,...x})=>x);
+    const { error } = await sb.from("pages").upsert(withId);
+    if(error){ flashError("Import", error); return; }
+    if(fresh.length){ const { error:e2 } = await sb.from("pages").insert(fresh); if(e2){ flashError("Import", e2); return; } }
+    const patch={};
+    if(s.numero!=null) patch.numero=str(s.numero);
+    if(s.bouclage!==undefined) patch.bouclage=dt(s.bouclage);
+    if(typeof s.theme==="string") patch.theme=s.theme;
+    if(s.rythme && typeof s.rythme==="object") for(const k of Object.keys(RYTHME_DEFAUT)){ const v=Number(s.rythme[k]); if(Number.isInteger(v) && v>=0 && v<=30) patch[k]=v; }
+    if(Object.keys(patch).length){
+      const { error:e3 } = await sb.from("issues").update(patch).eq("id",currentIssue.id);
+      if(e3) flashError("Import (en-tête du numéro)", e3); else Object.assign(currentIssue, patch);
+    }
+    // Sujets envisagés : remplacés en bloc par ceux du fichier.
+    if(Array.isArray(s.propositions) && !propsUnavailable){
+      await sb.from("propositions").delete().eq("issue_id", currentIssue.id);
+      const list=s.propositions.filter(x=>x && typeof x==="object").map((x,i)=>{ const o={issue_id:currentIssue.id};
+        PROP_FIELDS.forEach(k=>{ if(x[k]!==undefined) o[k]=x[k]; }); if(o.ordre==null) o.ordre=i; return o; });
+      if(list.length){ const { error:e4 } = await insertResilient("propositions", list); if(e4) flashError("Import des sujets envisagés", e4); }
+    }
+    // Relire le numéro depuis la base : l'écran montre exactement ce qui a été enregistré.
+    undoStack.length=0;
+    populateIssueSelect();
+    await selectIssue(currentIssue.id, false);
+    logActivity("a importé une sauvegarde JSON", null);
+    flashSaved("✓ Sauvegarde importée");
   };
   r.readAsText(f); e.target.value="";
 });
@@ -3961,10 +4009,10 @@ document.getElementById("btnReset").addEventListener("click", async ()=>{
   if(!currentIssue) return;
   const nom = currentIssue.numero || "ce numéro";
   if(!confirm(`Réinitialiser « ${nom} » ?\n\nLes 56 pages seront vidées : rubriques, sujets, calibrages, dates de rendu, statuts, lots, journalistes, briefs et notes seront définitivement supprimés. Cette action est irréversible.\n\nExporte une sauvegarde avant si besoin.`)) return;
-  const updates = Array.from({length:TOTAL},(_,i)=>({
-    id: state.pages[i].id, issue_id: currentIssue.id, n:i+1,
-    rubrique:"", sujet:"", calib:null, unite:"signes", rendu:null, statut:"a_caler", journaliste:"", lot:"", notes:"", brief:""
-  }));
+  // Une page vierge passée par pageToRow : tout champ ajouté plus tard sera
+  // vidé lui aussi (l'ancienne liste écrite à la main oubliait thématique,
+  // dates figées et étapes, qui réapparaissaient au rechargement).
+  const updates = state.pages.map((p,i)=>pageToRow({...blankPage(i+1), id:p.id}));
   const { error } = await sb.from("pages").upsert(updates);
   if(error){ alert("Erreur : "+error.message); return; }
   await sb.from("color_customizations").delete().eq("issue_id", currentIssue.id);
@@ -4129,23 +4177,50 @@ function showAuth(){
   if(issuesChannel){ sb.removeChannel(issuesChannel); issuesChannel=null; }
   if(colorsChannel){ sb.removeChannel(colorsChannel); colorsChannel=null; }
   if(activityChannel){ sb.removeChannel(activityChannel); activityChannel=null; }
+  if(propsChannel){ sb.removeChannel(propsChannel); propsChannel=null; }
   leavePresence();
   setDocTitle("");
-  appInited=false; currentIssue=null; issuesCache=[];
+  if(current!=null) closePeek();
+  if(!document.getElementById("presOverlay").hidden) closePresentation();
+  appInited=false; currentIssue=null; issuesCache=[]; props=[]; currentUserEmail="";
   colorCustomizations={};
+  undoStack.length=0; selectedPages.clear();
+  state.pages = Array.from({length:TOTAL},(_,i)=>blankPage(i+1));
+}
+// Rôle du compte connecté : « editeur » (tout), « lecteur » (mode Équipe,
+// lecture seule) ou null (compte authentifié mais pas encore autorisé).
+// Sans la table membres (migration de sécurité pas encore jouée), tout compte
+// connecté reste éditeur, comme avant.
+async function fetchRole(session){
+  const u = session.user || {};
+  if((u.app_metadata||{}).role==="lecteur" || (u.email||"").toLowerCase()===VISITOR_EMAIL) return "lecteur";
+  try{
+    const { data, error } = await sb.from("membres").select("role").eq("user_id", u.id);
+    if(error) return "editeur";
+    return (data && data[0] && data[0].role) || null;
+  }catch(_){ return "editeur"; }
 }
 async function showApp(session){
+  const role = await fetchRole(session);
+  if(role===null){
+    await sb.auth.signOut().catch(()=>{});
+    showAuth();
+    setAuthMsg("Ce compte n'a pas encore accès au chemin de fer : demandez à un administrateur de l'ajouter aux membres.", true);
+    return;
+  }
   authScreen.style.display="none"; appRoot.style.display="";
-  currentUserEmail = session.user.email;
-  document.getElementById("pUser").textContent = session.user.email;
-  enableEditingUI();
+  isVisitorMode = role==="lecteur";
+  if(isVisitorMode) localStorage.removeItem("cdf_visitor_mode");
+  currentUserEmail = isVisitorMode ? "" : (session.user.email||"");
+  document.getElementById("pUser").textContent = isVisitorMode ? "👁 Mode Équipe (lecture seule)" : currentUserEmail;
+  if(isVisitorMode) disableEditingUI(); else enableEditingUI();
   if(appInited) return;
   appInited=true;
   subscribeIssues();
   issuesCache = await loadIssues();
   populateIssueSelect();
   if(issuesCache.length===0){
-    await createIssue();
+    if(!isVisitorMode) await createIssue();
   } else {
     const fromUrl = new URL(window.location.href).searchParams.get("issue");
     const last = localStorage.getItem("cdf_last_issue");
@@ -4250,24 +4325,43 @@ function p4MeasureTextWidth(text, referenceEl){
   return p4WidthMeasureEl.offsetWidth;
 }
 
+/* La phrase du mode Équipe est le MOT DE PASSE d'un compte Supabase de
+   lecture (VISITOR_EMAIL) : elle est vérifiée par le serveur, plus dans le
+   navigateur, et la base n'ouvre ses données qu'aux sessions authentifiées.
+   Tant que ce compte n'existe pas, l'ancienne phrase reste acceptée en local
+   (accès anonyme, qui ne fonctionne que si la base l'autorise encore). */
+const VISITOR_EMAIL = "equipe@example.com";
+const LEGACY_VISITOR_PHRASE = "shazam";
+let p4AttemptTimer = null;
+const p4Tried = new Set();
 document.getElementById("p4-hidden-input").addEventListener("input", e => {
   const input = e.target;
   const val = input.value;
   input.style.width = Math.max(8, p4MeasureTextWidth(val, input) + 3) + "px";
-  const ok = val.trim().toLowerCase() === "shazam";
-  input.classList.toggle("correct", ok);
-  if (ok && !p4Unlocked) {
-    p4Unlocked = true;
-    input.blur();
-    launchConfetti();
-    playUnlockSuccess(() => playVisitorTransition());
-  } else if (!ok && p4Unlocked) {
-    p4Unlocked = false;
-    resetAuthLockIcon();
-  }
+  const phrase = val.trim().toLowerCase();
+  clearTimeout(p4AttemptTimer);
+  if (p4Unlocked || phrase.length < 6 || p4Tried.has(phrase)) return; // Supabase : 6 caractères minimum
+  p4AttemptTimer = setTimeout(() => tryVisitorPhrase(phrase), 450);
 });
+async function tryVisitorPhrase(phrase){
+  if (p4Unlocked) return;
+  p4Tried.add(phrase);
+  suppressAutoShowApp = true;
+  let session = null;
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email: VISITOR_EMAIL, password: phrase });
+    if (!error && data && data.session) session = data.session;
+  } catch (_) {}
+  if (!session && phrase !== LEGACY_VISITOR_PHRASE) { suppressAutoShowApp = false; return; }
+  const input = document.getElementById("p4-hidden-input");
+  p4Unlocked = true;
+  input.classList.add("correct");
+  input.blur();
+  launchConfetti();
+  playUnlockSuccess(() => playVisitorTransition(session));
+}
 
-function playVisitorTransition() {
+function playVisitorTransition(session) {
   const el = document.getElementById("visitorTransition");
   el.style.display = "flex";
   el.classList.remove("playing");
@@ -4276,10 +4370,12 @@ function playVisitorTransition() {
   setTimeout(() => {
     el.style.display = "none";
     el.classList.remove("playing");
-    enterVisitorMode();
+    suppressAutoShowApp = false;
+    if (session) showApp(session); else enterVisitorMode();
   }, 1400 + 1000); // laisser l'animation (1.4s) se terminer, puis patienter 1s avant la page suivante
 }
 
+// Accès anonyme historique (sans compte de lecture).
 async function enterVisitorMode() {
   isVisitorMode = true;
   localStorage.setItem("cdf_visitor_mode", "true");
@@ -4292,9 +4388,16 @@ async function enterVisitorMode() {
   if (appInited) return;
   appInited = true;
   subscribeIssues();
-  issuesCache = await loadIssues();
+  issuesCache = await loadIssues(true); // un refus des droits anonymes est attendu une fois la base sécurisée
   populateIssueSelect();
-  if (issuesCache.length) {
+  if (!issuesCache.length) {
+    // La base ne s'ouvre plus aux anonymes : il faut le compte de lecture.
+    localStorage.removeItem("cdf_visitor_mode");
+    isVisitorMode = false; showAuth();
+    setAuthMsg("Le mode Équipe passe désormais par un compte de lecture, pas encore créé dans Supabase. Connectez-vous avec votre compte en attendant.", true);
+    return;
+  }
+  {
     const fromUrl = new URL(window.location.href).searchParams.get("issue");
     const last = localStorage.getItem("cdf_last_issue");
     const pick = issuesCache.find(i=>i.id===fromUrl) || issuesCache.find(i=>i.id===last) || issuesCache[0];
@@ -4305,12 +4408,13 @@ async function enterVisitorMode() {
 function exitVisitorMode() {
   isVisitorMode = false;
   localStorage.removeItem("cdf_visitor_mode");
+  sb.auth.signOut().catch(()=>{});
   showAuth();
 }
 
 const VISITOR_LOCKED_SELECTORS = [
   "#btnNewIssue", "#btnClearSelection", "#btnCsv", "#btnJson",
-  "#btnImport", "#btnPrint", "#btnPresentation", "#btnReset", "#btnDeleteIssue", "#dtitle", "#numero",
+  "#btnImport", "#btnPrint", "#btnPresentation", "#btnReset", "#btnDeleteIssue", "#dtitle", "#numero", "#bouclage",
   "#fRubrique", "#fThematique", "#fCalib", "#fUnite", "#fJournaliste", "#fNotes", "#fBrief",
   // Circuit de production : dates, pastilles de jalon et réglage du SR
   ".jdate", ".jbul", ".jsr button", "#btnRythme", "#rRetours", "#rV2", "#rAgence",
