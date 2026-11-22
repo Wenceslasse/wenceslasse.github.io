@@ -3687,7 +3687,9 @@ const Meet = (()=>{
     state.pages.forEach(p=>{ const r=p.rubrique||""; if(cur && cur[0]===r) cur[2]=p.n; else { cur=[r,p.n,p.n]; BLOCKS.push(cur); } });
     const seen=new Set(); RUBLIST=BLOCKS.filter(b=>b[0] && !seen.has(b[0]) && seen.add(b[0]));
     const num=(currentIssue&&currentIssue.numero)||"";
-    ISSUE={ numero:(num.match(/N°\s*\d+/i)||[num||"N°"])[0], big:((num.match(/\d+/g)||[""]).pop()), theme:(currentIssue&&currentIssue.theme)||"" };
+    // « SacemMag #121 », « N° 121 » ou « 121 » : on ne garde que le numéro.
+    const big=(num.match(/\d+/g)||[""]).pop();
+    ISSUE={ numero: big ? "N°"+big : (num||"N°"), big, theme:(currentIssue&&currentIssue.theme)||"" };
     SLOTS={}; presModel().slots.forEach(s=>SLOTS[s.rub]=s);
   }
   const rubOf=n=>BLOCKS.find(b=>n>=b[1]&&n<=b[2]);
@@ -3716,6 +3718,7 @@ const Meet = (()=>{
     const k=NORM(name);
     if(n===1 || n===TOTAL) return "Couverture";
     if(n===2 || /^(ours|c2|2ecouv)/.test(k)) return "Ours";
+    if(n===5 && (!k || /^(edito|photo|visuel|image|pleinepage)/.test(k))) return "Visuel";
     if(n===TOTAL-1 && (!k || /^(couverture|c3|instants|publicite)/.test(k))) return "Couverture";
     if(/^edito/.test(k)) return "Édito";
     if(/^sommaire/.test(k)) return "Sommaire";
@@ -3822,11 +3825,13 @@ const Meet = (()=>{
       return P("ours",side,`<div class="no">${esc(ISSUE.numero)}</div><div class="credits">${["Lorem ipsum dolor","Sit amet","Consectetur adipiscing","Elit sed do eiusmod","Tempor incididunt","Ut labore","Et dolore magna","Aliqua"].map((t,i)=>`<div><b>${t}</b>${[["Camille Morel"],["Julien Faure"],["Inès Garnier","Paul Lemaire","Sarah Benali"],["Léa Fontaine","Hugo Marchand","Nadia Roux","Théo Girard"],["Clara Dupuis"],["Mathis Leroy"],["Emma Vidal"],["Lorem ipsum dolor"]][i].join(", ")}</div>`).join("")}</div>
         <div class="fx">${fauxP(4,3,38)}</div>${logo("#1C1838","left:38%;bottom:6%;width:14%")}`);
     },
+    // Page 5 : un visuel pleine page, en face du deuxième édito (dégradé doux et grain).
+    "Visuel"(S,n,side){ return P("edi-ph",side,`<span class="full"></span>`+fol(n,(side==="l"?"left":"right")+":2.6cqw;bottom:2cqw;color:#5A4458")); },
     "Édito"(S,n,side,r){
       if(n===2) return TPL["Ours"](S,n,side);
       const E=range(Math.max(r[1],3),r[2]), k=E.indexOf(n);
       // Après les éditos, la dernière page de droite est un visuel pleine page.
-      if(E.length>=3 && n===r[2] && side==="r") return P("edi-ph",side,`<span class="full"></span>`+fol(n,"right:2.6cqw;bottom:2cqw;color:#5A4458"));
+      if(E.length>=3 && n===r[2] && side==="r") return TPL["Visuel"](S,n,side);
       const info=pageInfo(S,n), G=[["#F2C6A0","#8E4A3A","#E8967A"],["#B9C7E0","#2E3A66","#7E95C9"]][Math.max(0,k)%2];
       // Signataires habituels : la présidente du Conseil d'administration, puis la directrice générale.
       // Un journaliste saisi sur la page l'emporte.
@@ -3836,7 +3841,7 @@ const Meet = (()=>{
         <div class="fx">${info&&info.brief?`<p class="lead">${esc(info.brief)}</p>`:""}${fauxP(5,n,52)}</div>${fol(n,side==="l"?"left:2.6cqw;bottom:2cqw":"right:2.6cqw;bottom:2cqw")}${run()}`);
     },
     "Sommaire"(S,n,side,r){
-      const items=RUBLIST.filter(r=>!["Couverture","Ours","Édito","Sommaire"].includes(tplName(r[0],r[1]))).filter(x=>!/^Ils et elles/.test(x[0]));
+      const items=RUBLIST.filter(r=>!["Couverture","Ours","Visuel","Édito","Sommaire"].includes(tplName(r[0],r[1]))).filter(x=>!/^Ils et elles/.test(x[0]));
       const two=r[2]>r[1], cut=two?Math.ceil(items.length/3):items.length, mine=(side==="l"||!two)?items.slice(0,cut):items.slice(cut);
       const it=(x,i,pic)=>{ const info=rubInfo(S,x), [bg,fg]=col(x); return `<div class="it"><span class="r">${esc(x[0])}</span><span class="p">${x[1]}</span><span class="s">${info?esc(info.titre):`<i style="color:#A3A29D">à pourvoir</i>`}</span>${pic?ph("",grad(bg,fg)):""}</div>`; };
       const bios = (n===r[1]) ? `<div class="bios"><div class="bh">Ils et elles ont contribué à ce numéro</div>${contributors(S).slice(0,12).map((j,i)=>`<div class="bi"><b>${esc(j)}</b>${faux(16,i+2)}</div>`).join("")}</div>` : "";
@@ -3969,6 +3974,7 @@ const Meet = (()=>{
   }
   function pageHtml0(S,n,side){
     const r=rubOf(n), name=tplName(r[0],n), t = !name && isDossierBlock(r) ? TPL["Dossier"] : TPL[name];
+    if(name==="Visuel") return TPL["Visuel"](S,n,side);
     if(t===TPL["Dossier"]){ try{ return t(S,n,side,r); }catch(e){ console.error("Dossier", r[0], e); } }
     if(r[0] && !OWN_OPEN.includes(name) && !NO_OPEN.includes(name) && openerPages(r).includes(n)){ try{ return genericOpener(S,n,side,r); }catch(e){ console.error("Ouverture", r[0], e); } }
     try{ return (t||genericPage)(S,n,side,r); }catch(e){ console.error("Gabarit", r[0], e); return genericPage(S,n,side,r); }
@@ -4077,6 +4083,7 @@ const Meet = (()=>{
     numMap=new Map(); names.filter(Boolean).flatMap(nm=>propsFor(nm).filter(x=>x.statut==="pressentie")).slice(0,9).forEach((x,i)=>numMap.set(x.id,i+1));
     const old=zoom.querySelector(".zside"), keep = old && +old.dataset.si===si ? old.scrollTop : 0;
     const aside=`<aside class="zside" data-si="${si}" aria-label="Propositions de la double page"><div class="k">Sur cette double page</div>${!ro() && numMap.size?`<div class="zhint">Survolez une proposition ou tapez son <b>numéro</b> pour l'essayer sur la page. <b>Entrée</b> la retient, <b>Échap</b> annule l'essai. Un clic sur une page la choisit comme place.</div>`:""}${names.map(nm=>`<section>${nm ? rubPanel(nm,true)
+      : pages.some(n=>n!=null && !rubOf(n)[0] && tplName("",n)==="Visuel") ? `<div class="rh"><h3>Visuel pleine page</h3></div><div class="rs">La page 5 reste un visuel, en face du deuxième édito.</div>`
       : `<div class="rh"><h3>Page à attribuer</h3></div><div class="rs">Donnez-lui une rubrique dans le chemin de fer pour y placer des propositions.</div>`}</section>`).join("")}</aside>`;
     zoom.innerHTML=`<div class="zmain"><div class="book">${edges(si)}<div class="spread${sp.length===1?" single":""}" id="spread">${spreadHtml(si)}${curls()}</div></div>
       <div class="chrome"><button class="btn" type="button" data-a="pp" ${si===0?"disabled":""} aria-label="Page précédente">‹</button>
