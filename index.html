@@ -3780,8 +3780,8 @@ const Meet = (()=>{
         ${x.statut==="ecartee"?`<button type="button" data-a="res" data-id="${x.id}">Rétablir</button>`:`<button type="button" class="go" data-a="ret" data-id="${x.id}" data-n="${n}">Retenir</button><button type="button" data-a="dis" data-id="${x.id}" aria-label="Écarter">✕</button>`}</div>`).join("")}</div></div>`;
   }
   const logo=(fill,style)=>`<div class="logo" style="${style}"><svg viewBox="${SACEM_LOGO_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" aria-label="Sacem" role="img">${SACEM_LOGO_PATHS.map(d=>`<path d="${d}" fill="${fill}"/>`).join("")}</svg></div>`;
-  // Faux texte : de vrais mots pour le gris typographique.
-  const FAUX="la chanson passe de main en main avant de trouver sa voix et chacun y laisse une part de ses nuits de ses doutes et de ses envies sur scène comme en studio chaque création raconte un chemin singulier la musique circule se transforme puis revient toujours à celles et ceux qui l'écrivent on y parle de métier de rencontres de transmission et de tout ce qui fait qu'une œuvre tient debout longtemps après le dernier accord".split(" ");
+  // Faux texte : du lorem ipsum, pour juger du gris typographique.
+  const FAUX="lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum".split(" ");
   const faux=(n,seed)=>{ const w=[]; for(let i=0;i<n;i++) w.push(FAUX[(i*3+(seed||0)*11)%FAUX.length]); const t=w.join(" "); return t.charAt(0).toUpperCase()+t.slice(1)+"."; };
   const fauxP=(k,seed,words)=>range(0,k-1).map(i=>`<p>${faux(words||46,(seed||0)+i)}</p>`).join("");
   const contributors=S=>{ const names=[...new Set(state.pages.map(p=>p.journaliste).filter(Boolean))]; return names; };
@@ -3819,7 +3819,7 @@ const Meet = (()=>{
     },
     // L'ours occupe toujours la page 2 (en face de la 2e de couverture), quelle que soit sa rubrique.
     "Ours"(S,n,side){
-      return P("ours",side,`<div class="no">${esc(ISSUE.numero)}</div><div class="credits">${["Directrice de la publication","Rédaction en chef","Comité éditorial","Ont collaboré à ce numéro","Direction artistique","Photographies","Impression","Contact"].map((t,i)=>`<div><b>${t}</b>${i===3?"Prénom Nom, Prénom Nom, Prénom Nom, Prénom Nom":i===7?"magazine@exemple.fr":"Prénom Nom"+(i===2?", Prénom Nom, Prénom Nom":"")}</div>`).join("")}</div>
+      return P("ours",side,`<div class="no">${esc(ISSUE.numero)}</div><div class="credits">${["Lorem ipsum dolor","Sit amet","Consectetur adipiscing","Elit sed do eiusmod","Tempor incididunt","Ut labore","Et dolore magna","Aliqua"].map((t,i)=>`<div><b>${t}</b>${[["Camille Morel"],["Julien Faure"],["Inès Garnier","Paul Lemaire","Sarah Benali"],["Léa Fontaine","Hugo Marchand","Nadia Roux","Théo Girard"],["Clara Dupuis"],["Mathis Leroy"],["Emma Vidal"],["Lorem ipsum dolor"]][i].join(", ")}</div>`).join("")}</div>
         <div class="fx">${fauxP(4,3,38)}</div>${logo("#1C1838","left:38%;bottom:6%;width:14%")}`);
     },
     "Édito"(S,n,side,r){
@@ -3861,13 +3861,13 @@ const Meet = (()=>{
     "Là où tout a commencé"(S,n,side,r){
       const info=rubInfo(S,r), k=n-r[1];
       if(k===0) return P("lot",side,`${wonBadge(info)}<div class="ring"><svg viewBox="0 0 200 200"><defs><path id="c${n}" d="M100,100 m-82,0 a82,82 0 1,1 164,0 a82,82 0 1,1 -164,0"/></defs><text font-family="ArchivoV" font-weight="500" font-size="13" letter-spacing="7" fill="#fff"><textPath href="#c${n}" startOffset="4%">LÀ OÙ TOUT A COMMENCÉ · LÀ OÙ TOUT A COMMENCÉ ·</textPath></text></svg></div>
-        ${fol(n,"left:3cqw;top:2.4cqw")}`).replace("</svg></div>",`</svg><div class="nm wide" style="font-size:${fitSize(info?info.titre:"Le lieu",23,5.2)}cqw">${esc(info?info.titre:"Le lieu")}</div></div>`);
+        ${fol(n,"left:3cqw;top:2.4cqw")}`).replace("</svg></div>",`</svg><div class="nm wide" style="font-size:${fitSize(info?info.titre:"Lorem ipsum",23,5.2)}cqw">${esc(info?info.titre:"Lorem ipsum")}</div></div>`);
       if(k===1) return P("lot2",side,`<div class="t wide">${esc(info&&info.angle||"")}</div>${by(info&&info.jou)}${ph("",scene("#2B1C3A","#0E0A14"),"")}<div class="chap">${esc(info&&info.brief||"")}</div>${fol(n,"right:2.6cqw;bottom:2cqw")}${run()}`);
-      if(k===2) return P("lot2",side,`<div class="t wide" style="text-align:left;left:7%;right:40%;top:6%">C'est un phénomène</div>${ph("",scene("#1A2A4A","#05080F"),"left:7%;right:40%;top:24%;height:36%")}${lines("left:7%;right:7%;top:66%;bottom:9%",2,"#DDD6D2")}${lines("left:64%;right:7%;top:6%;height:56%",1,"#DDD6D2")}${fol(n,"left:2.6cqw;bottom:2cqw")}${run()}`);
-      return P("lot2",side,`<div class="box">Dix soirées emblématiques<span>Une liste à composer avec la salle</span></div>${lines("left:7%;width:40%;top:42%;bottom:9%",1,"#DDD6D2")}${lines("left:53%;right:7%;top:6%;height:46%",1,"#DDD6D2")}${ph("",scene("#3A1020","#0B0710"),"left:53%;right:7%;top:56%;height:34%")}${fol(n,"right:2.6cqw;bottom:2cqw")}${run()}`);
+      if(k===2) return P("lot2",side,`<div class="t wide" style="text-align:left;left:7%;right:40%;top:6%">Lorem ipsum dolor</div>${ph("",scene("#1A2A4A","#05080F"),"left:7%;right:40%;top:24%;height:36%")}${lines("left:7%;right:7%;top:66%;bottom:9%",2,"#DDD6D2")}${lines("left:64%;right:7%;top:6%;height:56%",1,"#DDD6D2")}${fol(n,"left:2.6cqw;bottom:2cqw")}${run()}`);
+      return P("lot2",side,`<div class="box">Lorem ipsum dolor sit<span>Consectetur adipiscing elit</span></div>${lines("left:7%;width:40%;top:42%;bottom:9%",1,"#DDD6D2")}${lines("left:53%;right:7%;top:6%;height:46%",1,"#DDD6D2")}${ph("",scene("#3A1020","#0B0710"),"left:53%;right:7%;top:56%;height:34%")}${fol(n,"right:2.6cqw;bottom:2cqw")}${run()}`);
     },
     "Temps fort"(S,n,side,r){
-      const info=rubInfo(S,r), k=n-r[1], tags=(info&&info.tags)||["#territoires","#liberté","#IA","#soutien"];
+      const info=rubInfo(S,r), k=n-r[1], tags=(info&&info.tags&&info.tags.length?info.tags:null)||["#lorem","#ipsum","#dolor","#amet"];
       const f=fol(n,side==="l"?"left:3cqw;bottom:2cqw":"right:3cqw;top:2.4cqw");
       if(k===0) return P("tf",side,`<span class="tag">Temps fort</span><div class="t cond" style="font-size:${fitBox(info?info.titre:"",43,15.5,6.2,.46)}cqw">${esc(info?info.titre:"")}</div>${ph("",scene("#D2A46C","#3E1418"),"left:7%;right:7%;top:35%;height:33.3%")}
         ${by(info&&info.jou).replace('class="by"','class="by" style="position:absolute;left:7%;top:72%"')}<div class="chap" style="top:76%;bottom:8%;font-size:1.45cqw;overflow:hidden">${esc(info&&info.brief||"")}</div>${f}`);
@@ -3877,12 +3877,12 @@ const Meet = (()=>{
       if(k>1 && k===r[2]-r[1]) return P("tf",side,`${ph("",scene("#6A1E28","#E8A06A"),"left:0;right:0;top:0;height:48%")}${lines("left:7%;right:7%;top:54%;bottom:9%",2,L)}${f}`);
       const tg=tags[(k-1)%tags.length];
       return P("tf",side,(k%2
-        ? `<div class="hash wide">${esc(tg)}</div><div class="qq q">« Une citation forte de l'entretien, mise en avant. »</div>${lines("left:50%;right:7%;top:7%;height:38%",1,"rgba(210,164,108,.35)")}${ph("",portrait("#D9B48A","#3E1418","#EBCDB0","",k%4===1))}`
+        ? `<div class="hash wide">${esc(tg)}</div><div class="qq q">« Lorem ipsum dolor sit amet, consectetur adipiscing elit. »</div>${lines("left:50%;right:7%;top:7%;height:38%",1,"rgba(210,164,108,.35)")}${ph("",portrait("#D9B48A","#3E1418","#EBCDB0","",k%4===1))}`
         : `${lines("left:7%;right:52%;top:7%;bottom:9%",1,"rgba(210,164,108,.35)")}<div class="hash wide" style="left:52%">${esc(tg)}</div>${lines("left:52%;right:7%;top:16%;bottom:9%",1,"rgba(210,164,108,.35)")}`)+f);
     },
     "Décryptage"(S,n,side,r){
       const info=rubInfo(S,r), k=n-r[1], dk=deckPage(S,r), f=fol(n,side==="l"?"left:2.6cqw;bottom:2cqw":"right:2.6cqw;top:2.4cqw");
-      const chap=["Les origines","Les codes","Les figures","La scène","Les chiffres","Le lexique","La playlist"];
+      const chap=["Lorem ipsum","Dolor sit","Amet elit","Sed tempor","Ut labore","Magna aliqua","Enim minim"];
       if(k<=1){ // ouverture : des sillons concentriques qui courent sur la double page
         const rings=`<span class="rings"></span>`;
         if(k===0) return P("dk2",side,`${rings}<span class="tag">Décryptage</span>${info?wonBadge(info):""}<div class="key">${chap.slice(0,4).map((c,i)=>`<div><b>0${i+1}</b>${c}</div>`).join("")}</div>${f}`);
@@ -3891,19 +3891,19 @@ const Meet = (()=>{
       }
       const last=r[2]-r[1], isSec=j=>j%2===0 || (j>3 && j>=last-1), no=range(2,k).filter(isSec).length;
       const sec=kind=>`<div class="sec"><b>${String(no).padStart(2,"0")}</b><span>${kind||chap[(no-1)%5]}</span></div>`;
-      if(k===r[2]-r[1]-1 && k>3) return P("dcy3",side,`${sec("Le lexique")}<div class="lx">${["Terme un","Terme deux","Terme trois","Terme quatre"].map(t=>`<div><b>${t}</b><i></i></div>`).join("")}</div>${f}`);
-      if(k===r[2]-r[1] && k>3) return P("dcy3",side,`${sec("La playlist")}<div class="pls">${range(1,8).map(i=>`<div><b>${i}</b><span><b>Artiste ${i}</b> — <i style="color:#66646A">Titre</i></span></div>`).join("")}</div>${ph("",grad("#16161A","#5BE0C0","#C8F560"),"left:8%;right:8%;top:72%;bottom:9%")}${f}`);
+      if(k===r[2]-r[1]-1 && k>3) return P("dcy3",side,`${sec("Lorem ipsum")}<div class="lx">${["Lorem","Ipsum","Dolor","Amet"].map(t=>`<div><b>${t}</b><i></i></div>`).join("")}</div>${f}`);
+      if(k===r[2]-r[1] && k>3) return P("dcy3",side,`${sec("Dolor sit amet")}<div class="pls">${range(1,8).map(i=>`<div><b>${i}</b><span><b>Lorem ipsum</b> — <i style="color:#66646A">Dolor sit</i></span></div>`).join("")}</div>${ph("",grad("#16161A","#5BE0C0","#C8F560"),"left:8%;right:8%;top:72%;bottom:9%")}${f}`);
       if(k%2===0) return P("dcy3",side,`${sec()}${lines("left:8%;right:8%;top:16%;height:34%",2,"#D3D2CC")}${ph("",grad("#5BE0C0","#16161A","#C8F560"),"left:8%;right:8%;top:54%;bottom:9%")}${f}`);
-      if(k!==3) return P("dcy3",side,`${lines("left:8%;right:8%;top:7%;height:40%",2,"#D3D2CC")}<div class="qq q" style="position:absolute;left:8%;right:8%;top:54%;font-size:2.6cqw;text-transform:uppercase">« La phrase qui résume le sujet. »</div>${lines("left:8%;right:8%;top:72%;bottom:9%",2,"#D3D2CC")}${f}`);
-      return P("dcy3",side,`<div class="kn" style="top:7%">${["68 %","1 sur 3","2010"].map(v=>`<div><b>${v}</b><span>Un chiffre clé, sa source.</span></div>`).join("")}</div>${lines("left:8%;right:8%;top:30%;bottom:9%",2,"#D3D2CC")}${f}`);
+      if(k!==3) return P("dcy3",side,`${lines("left:8%;right:8%;top:7%;height:40%",2,"#D3D2CC")}<div class="qq q" style="position:absolute;left:8%;right:8%;top:54%;font-size:2.6cqw;text-transform:uppercase">« Lorem ipsum dolor sit amet. »</div>${lines("left:8%;right:8%;top:72%;bottom:9%",2,"#D3D2CC")}${f}`);
+      return P("dcy3",side,`<div class="kn" style="top:7%">${["00 %","00","0000"].map(v=>`<div><b>${v}</b><span>Lorem ipsum dolor sit.</span></div>`).join("")}</div>${lines("left:8%;right:8%;top:30%;bottom:9%",2,"#D3D2CC")}${f}`);
     },
     "Carte blanche"(S,n,side,r){
       const info=rubInfo(S,r), k=n-r[1], f=fol(n,side==="l"?"left:2.6cqw;top:2.4cqw":"right:2.6cqw;top:2.4cqw");
-      if(k===0) return P("cb",side,`${ph("",portrait("#C9B89E","#3B2F24","#E6CDB5","Photo · artiste invité·e"))}${f}`);
+      if(k===0) return P("cb",side,`${ph("",portrait("#C9B89E","#3B2F24","#E6CDB5","Lorem ipsum"))}${f}`);
       if(k===1) return P("cb",side,`<div class="v2">Carte<br>Blanche à</div><div class="chap">${esc(info&&info.brief||"")}</div>${lines("left:8%;width:52%;top:46%;bottom:30%")}<div class="nm">${esc(info?info.titre:"")}</div>${f}`);
       const T=[["#4F6A8A","#0D1520"],["#B5463C","#2A0F0C"],["#7C8A5A","#1A1F10"],["#C7A24A","#2E2308"]][k%4];
-      if(k%2===0) return P("cb",side,`${ph("",portrait(T[0],T[1],"#E3C4AE","",side==="l"),"left:8%;right:8%;top:14%;height:58%")}<div class="cp" style="top:76%;width:60%">Légende de la photo : qui, où, quelle chanson.</div>${f}${run()}`);
-      return P("cb",side,`${ph("p1",portrait(T[0],T[1],"#E3C4AE","",k%2))}${ph("p2",portrait("#D8C3A0","#3C2F20","#EBD2BA","",!(k%2)))}<div class="cp">Légende de la photo : qui, où, quelle chanson.</div>${f}${run()}`);
+      if(k%2===0) return P("cb",side,`${ph("",portrait(T[0],T[1],"#E3C4AE","",side==="l"),"left:8%;right:8%;top:14%;height:58%")}<div class="cp" style="top:76%;width:60%">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>${f}${run()}`);
+      return P("cb",side,`${ph("p1",portrait(T[0],T[1],"#E3C4AE","",k%2))}${ph("p2",portrait("#D8C3A0","#3C2F20","#EBD2BA","",!(k%2)))}<div class="cp">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>${f}${run()}`);
     },
     "Dossier"(S,n,side,r){
       const info=rubInfo(S,r), k=n-r[1], dk=deckPage(S,r), f=fol(n,k<=1?(side==="l"?"left:46%;bottom:2.2cqw":"right:2.6cqw;top:2.4cqw"):(side==="l"?"left:2.6cqw;top:2.4cqw":"right:2.6cqw;top:2.4cqw"));
@@ -3915,41 +3915,41 @@ const Meet = (()=>{
         return P(cls,side,`${bg}<div class="nmd ${da.ttl}" style="font-size:${fitSize(info.titre,40,da.ttl==="cond"?7.4:6.2)}cqw">${esc(info.titre)}</div><span class="pp">${fp(r[1],r[2]).toUpperCase()}</span>${f}`);
       }
       if(k===2) return P("dos2",side,`${by(info&&info.jou)}<div class="t cond">${esc(info?info.angle:"")}</div>${lines("left:10%;right:10%;top:42%;bottom:9%",2,"#DED9D1")}${f}${run()}`);
-      if(k===3) return P("dos2",side,`${lines("left:7%;right:40%;top:7%;height:36%",1,"#DED9D1")}<div class="qq q">« Une phrase du dossier, en grand. »</div>${lines("left:7%;right:40%;top:66%;bottom:9%",1,"#DED9D1")}<div class="side" style="background:${dossierDA(r).side[0]};color:${dossierDA(r).side[1]}"><div class="t cond">${esc(info?info.titre:"")}</div><i></i></div>${fol(n,(side==="l"?"left":"right")+":2.6cqw;top:2.4cqw;color:"+(side==="r"?dossierDA(r).side[1]:"inherit"))}`);
-      if(k%2===0) return P("dos",side,`<div class="ph" style="inset:0;${k===6?"transform:scaleX(-1)":""}">${illus("Illustration",k/2,r)}</div>${f}`);
+      if(k===3) return P("dos2",side,`${lines("left:7%;right:40%;top:7%;height:36%",1,"#DED9D1")}<div class="qq q">« Lorem ipsum dolor sit amet. »</div>${lines("left:7%;right:40%;top:66%;bottom:9%",1,"#DED9D1")}<div class="side" style="background:${dossierDA(r).side[0]};color:${dossierDA(r).side[1]}"><div class="t cond">${esc(info?info.titre:"")}</div><i></i></div>${fol(n,(side==="l"?"left":"right")+":2.6cqw;top:2.4cqw;color:"+(side==="r"?dossierDA(r).side[1]:"inherit"))}`);
+      if(k%2===0) return P("dos",side,`<div class="ph" style="inset:0;${k===6?"transform:scaleX(-1)":""}">${illus("",k/2,r)}</div>${f}`);
       return P("dos2",side,`${lines("left:7%;right:7%;top:7%;height:40%",2,"#DED9D1")}<div class="ph" style="left:0;right:0;top:52%;bottom:0">${illus("",k,r)}</div>${f}`);
     },
     "Zoom sur"(S,n,side,r){
       const info=rubInfo(S,r), f=fol(n,side==="l"?"left:2.6cqw;bottom:2cqw":"right:2.6cqw;top:2.4cqw");
       if(n===r[1]) return P("zs",side,`<div class="stamp">ZOOM SUR</div><div class="t wide">${esc(info?info.titre:"")}</div>${ph("",scene("#3A4A8C","#090B1A"))}<div class="chap">${esc(info&&info.brief||"")}</div>${lines("left:52%;right:8%;top:70%;bottom:8%")}${f}${run()}`);
-      return P("zs",side,`${lines("left:8%;width:38%;top:7%;height:40%")}<div class="box">Un encadré chiffré<i></i></div><div class="qq">« La citation qui résume le sujet. »</div>${lines("left:52%;right:8%;top:56%;bottom:8%")}${f}${run()}`);
+      return P("zs",side,`${lines("left:8%;width:38%;top:7%;height:40%")}<div class="box">Lorem ipsum dolor<i></i></div><div class="qq">« Lorem ipsum dolor sit amet. »</div>${lines("left:52%;right:8%;top:56%;bottom:8%")}${f}${run()}`);
     },
     "Toute 1re fois"(S,n,side,r){
       const info=rubInfo(S,r), bg=`<div class="ph" style="inset:0;width:200%;${side==="r"?"left:-100%":""}">${portrait("#C88A5A","#21150E","#D9A07A","",false)}</div>`;
       if(side==="l") return P("t1f dark",side,`${bg}<div class="lg">TOUTE 1<sup>RE</sup> FOIS</div>${wonBadge(info)}${fol(n,"left:2.6cqw;bottom:2cqw")}`);
       if(!info) return P("t1f dark",side,`${bg}${fol(n,"right:3cqw;top:2.4cqw")}${deckPage(S,r)===r[1]?deck(S,r,r[1],"top:30%;left:10%;right:8%",{sub:x=>x.brief}):""}`);
-      const Q=["Votre premier choc musical ?","Votre première fois en studio ?","Votre premier concert ?","Votre premier chèque de la Sacem ?","Votre première chanson ?","Votre prochaine première fois ?"];
-      return P("t1f dark",side,`${bg}${fol(n,"right:3cqw;top:2.4cqw")}<div class="nm wide">${esc(info.titre)}</div>${by(info.jou)}<div class="chap">${esc(info.brief)}<br>Vous souvenez-vous de :</div><div class="qa">${Q.map(q=>`<div><b>${q}</b><i></i></div>`).join("")}</div>`);
+      const Q=["Lorem ipsum dolor ?","Sit amet consectetur ?","Adipiscing elit sed ?","Do eiusmod tempor ?","Incididunt ut labore ?","Et dolore magna ?"];
+      return P("t1f dark",side,`${bg}${fol(n,"right:3cqw;top:2.4cqw")}<div class="nm wide">${esc(info.titre)}</div>${by(info.jou)}<div class="chap">${esc(info.brief)}<br>Lorem ipsum dolor sit :</div><div class="qa">${Q.map(q=>`<div><b>${q}</b><i></i></div>`).join("")}</div>`);
     },
     "Fan de…"(S,n,side,r){
       const info=rubInfo(S,r), f=fol(n,side==="l"?"left:46%;top:2.4cqw":"left:46%;bottom:2cqw");
-      if(side==="l") return P("fan",side,`<div class="t cond">Fan de…</div><div class="ti">${esc(info?info.titre:"")}</div>${by(info&&info.jou).replace('class="by"','class="by" style="position:absolute;left:7%;top:21%"')}${lines("left:34%;right:8%;top:23%;height:24%")}${ph("doc",archive("Bulletin de déclaration, archives Sacem"))}${f}`);
-      return P("fan",side,`${ph("doc2",archive("Partition annotée"))}${lines("left:40%;right:8%;top:58%;bottom:12%")}<div class="qr"></div><div class="A" style="left:10%;top:72%;font-family:var(--sans);font-size:.85cqw;font-weight:700">Écoutez<br>le podcast</div>${f}`);
+      if(side==="l") return P("fan",side,`<div class="t cond">Fan de…</div><div class="ti">${esc(info?info.titre:"")}</div>${by(info&&info.jou).replace('class="by"','class="by" style="position:absolute;left:7%;top:21%"')}${lines("left:34%;right:8%;top:23%;height:24%")}${ph("doc",archive("Lorem ipsum dolor sit amet"))}${f}`);
+      return P("fan",side,`${ph("doc2",archive("Lorem ipsum"))}${lines("left:40%;right:8%;top:58%;bottom:12%")}<div class="qr"></div><div class="A" style="left:10%;top:72%;font-family:var(--sans);font-size:.85cqw;font-weight:700">Lorem<br>ipsum dolor</div>${f}`);
     },
     "Solidaires"(S,n,side,r){
       const info=pageInfo(S,n), head=`<div class="lg">SOLIDAIRES</div>${fol(n,"left:46%;top:2.4cqw")}`;
       if(!info) return P("sol",side,`${head}${deckPage(S,r)===n?deck(S,r,n,"top:30%;left:8%;right:8%",{sub:x=>x.brief}):""}`);
-      return P("sol",side,`${head}${wonBadge(info)}<div class="t wide">${esc(info.titre)}</div><div class="chap">${esc(info.brief)}</div>${ph("",portrait("#F2B8A8","#7A2A20","#F3CDBB","Photo du reportage"))}${lines("left:54%;right:8%;top:32%;bottom:9%",1,"rgba(255,255,255,.45)")}`);
+      return P("sol",side,`${head}${wonBadge(info)}<div class="t wide">${esc(info.titre)}</div><div class="chap">${esc(info.brief)}</div>${ph("",portrait("#F2B8A8","#7A2A20","#F3CDBB","Lorem ipsum"))}${lines("left:54%;right:8%;top:32%;bottom:9%",1,"rgba(255,255,255,.45)")}`);
     },
     "Ça sonne faux"(S,n,side,r){
-      const info=pageInfo(S,n), base=`<div class="vw">Ça<br>sonne<br>faux</div><span class="rb"></span><div class="intro">À une époque où il peut sembler de plus en plus difficile de séparer le vrai du faux, la Sacem décrypte les rumeurs et autres idées préconçues qui circulent à son sujet.</div>${fol(n,"right:2.6cqw;bottom:2cqw")}${run()}`;
+      const info=pageInfo(S,n), base=`<div class="vw">Ça<br>sonne<br>faux</div><span class="rb"></span><div class="intro">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</div>${fol(n,"right:2.6cqw;bottom:2cqw")}${run()}`;
       if(!info) return P("csf",side,`${base}${deckPage(S,r)===n?deck(S,r,n,"left:40%;right:5%;top:6%",{sub:x=>x.brief}):""}`);
       return P("csf",side,`${base}${wonBadge(info)}<div class="t">${esc(info.titre)}</div><div class="bdy">${esc(info.brief)}</div>${lines("left:40%;right:6%;top:46%;bottom:9%")}`);
     },
     "Playlist"(S,n,side){
-      const rows=[...new Set(meetArtists())].slice(0,10); if(!rows.length) rows.push("Les artistes du numéro");
-      return P("pl",side,`<div class="h wide">play<br>play<br>playlist</div><div class="i">Prolongez en musique votre lecture avec des morceaux de nos invités &amp; des chansons qui ont changé leur vie.</div>
-        <div class="rows">${rows.map(a=>`<div class="row"><b>${esc(a)}</b><span>Son titre<small>${esc(a)}</small></span><span>La chanson de sa vie<small>Interprète</small></span></div>`).join("")}</div>${fol(n,"left:2.6cqw;bottom:2cqw")}`);
+      const rows=[...new Set(meetArtists())].slice(0,10); if(!rows.length) rows.push("Lorem ipsum");
+      return P("pl",side,`<div class="h wide">play<br>play<br>playlist</div><div class="i">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.</div>
+        <div class="rows">${rows.map(a=>`<div class="row"><b>${esc(a)}</b><span>Lorem ipsum<small>${esc(a)}</small></span><span>Dolor sit amet<small>Consectetur</small></span></div>`).join("")}</div>${fol(n,"left:2.6cqw;bottom:2cqw")}`);
     },
   };
   // Gabarit commun : toute rubrique qui n'a pas le sien
