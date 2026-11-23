@@ -899,6 +899,7 @@
           <button class="more-menu-item" id="btnJson">Exporter JSON</button>
           <button class="more-menu-item" id="btnImport">Importer JSON</button>
           <button class="more-menu-item" id="btnPrint">Imprimer</button>
+          <button class="more-menu-item" id="btnWallA3" title="Tout le chemin de fer sur une feuille A3 paysage, à afficher au mur">🖨 Affiche A3 du chemin de fer</button>
           <button class="more-menu-item" id="btnPresentation">📖 Comité : feuilleter le numéro</button>
           <button class="more-menu-item" id="btnReset">Réinitialiser</button>
           <div class="more-menu-sep"></div>
@@ -1233,9 +1234,9 @@ const SUPABASE_URL = "https://aedgayenmptowhornxcv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TTPagsR_nvpVwmJerXYkrg_uQ610Uq9";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", d_retours:"", d_v2:"", d_sr:"", d_agence:"", sr_duree:null, statut:"a_caler", journaliste:"", lot:"", notes:"", brief:"", etapes:{}}; }
+function blankPage(n){ return {id:null, n, rubrique:"", sujet:"", thematique:"", calib:"", unite:"signes", rendu:"", d_retours:"", d_v2:"", d_sr:"", d_agence:"", sr_duree:null, statut:"a_caler", journaliste:"", lot:"", notes:"", brief:"", visuel:"", etapes:{}}; }
 function rowToPage(r){
-  const p = {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", d_retours:r.d_retours||"", d_v2:r.d_v2||"", d_sr:r.d_sr||"", d_agence:r.d_agence||"", sr_duree:(r.sr_duree==null?null:Number(r.sr_duree)), statut:STATUT_ALIAS[r.statut]||r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||"", brief:r.brief||"", etapes:(r.etapes && typeof r.etapes==="object") ? {...r.etapes} : {}};
+  const p = {id:r.id, n:r.n, rubrique:r.rubrique||"", sujet:r.sujet||"", thematique:r.thematique||"", calib:(r.calib==null?"":r.calib), unite:r.unite||"signes", rendu:r.rendu||"", d_retours:r.d_retours||"", d_v2:r.d_v2||"", d_sr:r.d_sr||"", d_agence:r.d_agence||"", sr_duree:(r.sr_duree==null?null:Number(r.sr_duree)), statut:STATUT_ALIAS[r.statut]||r.statut||"a_caler", journaliste:r.journaliste||"", lot:r.lot||"", notes:r.notes||"", brief:r.brief||"", visuel:r.visuel||"", etapes:(r.etapes && typeof r.etapes==="object") ? {...r.etapes} : {}};
   // Les étapes font foi : si le statut stocké les contredit — par exemple parce
   // qu'un découpage jalon/étapes a changé depuis la dernière écriture — on le
   // réaligne EN MÉMOIRE, pour que la Grille, le Gantt et la Matrice montrent la
@@ -3557,21 +3558,66 @@ function renderVisBox(p){
   const box=document.getElementById("visBox"); if(!box || !p) return;
   const u=p.visuel ? visuelURL(p.visuel) : null;
   box.innerHTML = (u?`<img src="${esc(u)}" alt="Visuel de la page ${p.n}">`:(p.visuel?`<span>Visuel enregistré (aperçu indisponible)</span>`:`<span>Aucun : un dégradé d'attente s'affiche dans le mode réunion.</span>`))
-    + (isVisitorMode?"":`<label class="tbtn" style="cursor:pointer">${p.visuel?"Remplacer":"Ajouter une image"}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden id="visFile"></label>${p.visuel?`<button class="tbtn" type="button" id="visDel">Retirer</button>`:""}`);
+    + (isVisitorMode?"":`<label class="tbtn" style="cursor:pointer">${p.visuel?"Remplacer":"Ajouter une image"}<input type="file" accept="image/*" hidden id="visFile"></label>${p.visuel?`<button class="tbtn" type="button" id="visDel">Retirer</button>`:""}`);
   const fi=document.getElementById("visFile"); if(fi) fi.onchange=e=>{ const file=e.target.files&&e.target.files[0]; if(file) uploadVisuel(p, file); };
   const del=document.getElementById("visDel"); if(del) del.onclick=async ()=>{ pushUndo(`Retirer le visuel page ${p.n}`, [{...p}]); p.visuel=""; await persistPageRow(p); renderVisBox(p); render(); presRefresh(); logActivity("a retiré le visuel", p.n); };
 }
+/* Avant l'envoi, l'image est mise au bon format : 2400 px au plus sur le grand
+   côté (assez pour une page pleine en réunion et pour l'affiche), en WebP
+   qualité 0,85, ou en JPEG si le navigateur ne sait pas écrire le WebP. Une
+   image déjà légère et assez petite part telle quelle. L'orientation des photos
+   de téléphone est respectée. */
+const VIS_MAX=2400, VIS_Q=0.85, VIS_IN_MAX=60*1024*1024, VIS_OUT_MAX=8*1024*1024;
+async function optimizeImage(file){
+  let src;
+  try{ src=await createImageBitmap(file, {imageOrientation:"from-image"}); }
+  catch(_){ src=await new Promise((res,rej)=>{ const u=URL.createObjectURL(file), im=new Image();
+    im.onload=()=>{ URL.revokeObjectURL(u); res(im); }; im.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("illisible")); }; im.src=u; }); }
+  const w0=src.naturalWidth||src.width, h0=src.naturalHeight||src.height;
+  if(!w0 || !h0) throw new Error("illisible");
+  const k=Math.min(1, VIS_MAX/Math.max(w0,h0)), w=Math.round(w0*k), h=Math.round(h0*k);
+  const keep=()=>{ if(src.close) src.close(); return {blob:file, type:file.type, w, h, w0, h0, kept:true}; };
+  if(k===1 && file.size<=500*1024 && /^image\/(jpeg|webp)$/.test(file.type)) return keep();
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const g=c.getContext("2d"); g.imageSmoothingEnabled=true; g.imageSmoothingQuality="high"; g.drawImage(src,0,0,w,h);
+  const enc=(t,q)=>new Promise(r=>c.toBlob(r,t,q));
+  let blob=await enc("image/webp",VIS_Q), type="image/webp";
+  if(!blob || blob.type!=="image/webp"){ // pas de WebP (anciens Safari) : JPEG sur fond blanc
+    g.globalCompositeOperation="destination-over"; g.fillStyle="#fff"; g.fillRect(0,0,w,h);
+    blob=await enc("image/jpeg",VIS_Q); type="image/jpeg"; }
+  if(!blob) throw new Error("encodage");
+  if(k===1 && blob.size>=file.size && /^image\/(jpeg|png|webp)$/.test(file.type)) return keep();
+  if(src.close) src.close();
+  return {blob, type, w, h, w0, h0, kept:false};
+}
+function storageError(error){
+  const m=String(error&&error.message||error||"");
+  if(/bucket.*not found|bucket not found|not_found/i.test(m)) return {message:"Could not find the 'visuels' column (espace de stockage absent : exécutez supabase/lot2.sql)"};
+  if(/row-level security|unauthori[sz]ed|permission|403/i.test(m)) return {message:"Envoi refusé : seuls les éditeurs peuvent ajouter un visuel (vérifiez supabase/lot2.sql et votre rôle dans la table membres)."};
+  if(/exceed|too large|payload|413/i.test(m)) return {message:"Image trop lourde pour l'espace de stockage (8 Mo au maximum)."};
+  if(/mime|content.?type|invalid.*type/i.test(m)) return {message:"Format refusé par l'espace de stockage : JPEG, PNG, WebP ou GIF."};
+  return error;
+}
 async function uploadVisuel(p, file){
   if(isVisitorMode || !currentIssue || !sb.storage) return;
-  if(!/^image\/(jpeg|png|webp|gif)$/.test(file.type)){ uiAlert("Formats acceptés : JPEG, PNG, WebP ou GIF."); return; }
-  if(file.size>8*1024*1024){ uiAlert("Image trop lourde : 8 Mo au maximum."); return; }
-  const ext=(file.type.split("/")[1]||"jpg").replace("jpeg","jpg"), path=`${currentIssue.id}/p${p.n}-${Date.now()}.${ext}`;
-  const box=document.getElementById("visBox"); if(box) box.insertAdjacentHTML("beforeend", `<span>Envoi…</span>`);
-  const { error } = await sb.storage.from("visuels").upload(path, file, { contentType:file.type, upsert:false });
-  if(error){ flashError("Visuel", /bucket|not found|exist/i.test(error.message) ? {message:"Could not find the 'visuels' column (espace de stockage absent : exécutez supabase/lot2.sql)"} : error); renderVisBox(p); return; }
+  if(file.type && !/^image\//.test(file.type)){ uiAlert("Choisissez une image (JPEG, PNG, WebP, HEIC…)."); return; }
+  if(file.size>VIS_IN_MAX){ uiAlert(`Image trop lourde : ${fmtSize(file.size)}, 60 Mo au maximum.`); return; }
+  const box=document.getElementById("visBox"), say=t=>{ if(!box) return; let s=box.querySelector(".vis-st"); if(!s){ s=document.createElement("span"); s.className="vis-st"; box.appendChild(s); } s.textContent=t; };
+  say("Optimisation de l'image…");
+  let o;
+  try{ o=await optimizeImage(file); }
+  catch(e){ renderVisBox(p); uiAlert("Cette image ne peut pas être lue par le navigateur (format HEIC ou fichier abîmé ?). Exportez-la en JPEG ou en PNG, puis réessayez."); return; }
+  if(o.blob.size>VIS_OUT_MAX){ renderVisBox(p); uiAlert(`Même optimisée, l'image pèse ${fmtSize(o.blob.size)} : 8 Mo au maximum.`); return; }
+  say(`Envoi… (${o.w} × ${o.h} px, ${fmtSize(o.blob.size)})`);
+  const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[o.type]||"jpg", path=`${currentIssue.id}/p${p.n}-${Date.now()}.${ext}`;
+  let res;
+  try{ res=await sb.storage.from("visuels").upload(path, o.blob, { contentType:o.type, cacheControl:"31536000", upsert:false }); }
+  catch(e){ res={error:e}; }
+  if(res.error){ flashError("Visuel", storageError(res.error)); renderVisBox(p); return; }
   pushUndo(`Visuel page ${p.n}`, [{...p}]);
   p.visuel=path; await persistPageRow(p);
   await refreshVisuelURLs([path]); renderVisBox(p); render(); presRefresh();
+  flashSaved(o.kept ? `✓ Visuel envoyé (${fmtSize(o.blob.size)})` : `✓ Visuel optimisé et envoyé : ${fmtSize(o.blob.size)} au lieu de ${fmtSize(file.size)}`);
   logActivity("a ajouté un visuel", p.n);
 }
 
@@ -4302,7 +4348,7 @@ const Meet = (()=>{
       <span class="sp"></span><span class="meta"><b>${decided}</b> retenu${decided>1?"s":""} · <b>${toDec.length}</b> à trancher${ro()?" · lecture seule":""}</span>
       ${z?`<button class="btn" type="button" data-a="out">${from==="gal"?"⤡ Numéro composé":"⤡ Vue globale"}</button>`: mode==="gal" ? `<button class="btn" type="button" data-a="glob">← Vue d'ensemble</button>` : `<button class="btn" type="button" data-a="gal" title="Toutes les doubles pages, mises à jour en direct">📚 Numéro composé</button><button class="btn" type="button" data-a="home" ${idx<0?"disabled":""}>Vue d'ensemble</button><button class="btn" type="button" data-a="prev" ${idx<0?"disabled":""} aria-label="Rubrique précédente">‹</button><button class="btn" type="button" data-a="next" ${idx>=S.length-1?"disabled":""} aria-label="Rubrique suivante">›</button>`}
       <button class="btn" type="button" data-a="cr" title="Relevé des décisions de la séance">📝 Compte rendu</button>
-      <button class="btn" type="button" data-a="pdf" title="Imprimer ou enregistrer en PDF, une double page par feuille A3">🖨 PDF A3</button>
+      <button class="btn" type="button" data-a="pdf" title="Affiche A3 paysage : tout le chemin de fer sur une feuille, à imprimer ou enregistrer en PDF">🖨 Affiche A3</button>
       <button class="btn" type="button" data-a="exp" title="Télécharger le numéro composé (copie HTML, lecture seule)">⤓ Copie</button>
       <button class="btn" type="button" data-a="fs" title="Plein écran (F)">⛶</button><button class="btn" type="button" data-a="close" title="Fermer (Échap)">✕</button>`;
   }
@@ -4596,6 +4642,8 @@ const Meet = (()=>{
   }
   // PDF A3 : le numéro composé, une double page par feuille A3 paysage (42 × 29,7 cm).
   async function printA3(){
+    // Dans l'appli : l'affiche du chemin de fer, tout le numéro sur une feuille A3 paysage.
+    if(typeof printWallA3==="function") return printWallA3();
     const html=(await exportDocFull()).replace("</style>", `@page{size:420mm 297mm; margin:0}
       @media print{ html,body{background:#fff!important} .wrap{padding:0!important; max-width:none!important} .wrap>h1,.wrap>p{display:none!important}
         .gal{display:block!important} .gal figure{margin:0!important; width:420mm; height:297mm; overflow:hidden; break-after:page; page-break-after:always}
@@ -4690,6 +4738,8 @@ function subscribePages(issueId){
       state.pages[row.n-1] = np;
       render();
       refreshPeekIfIdle(row.n);
+      // Visuel envoyé depuis un autre poste : on demande son lien signé.
+      if(np.visuel && !visuelURL(np.visuel)) refreshVisuelURLs([np.visuel]).then(()=>{ render(); presRefresh(); refreshPeekIfIdle(row.n); });
     })
     .subscribe();
 
@@ -4838,6 +4888,95 @@ document.getElementById("fileInput").addEventListener("change",e=>{
   r.readAsText(f); e.target.value="";
 });
 document.getElementById("btnPrint").addEventListener("click",()=>window.print());
+/* ---- Affiche A3 : tout le chemin de fer sur une feuille paysage ----------
+   Pour le mur ou le tableau de la rédaction : les pages en fiches texte
+   (rubrique, sujet, journaliste, calibrage), dans l'ordre de lecture, par
+   doubles pages. La grille se calcule pour remplir la feuille quel que soit
+   le nombre de pages du numéro. */
+function wallA3Html(){
+  const P=state.pages, T=P.length, iss=currentIssue||{};
+  const W=400, H=277, HEAD=20, LEG=16, GX=4.5, GY=3.2, LBL=3.6; // mm, marges de 10 mm
+  const spreads=[[1]]; for(let n=2;n<T;n+=2) spreads.push(n+1<=T?[n,n+1]:[n]); if(T>1 && T%2===0) spreads.push([T]);
+  const bodyH=H-HEAD-LEG; let best=null;
+  for(let cols=3; cols<=12; cols++){
+    const rows=Math.ceil(spreads.length/cols), pw=(W-(cols-1)*GX)/cols/2, ph=Math.min(pw*1.42, (bodyH-(rows-1)*GY)/rows-LBL);
+    if(ph<=0) continue; const sc=Math.min(pw, ph/1.42); if(!best || sc>best.sc) best={cols, rows, pw, ph, sc};
+  }
+  const {cols, pw, ph}=best, fs=Math.max(6, Math.min(14, pw*0.40)); // corps du sujet, en points (13 pt pour 56 pages)
+  const same=(a,b)=>a && b && a.rubrique && a.rubrique===b.rubrique && (a.sujet||"")===(b.sujet||"");
+  const calib=p=>{ const v=parseFloat(p.calib); return v ? `${v.toLocaleString("fr-FR")} ${p.unite||"signes"}` : ""; };
+  const tile=p=>{
+    if(!p) return `<div class="pg void"></div>`;
+    const c=p.rubrique ? getTagColor(p.rubrique,"rubrique") : null, prev=P[p.n-2], next=P[p.n];
+    const head=!same(prev,p), cont=same(p,next);
+    const rubFirst=p.rubrique && (!prev || prev.rubrique!==p.rubrique);
+    const body = !p.rubrique ? `<div class="s none">À attribuer</div>`
+      : head ? `${p.sujet?`<div class="s">${esc(p.sujet)}</div>`:`<div class="s none">Sujet à pourvoir</div>`}
+        <div class="f">${p.journaliste?`<span class="j">${esc(p.journaliste)}</span>`:""}${calib(p)?`<span class="c">${esc(calib(p))}</span>`:""}</div>`
+      : `<div class="s suite">suite</div>`;
+    return `<div class="pg${c?"":" empty"}${head?"":" cont"}${cont?" more":""}" style="${c?`--bg:${c.bg};--fg:${c.fg}`:""}">
+      <div class="t"><span class="n">${p.n}</span>${COVER[p.n]?`<span class="cv">${COVER[p.n]}</span>`:""}</div>
+      ${p.rubrique ? `<div class="r${rubFirst?"":" ghost"}">${esc(p.rubrique)}</div>` : ""}${body}</div>`;
+  };
+  const board=spreads.map((sp,i)=>{
+    const lbl = sp.length===2 ? `${sp[0]}–${sp[1]}` : (sp[0]===1 ? "Couverture" : "Dos");
+    const pair = sp.length===2 ? tile(P[sp[0]-1])+tile(P[sp[1]-1]) : (sp[0]===1 ? `<div class="pg void"></div>`+tile(P[0]) : tile(P[sp[0]-1])+`<div class="pg void"></div>`);
+    return `<div class="sp"><div class="sl">${lbl}</div><div class="pair">${pair}</div></div>`;
+  }).join("");
+  const rubs=[], seen=new Map();
+  P.forEach(p=>{ if(!p.rubrique) return; if(!seen.has(p.rubrique)){ seen.set(p.rubrique, []); rubs.push(p.rubrique); } seen.get(p.rubrique).push(p.n); });
+  const legend=rubs.map(r=>{ const c=getTagColor(r,"rubrique"); return `<span class="lg"><i style="background:${c.bg};border-color:${c.fg}55"></i><b>${esc(r)}</b> ${esc(formatPages(seen.get(r)))}</span>`; }).join("");
+  const big=((iss.numero||"").match(/\d+/g)||[""]).pop();
+  const assigned=P.filter(p=>p.rubrique).length, withSubject=P.filter(p=>p.sujet).length;
+  const today=new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${esc(iss.numero||"Chemin de fer")} · affiche A3</title><style>
+  @font-face{font-family:"Archivo"; src:url("fonts/Archivo.woff2") format("woff2"); font-weight:100 900}
+  @page{size:420mm 297mm; margin:10mm}
+  *{box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  html,body{margin:0; background:#fff; color:#1F1E1C; font-family:"Archivo",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+  .sheet{width:${W}mm; height:${H}mm; display:flex; flex-direction:column; overflow:hidden}
+  header{height:${HEAD}mm; display:flex; align-items:flex-end; justify-content:space-between; gap:10mm; border-bottom:.6mm solid #1F1E1C; padding-bottom:2.5mm; margin-bottom:3mm}
+  header h1{margin:0; font-size:26pt; font-weight:800; letter-spacing:-.02em; line-height:1} header h1 span{font-weight:400}
+  header .th{font-size:12pt; margin-top:1.5mm; color:#55534E}
+  header .meta{text-align:right; font-size:9.5pt; line-height:1.45; color:#55534E} header .meta b{color:#1F1E1C}
+  .board{flex:1; display:grid; grid-template-columns:repeat(${cols}, 1fr); column-gap:${GX}mm; row-gap:${GY}mm; align-content:start}
+  .sl{height:${LBL}mm; font-size:6.5pt; color:#8A8882; text-align:center; letter-spacing:.04em; font-variant-numeric:tabular-nums}
+  .pair{display:flex; gap:.5mm; height:${ph.toFixed(2)}mm}
+  .pg{flex:1 1 0; min-width:0; border:.3mm solid #CFCDC8; background:#fff; padding:1.6mm 1.8mm; display:flex; flex-direction:column; gap:.7mm; overflow:hidden; line-height:1.2}
+  .pg:not(.empty){background:var(--bg); border-color:var(--bg); color:var(--fg)}
+  .pg.empty{border-style:dashed}
+  .pg.void{border:0; background:none}
+  .pair .pg:first-child{border-radius:1.4mm .3mm .3mm 1.4mm} .pair .pg:last-child{border-radius:.3mm 1.4mm 1.4mm .3mm}
+  .t{display:flex; justify-content:space-between; align-items:baseline; font-variant-numeric:tabular-nums}
+  .n{font-size:${fs.toFixed(1)}pt; font-weight:700} .cv{font-size:${(fs*0.55).toFixed(1)}pt; font-weight:700; opacity:.7}
+  .r{font-size:${(fs*0.58).toFixed(1)}pt; font-weight:800; text-transform:uppercase; letter-spacing:.05em; line-height:1.15}
+  .r.ghost{opacity:.45; font-weight:600}
+  .s{font-size:${fs.toFixed(1)}pt; font-weight:650; line-height:1.15; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:6; overflow:hidden; color:#1F1E1C}
+  .pg:not(.empty) .s{color:inherit; filter:brightness(.55)}
+  .s.none{font-weight:400; font-style:italic; font-size:${(fs*0.72).toFixed(1)}pt; opacity:.65; filter:none!important}
+  .s.suite{font-weight:400; font-size:${(fs*0.7).toFixed(1)}pt; opacity:.6; filter:none!important}
+  .s.suite::before{content:"→ "}
+  .f{margin-top:auto; display:flex; flex-direction:column; gap:.3mm; font-size:${(fs*0.66).toFixed(1)}pt; line-height:1.15}
+  .j{font-weight:600} .c{opacity:.75; font-variant-numeric:tabular-nums}
+  footer{height:${LEG}mm; border-top:.3mm solid #CFCDC8; padding-top:2mm; display:flex; flex-wrap:wrap; gap:1.2mm 5mm; align-content:flex-start; font-size:7.5pt; color:#55534E; overflow:hidden}
+  .lg{white-space:nowrap; font-size:8.5pt; display:inline-flex; align-items:center; gap:1.3mm} .lg b{color:#1F1E1C; font-weight:650}
+  .lg i{display:inline-block; width:3.2mm; height:3.2mm; border-radius:.6mm; border:.3mm solid}
+  @media screen{ body{background:#E9E8E4; padding:10mm} .sheet{background:#fff; padding:10mm; width:${W+20}mm; height:${H+20}mm; box-shadow:0 2px 14px rgba(0,0,0,.15)} }
+  </style></head><body><div class="sheet">
+  <header><div><h1>SacemMag${big?` <span>n°${esc(big)}</span>`:""}</h1>${iss.theme?`<div class="th">${esc(iss.theme)}</div>`:""}</div>
+    <div class="meta"><b>Chemin de fer</b> · ${T} pages${iss.bouclage?` · bouclage le <b>${esc(frDateFull(iss.bouclage))}</b>`:""}<br>${assigned}/${T} pages attribuées · ${withSubject}/${T} sujets calés<br>Imprimé le ${esc(today)}</div></header>
+  <div class="board">${board}</div>
+  <footer>${legend || "Aucune rubrique attribuée pour l'instant."}</footer>
+  </div></body></html>`;
+}
+function printWallA3(){
+  if(!currentIssue || !state.pages.length) return;
+  let f=document.getElementById("cdfPrintFrame"); if(f) f.remove();
+  f=document.createElement("iframe"); f.id="cdfPrintFrame"; f.setAttribute("aria-hidden","true"); f.style.cssText="position:fixed; right:0; bottom:0; width:0; height:0; border:0; visibility:hidden";
+  document.body.appendChild(f); f.srcdoc=wallA3Html();
+  f.onload=async ()=>{ try{ await f.contentDocument.fonts.ready; }catch(_){} setTimeout(()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ console.error(e); } }, 200); };
+}
+document.getElementById("btnWallA3").addEventListener("click",()=>{ closeMoreMenu(); printWallA3(); });
 document.getElementById("btnReset").addEventListener("click", async ()=>{
   if(!currentIssue) return;
   const nom = currentIssue.numero || "ce numéro";
@@ -4894,7 +5033,7 @@ document.getElementById("btnUndo").addEventListener("click", undoLast);
 const SAVE_KINDS = { auto:"Nuit", manuelle:"Manuelle", avant_restauration:"Avant restauration", avant_reinitialisation:"Avant réinitialisation", import:"Avant import", corbeille:"Corbeille" };
 let saves = [], savesUnavailable = null, saveConfirm = null;
 const frDateTime = iso => { const d=new Date(iso); return d.toLocaleDateString("fr-FR",{weekday:"short", day:"numeric", month:"short"})+", "+d.toLocaleTimeString("fr-FR",{hour:"2-digit", minute:"2-digit"}); };
-const fmtSize = n => n>=1048576 ? (n/1048576).toLocaleString("fr-FR",{maximumFractionDigits:1})+" Mo" : Math.max(1,Math.round((n||0)/1024))+" Ko";
+function fmtSize(n){ return n>=1048576 ? (n/1048576).toLocaleString("fr-FR",{maximumFractionDigits:1})+" Mo" : Math.max(1,Math.round((n||0)/1024))+" Ko"; }
 // Copie de sécurité côté serveur avant une opération lourde ; sans le script
 // du lot 1, on continue sans (rien ne change par rapport à avant).
 async function serverBackup(kind){
