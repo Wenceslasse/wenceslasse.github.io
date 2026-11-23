@@ -451,6 +451,7 @@
   .modal.wide{width:min(680px, calc(100vw - 32px)); max-height:calc(100vh - 40px); display:flex; flex-direction:column}
   .modal.wide .modal-b{overflow:auto}
   .db-weekly{display:flex; justify-content:flex-end; margin:0 0 10px}
+  .offline-bar{position:fixed; left:50%; top:10px; transform:translateX(-50%); z-index:450; background:#3A3D42; color:#fff; font-size:13px; font-weight:600; padding:7px 14px; border-radius:99px; box-shadow:0 6px 20px rgba(0,0,0,.2); max-width:calc(100vw - 24px); text-align:center}
   #cdfActs{display:inline-flex; gap:6px; margin-right:6px}
   .cdf-pre{white-space:pre-wrap; font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--body); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin:0}
   .visbox{display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--muted)}
@@ -1027,6 +1028,7 @@
 
 <div id="meetHost" hidden></div>
 
+<div class="offline-bar" id="offlineBar" role="status" hidden></div>
 <div class="save-toast" id="saveToast" role="status" aria-live="polite">✓ Enregistré</div>
 
 <!-- integrity : le navigateur refuse le fichier si le CDN le sert modifié. -->
@@ -2347,7 +2349,9 @@ function renderGanttView(){
 // Rendu coalescé : pendant la frappe, on regroupe les re-rendus (150 ms)
 // au lieu de reconstruire les 56 fiches à chaque caractère.
 let renderTimer=null;
+let snapTimer=null;
 function scheduleRender(delay){
+  clearTimeout(snapTimer); snapTimer=setTimeout(saveOfflineSnapshot, 5000);
   clearTimeout(renderTimer);
   renderTimer=setTimeout(()=>{ renderTimer=null; render(); }, delay||150);
 }
@@ -2882,6 +2886,7 @@ async function persistField(p, field){
   if(field==="sr_duree") val = (val===1||val===2) ? val : null;
   if(DATE_FIELDS.has(field) && val==="") val=null;
   const { error } = await sb.from("pages").update({ [field]: val }).eq("id", p.id);
+  if(error && isNetErr(error) && queueWrite("pages","upsert",[pageToRow(p)])){ flashSaved("✓ Gardé sur cet ordinateur (hors ligne)"); return; }
   if(error) flashError("Modification de la page "+p.n, error);
   else flashSaved();
 }
@@ -2897,6 +2902,7 @@ async function persistEtapes(pages){
     sb.from("pages").update({ etapes: p.etapes, statut: p.statut }).eq("id", p.id)
   ));
   const err = results.find(r=>r.error);
+  if(err && isNetErr(err.error) && queueWrite("pages","upsert",list.map(pageToRow))){ flashSaved("✓ Gardé sur cet ordinateur (hors ligne)"); return; }
   if(err) flashError("Avancement des étapes", err.error);
   else flashSaved();
 }
@@ -3079,7 +3085,7 @@ function renderIssueList(){
 }
 async function loadIssues(quiet){
   const { data, error } = await sb.from("issues").select("id,numero,bouclage,created_at").order("created_at",{ascending:true});
-  if(error){ if(!quiet) alert("Erreur de chargement des numéros : "+error.message); return []; }
+  if(error){ if(isNetErr(error) && offlineSnapshot()) return null; if(!quiet) alert("Erreur de chargement des numéros : "+error.message); return []; }
   return data||[];
 }
 let selectSeq = 0; // la dernière sélection gagne, même si une précédente répond après elle
@@ -3131,6 +3137,7 @@ async function selectIssue(id, pushUrl){
   }
 
   render();
+  saveOfflineSnapshot();
   subscribePages(id);
   subscribeProps(id);
   presRefresh();
@@ -3162,7 +3169,66 @@ async function createIssue(){
 // écritures suivantes, pour ne pas échouer puis réessayer à chaque fois.
 const missingCols = {};
 let missingColsWarned = false;
+// ---- Travail hors ligne ---------------------------------------------------
+// Le dernier numéro ouvert est gardé sur cet ordinateur ; sans réseau, l'appli
+// s'ouvre dessus. Les modifications de pages faites hors ligne attendent dans
+// une file, envoyée au retour du réseau (la dernière écriture l'emporte).
+const isNetErr = e => /Failed to fetch|NetworkError|Load failed|network|fetch failed/i.test((e && (e.message||e)) || "");
+let offlineMode=false;
+function saveOfflineSnapshot(){
+  if(!currentIssue || offlineMode) return;
+  try{ localStorage.setItem("cdf_offline", JSON.stringify({ at:new Date().toISOString(), issues:issuesCache, issue:currentIssue, pages:state.pages, props })); }catch(_){}
+}
+function offlineSnapshot(){ try{ return JSON.parse(localStorage.getItem("cdf_offline")||"null"); }catch(_){ return null; } }
+const offlineQueue = () => { try{ return JSON.parse(localStorage.getItem("cdf_queue")||"[]"); }catch(_){ return []; } };
+function queueWrite(table, op, rows){
+  let q=offlineQueue();
+  const ids=new Set((Array.isArray(rows)?rows:[rows]).map(r=>r && r.id).filter(Boolean));
+  if(table==="pages" && op==="upsert") q=q.filter(w=>!(w.table==="pages" && w.op==="upsert" && (w.rows||[]).length===1 && ids.has(w.rows[0].id) && ids.size===1));
+  q.push({ table, op, rows, at:new Date().toISOString() });
+  try{ localStorage.setItem("cdf_queue", JSON.stringify(q)); }catch(_){ return false; }
+  updateOfflineBar(); return true;
+}
+function updateOfflineBar(){
+  const bar=document.getElementById("offlineBar"); if(!bar) return;
+  const n=offlineQueue().length, off=!navigator.onLine || offlineMode;
+  if(!off && !n){ bar.hidden=true; return; }
+  const snap=offlineMode ? offlineSnapshot() : null;
+  bar.textContent = off ? `Hors ligne${snap?` · version du ${new Date(snap.at).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}`:""}${n?` · ${n} modification${n>1?"s":""} en attente d'envoi`:" · les modifications de pages seront gardées sur cet ordinateur"}`
+    : `Envoi de ${n} modification${n>1?"s":""} faite${n>1?"s":""} hors ligne…`;
+  bar.hidden=false;
+}
+async function flushOfflineQueue(){
+  let q=offlineQueue(); if(!q.length || !navigator.onLine) { updateOfflineBar(); return; }
+  updateOfflineBar();
+  while(q.length){
+    const w=q[0], { error } = await writeResilient0(w.table, w.op, w.rows);
+    if(error){ if(isNetErr(error)) break; flashError("Envoi des modifications hors ligne", error); }
+    q.shift(); try{ localStorage.setItem("cdf_queue", JSON.stringify(q)); }catch(_){}
+  }
+  if(!q.length){ flashSaved("✓ Modifications hors ligne envoyées"); if(offlineMode){ offlineMode=false; location.reload(); return; } if(currentIssue) await selectIssue(currentIssue.id, false); }
+  updateOfflineBar();
+}
+function enterOfflineMode(snap){
+  offlineMode=true;
+  issuesCache=snap.issues||[]; currentIssue=snap.issue; props=snap.props||[];
+  state.pages=(snap.pages||[]).length===TOTAL ? snap.pages : Array.from({length:TOTAL},(_,i)=>blankPage(i+1));
+  populateIssueSelect(); setDocTitle(currentIssue.numero);
+  numero.value=currentIssue.numero||""; bouclage.value=currentIssue.bouclage||"";
+  render(); updateOfflineBar();
+}
+window.addEventListener("online", ()=>{ updateOfflineBar(); flushOfflineQueue(); });
+window.addEventListener("offline", updateOfflineBar);
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(()=>{});
+
 async function writeResilient(table, op, rows){
+  const res = await writeResilient0(table, op, rows);
+  if(res.error && isNetErr(res.error) && table==="pages" && op==="upsert" && queueWrite(table, op, rows)){
+    flashSaved("✓ Gardé sur cet ordinateur (hors ligne)"); return { error:null, dropped:res.dropped, queued:true };
+  }
+  return res;
+}
+async function writeResilient0(table, op, rows){
   const miss = missingCols[table] = missingCols[table] || new Set();
   const strip = r => { const o={...r}; miss.forEach(c=>delete o[c]); return o; };
   let payload = Array.isArray(rows) ? rows.map(strip) : strip(rows);
@@ -5077,8 +5143,9 @@ async function showApp(session){
   if(appInited) return;
   appInited=true;
   subscribeIssues();
-  issuesCache = await loadIssues();
+  { const list = await loadIssues(); if(list===null){ enterOfflineMode(offlineSnapshot()); return; } issuesCache = list; }
   populateIssueSelect();
+  flushOfflineQueue();
   if(issuesCache.length===0){
     if(!isVisitorMode) await createIssue();
   } else {
